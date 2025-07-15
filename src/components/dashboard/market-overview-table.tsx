@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from 'react';
@@ -35,6 +36,13 @@ const signalConfig = {
     Block: { color: "text-muted-foreground", icon: <Minus className="h-4 w-4" />, label: "Block" },
 }
 
+const TrendIndicator = ({ trend }: { trend: 'buy' | 'sell' }) => (
+    trend === 'buy'
+        ? <ArrowUp className="h-4 w-4 text-green-400" />
+        : <ArrowDown className="h-4 w-4 text-red-400" />
+);
+
+
 export default function MarketOverviewTable({ data }: MarketOverviewTableProps) {
   const [sortKey, setSortKey] = React.useState<SortKey>('dScore');
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc');
@@ -63,8 +71,8 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
     }
   };
 
-  const SortableHeader = ({ tkey, label }: { tkey: SortKey; label: string }) => (
-    <TableHead>
+  const SortableHeader = ({ tkey, label, className }: { tkey: SortKey; label: string; className?: string }) => (
+    <TableHead className={className}>
       <Button variant="ghost" onClick={() => handleSort(tkey)} className="px-0 hover:bg-transparent">
         {label}
         <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -86,6 +94,7 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
                 <SortableHeader tkey="pair" label="Pair" />
                 <SortableHeader tkey="dScore" label="D-Score" />
                 <SortableHeader tkey="grade" label="Grade" />
+                <TableHead>Trend (4h/1d/1w)</TableHead>
                 <SortableHeader tkey="cot" label="COT" />
                 <SortableHeader tkey="adx" label="ADX" />
                 <SortableHeader tkey="spread" label="Spread" />
@@ -103,6 +112,13 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
                       <Badge variant="outline" className={cn("font-bold", gradeColors[item.grade])}>
                           {item.grade}
                       </Badge>
+                    </TableCell>
+                     <TableCell>
+                        <div className="flex items-center gap-2">
+                           <TrendIndicator trend={item.trends.h4} />
+                           <TrendIndicator trend={item.trends.d1} />
+                           <TrendIndicator trend={item.trends.w1} />
+                        </div>
                     </TableCell>
                     <TableCell>{item.cot}</TableCell>
                     <TableCell>{item.adx}</TableCell>
@@ -123,3 +139,4 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
     </Card>
   );
 }
+

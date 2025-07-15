@@ -13,7 +13,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ChevronsRight } from 'lucide-react';
+import { ChevronsRight, HelpCircle } from 'lucide-react';
 import type { Bot, DScore } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -28,7 +28,7 @@ interface ActiveBotsTableProps {
   isClosed?: boolean;
 }
 
-const statusConfig = {
+const statusConfig: Record<Bot['status'] | 'unknown', { label: string; color: string; }> = {
     active: {
         label: "Active",
         color: "bg-green-500/20 text-green-400 border-green-500/30",
@@ -48,6 +48,10 @@ const statusConfig = {
     close_at_tp: {
         label: "Close at TP",
         color: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+    },
+    unknown: {
+        label: "Unknown",
+        color: "bg-gray-500/20 text-gray-400 border-gray-500/30",
     }
 }
 
@@ -86,7 +90,7 @@ export default function ActiveBotsTable({ data, allPairs, title, description, is
                 <TableBody>
                   {data.map((bot) => {
                     const currentStatus = isClosed ? 'closed' : bot.status;
-                    const config = statusConfig[currentStatus];
+                    const config = statusConfig[currentStatus] || statusConfig.unknown;
                     return (
                       <TableRow key={bot.id}>
                         <TableCell className="font-medium">{bot.pair}</TableCell>

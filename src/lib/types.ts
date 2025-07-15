@@ -18,6 +18,11 @@ export type DScore = {
   spread: number;
   signal: 'Buy' | 'Sell' | 'Block';
   positions?: number;
+  trends: {
+    h4: 'buy' | 'sell';
+    d1: 'buy' | 'sell';
+    w1: 'buy' | 'sell';
+  };
 };
 
 export type Bot = {
@@ -66,12 +71,12 @@ export type BotConfigurationData = {
   botType: string;
   lotSize: number;
   maxPositions: number;
+  reentryDelay: number;
   stopLoss: number;
   takeProfit: number;
-  enableTrailingStop: boolean;
   enableDSizeExit: boolean;
   dSizeExitThreshold: number;
-  reentryDelay: number;
+  enableTrailingStop: boolean;
   newsFilter: boolean;
   weekendTrading: boolean;
   aiOptimization: boolean;
@@ -83,3 +88,23 @@ export type AIReentry = {
   lotSize: number;
   condition: string;
 }
+
+export type CotData = {
+  currency: string;
+  data: {
+    date: string;
+    long: number;
+    short: number;
+  }[];
+};
+
+export type NewsEvent = {
+  id: string;
+  time: string;
+  currency: string;
+  impact: 'High' | 'Medium' | 'Low';
+  event: string;
+  actual: string | null;
+  forecast: string | null;
+  previous: string | null;
+};
