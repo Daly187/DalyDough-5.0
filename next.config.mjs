@@ -1,4 +1,6 @@
+
 import 'dotenv/config';
+import type {NextConfig} from 'next';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -22,7 +24,7 @@ const nextConfig = {
       }
     ],
   },
-  async rewrites() {
+   async rewrites() {
     return [
       {
         source: '/api/fmp/:path*',

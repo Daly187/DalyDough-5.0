@@ -1,20 +1,26 @@
 
 import type { ForexData } from './types';
 
-// Use a relative path for the proxied API route
-const BASE_URL = '/api/fmp';
+// When running on the server, we can call the API directly.
+// On the client, we use the proxy to avoid CORS and hide the key.
+const IS_SERVER = typeof window === 'undefined';
+const FMP_API_KEY = process.env.FMP_API_KEY;
+const BASE_URL = IS_SERVER 
+    ? `https://financialmodelingprep.com/api/v3`
+    : '/api/fmp';
 
 async function fetchWithCache<T>(url: string, ttl: number = 300): Promise<T | null> {
+    // Append API key for direct server-side calls
+    const finalUrl = IS_SERVER ? `${url}?apikey=${FMP_API_KEY}` : url;
+
     try {
-        const res = await fetch(url, { 
-            // We use cache: 'no-store' during development to ensure we get fresh data,
-            // but revalidate on production builds.
+        const res = await fetch(finalUrl, { 
             cache: process.env.NODE_ENV === 'development' ? 'no-store' : undefined,
             next: { revalidate: ttl } 
         });
 
         if (!res.ok) {
-            console.error(`Failed to fetch ${url}: HTTP ${res.status} ${res.statusText}`);
+            console.error(`Failed to fetch ${finalUrl}: HTTP ${res.status} ${res.statusText}`);
             const errorBody = await res.text();
             console.error('Error body:', errorBody);
             return null;
@@ -23,18 +29,18 @@ async function fetchWithCache<T>(url: string, ttl: number = 300): Promise<T | nu
         const data = await res.json();
         
         if (data && data['Error Message']) {
-            console.error(`API Error for ${url}: ${data['Error Message']}`);
+            console.error(`API Error for ${finalUrl}: ${data['Error Message']}`);
             return null;
         }
 
         if (Array.isArray(data) && data.length === 0) {
-            console.warn(`Received empty array for ${url}, which may be expected.`);
-            return data as T; // Return the empty array, don't treat as null
+            // This is an expected empty response, not an error.
+            return data as T;
         }
 
         return data as T;
     } catch (error) {
-        console.error(`Network or JSON parsing error fetching ${url}:`, error);
+        console.error(`Network or JSON parsing error fetching ${finalUrl}:`, error);
         return null;
     }
 }
@@ -43,6 +49,7 @@ export async function getForexData(pairs: string[]): Promise<ForexData[]> {
     const promises = pairs.map(async (pair) => {
         const apiSymbol = pair.replace('/', '');
         
+        // Construct URLs without the API key; it's added in fetchWithCache for server-side calls
         const quotePromise = fetchWithCache(`${BASE_URL}/quote/${apiSymbol}`);
         const adxPromise = fetchWithCache(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=14&type=adx`);
         const atrPromise = fetchWithCache(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=14&type=atr`);
@@ -59,7 +66,6 @@ export async function getForexData(pairs: string[]): Promise<ForexData[]> {
             sma200Promise
         ]);
         
-        // Return the object with potentially null fields. The calculation function will handle this.
         return {
             pair,
             quote,
