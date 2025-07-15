@@ -21,7 +21,7 @@ export default function AutoBotPage() {
             <MarketOpportunities opportunities={dScoreData.slice(0, 9)} />
         </div>
         <div className="lg:col-span-2 flex flex-col gap-8">
-            <BotConfiguration config={botConfigurationData} />
+            <BotConfiguration config={botConfigurationData} allPairs={dScoreData} />
             <AiOptimizedReentries reentries={aiReentriesData} />
         </div>
       </div>

@@ -8,14 +8,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Settings, Lightbulb } from "lucide-react";
-import type { BotConfigurationData } from "@/lib/types";
+import { Slider } from "@/components/ui/slider";
+import type { BotConfigurationData, DScore } from "@/lib/types";
 
 interface BotConfigurationProps {
   config: BotConfigurationData;
+  allPairs: DScore[];
 }
 
-export default function BotConfiguration({ config: initialConfig }: BotConfigurationProps) {
+export default function BotConfiguration({ config: initialConfig, allPairs }: BotConfigurationProps) {
   const [config, setConfig] = React.useState(initialConfig);
+  const [minDSize, setMinDSize] = React.useState(7.0);
+  const [selectedPair, setSelectedPair] = React.useState<string>("");
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -25,10 +29,30 @@ export default function BotConfiguration({ config: initialConfig }: BotConfigura
   const handleSelectChange = (id: keyof BotConfigurationData) => (value: string) => {
     setConfig((prev) => ({ ...prev, [id]: value }));
   };
+  
+  const handlePairSelectChange = (value: string) => {
+    setSelectedPair(value);
+  };
 
   const handleSwitchChange = (id: keyof BotConfigurationData) => (checked: boolean) => {
     setConfig((prev) => ({ ...prev, [id]: checked }));
   };
+  
+  const handleSliderChange = (value: number[]) => {
+    setMinDSize(value[0]);
+  };
+
+  const filteredPairs = React.useMemo(() => {
+    return allPairs.filter(p => p.dScore >= minDSize);
+  }, [allPairs, minDSize]);
+
+  React.useEffect(() => {
+    if (filteredPairs.length > 0 && !filteredPairs.find(p => p.pair === selectedPair)) {
+      setSelectedPair(filteredPairs[0].pair);
+    } else if (filteredPairs.length === 0) {
+      setSelectedPair("");
+    }
+  }, [filteredPairs, selectedPair]);
 
   return (
     <Card>
@@ -38,7 +62,26 @@ export default function BotConfiguration({ config: initialConfig }: BotConfigura
           Bot Configuration
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6">
+        <div className="space-y-4">
+            <div>
+                <Label htmlFor="minDSize">Min D-Size: <span className="text-primary font-bold">{minDSize.toFixed(1)}</span></Label>
+                <Slider id="minDSize" min={6} max={10} step={0.1} defaultValue={[minDSize]} onValueChange={handleSliderChange} />
+            </div>
+            <div>
+                <Label htmlFor="pairSelect">Select Pair ({filteredPairs.length} available)</Label>
+                 <Select value={selectedPair} onValueChange={handlePairSelectChange}>
+                    <SelectTrigger id="pairSelect">
+                        <SelectValue placeholder="Select a high-scoring pair" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {filteredPairs.map(p => (
+                            <SelectItem key={p.id} value={p.pair}>{p.pair} (D-Score: {p.dScore.toFixed(1)})</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
                 <Label htmlFor="botType">Bot Type</Label>
@@ -58,7 +101,7 @@ export default function BotConfiguration({ config: initialConfig }: BotConfigura
                 <Input id="initialInvestment" type="number" value={config.initialInvestment} onChange={handleInputChange} />
             </div>
              <div>
-                <Label htmlFor="lotSize">Lot Size</Label>
+                <Label htmlFor="lotSize">Initial Lot Order</Label>
                 <Input id="lotSize" type="number" value={config.lotSize} onChange={handleInputChange} />
             </div>
             <div>
