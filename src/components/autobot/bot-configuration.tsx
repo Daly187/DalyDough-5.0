@@ -131,6 +131,11 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
                 <Label htmlFor="takeProfit">Take Profit ($)</Label>
                 <Input id="takeProfit" type="number" value={config.takeProfit} onChange={handleInputChange} />
             </div>
+            <div>
+                <Label htmlFor="reentryDelay">Re-entry Delay (mins)</Label>
+                <Input id="reentryDelay" type="number" value={config.reentryDelay} onChange={handleInputChange} />
+            </div>
+            <div></div>
             <div className="col-span-1 md:col-span-2 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <Label htmlFor="enableDSizeExit" className={cn(!config.enableDSizeExit && "text-muted-foreground")}>D-Size Exit Threshold</Label>
@@ -148,10 +153,6 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
             <div className="flex items-center justify-between col-span-1 md:col-span-2">
                 <Label htmlFor="enableTrailingStop">Enable Trailing Stop</Label>
                 <Switch id="enableTrailingStop" checked={config.enableTrailingStop} onCheckedChange={handleSwitchChange('enableTrailingStop')} />
-            </div>
-             <div>
-                <Label htmlFor="reentryDelay">Re-entry Delay (mins)</Label>
-                <Input id="reentryDelay" type="number" value={config.reentryDelay} onChange={handleInputChange} />
             </div>
             <div className="flex items-center justify-between">
                 <Label htmlFor="newsFilter">News Filter</Label>
