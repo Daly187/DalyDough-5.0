@@ -28,6 +28,8 @@ export type Bot = {
   entry_time: string;
   d_score_entry: number;
   d_score_exit?: number;
+  stopLoss?: number;
+  takeProfit?: number;
 };
 
 export type EquityData = {

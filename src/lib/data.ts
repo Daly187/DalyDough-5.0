@@ -50,11 +50,11 @@ const generateRandomDScore = (pair: string, index: number): DScore => {
 export const dScoreData: DScore[] = pairs.map(generateRandomDScore);
 
 export const activeBotsData: Bot[] = [
-  { id: 'bot1', pair: 'EUR/USD', strategy: 'DCA Grid', status: 'active', profit_loss: 152.3, entry_time: '2024-05-20T10:30:00Z', d_score_entry: 8.2 },
-  { id: 'bot2', pair: 'GBP/USD', strategy: 'Trend Rider', status: 'active', profit_loss: -45.1, entry_time: '2024-05-20T11:05:00Z', d_score_entry: 7.5 },
-  { id: 'bot3', pair: 'AUD/USD', strategy: 'Breakout', status: 'active', profit_loss: 210.55, entry_time: '2024-05-20T14:00:00Z', d_score_entry: 9.1 },
-  { id: 'bot4', pair: 'USD/JPY', strategy: 'Mean Reversion', status: 'paused', profit_loss: 89.7, entry_time: '2024-05-19T22:15:00Z', d_score_entry: 6.8 },
-  { id: 'bot5', pair: 'XAU/USD', strategy: 'DCA Grid', status: 'error', profit_loss: -112.0, entry_time: '2024-05-18T08:45:00Z', d_score_entry: 8.8, d_score_exit: 5.4 },
+  { id: 'bot1', pair: 'EUR/USD', strategy: 'DCA Grid', status: 'active', profit_loss: 152.3, entry_time: '2024-05-20T10:30:00Z', d_score_entry: 8.2, stopLoss: 50, takeProfit: 100 },
+  { id: 'bot2', pair: 'GBP/USD', strategy: 'Trend Rider', status: 'active', profit_loss: -45.1, entry_time: '2024-05-20T11:05:00Z', d_score_entry: 7.5, stopLoss: 50, takeProfit: 100 },
+  { id: 'bot3', pair: 'AUD/USD', strategy: 'Breakout', status: 'active', profit_loss: 210.55, entry_time: '2024-05-20T14:00:00Z', d_score_entry: 9.1, stopLoss: 50, takeProfit: 100 },
+  { id: 'bot4', pair: 'USD/JPY', strategy: 'Mean Reversion', status: 'paused', profit_loss: 89.7, entry_time: '2024-05-19T22:15:00Z', d_score_entry: 6.8, stopLoss: 50, takeProfit: 100 },
+  { id: 'bot5', pair: 'XAU/USD', strategy: 'DCA Grid', status: 'error', profit_loss: -112.0, entry_time: '2024-05-18T08:45:00Z', d_score_entry: 8.8, d_score_exit: 5.4, stopLoss: 50, takeProfit: 100 },
 ];
 
 export const closedBotsData: Bot[] = [

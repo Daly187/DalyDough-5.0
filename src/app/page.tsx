@@ -13,7 +13,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 flex flex-col gap-8">
           <MarketOverviewTable data={dScoreData} />
-          <ActiveBotsTable data={activeBotsData.slice(0, 4)} title="Active Bots" description="A real-time overview of all currently running trade bots." />
+          <ActiveBotsTable data={activeBotsData.slice(0, 4)} allPairs={dScoreData} title="Active Bots" description="A real-time overview of all currently running trade bots." />
         </div>
         <div className="lg:col-span-1 flex flex-col gap-8">
             <div className="flex items-center gap-4">
