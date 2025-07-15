@@ -1,3 +1,4 @@
+
 "use client";
 
 import { usePathname } from 'next/navigation';
@@ -7,7 +8,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, Bot, FileText, Newspaper, BarChart2, Settings, Scan, Wallet, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, Bot, FileText, Newspaper, BarChart2, Settings, Scan, Wallet, TrendingUp, BookOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -18,6 +19,7 @@ const navItems = [
   { href: '/news', label: 'News', icon: Newspaper },
   { href: '/analytics', label: 'Statistics', icon: BarChart2 },
   { href: '/accounts', label: 'Accounts', icon: Wallet },
+  { href: '/learning', label: 'Learning Center', icon: BookOpen },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
