@@ -1,0 +1,24 @@
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import type { RiskMetric } from '@/lib/types';
+
+interface RiskDashboardProps {
+  metrics: RiskMetric[];
+}
+
+export default function RiskDashboard({ metrics }: RiskDashboardProps) {
+  return (
+    <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
+      {metrics.map((metric) => (
+        <Card key={metric.label}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{metric.label}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{metric.value}</div>
+            <p className="text-xs text-muted-foreground">{metric.description}</p>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
