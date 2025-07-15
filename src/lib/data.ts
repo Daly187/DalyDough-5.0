@@ -1,5 +1,5 @@
 
-import type { DScore, Bot, EquityData, RiskMetric, ApiKey, NewsEvent, BotConfigurationData, AIReentry, MarketRegime, ExposureData, ForexData, StrengthData } from './types';
+import type { DScore, Bot, EquityData, RiskMetric, ApiKey, NewsEvent, BotConfigurationData, AIReentry, MarketRegime, ExposureData, ForexData, StrengthData, CurrencyStrength } from './types';
 
 const getGrade = (score: number): 'A' | 'B' | 'C' => {
   if (score >= 8.5) return 'A';
@@ -9,7 +9,45 @@ const getGrade = (score: number): 'A' | 'B' | 'C' => {
 
 export const pairs = ['AUD/CAD', 'AUD/CHF', 'AUD/JPY', 'AUD/NZD', 'AUD/USD', 'CAD/JPY', 'CHF/JPY', 'EUR/CAD', 'EUR/CHF', 'EUR/GBP', 'EUR/JPY', 'EUR/NZD', 'EUR/TRY', 'EUR/USD', 'GBP/AUD', 'GBP/CAD', 'GBP/CHF', 'GBP/JPY', 'GBP/USD', 'NZD/CAD', 'NZD/CHF', 'NZD/JPY', 'NZD/USD', 'USD/CAD', 'USD/CHF', 'USD/JPY', 'USD/TRY', 'USD/ZAR', 'XAU/USD'];
 
-export const calculateDScore = (data: ForexData, index: number): DScore => {
+const majorCurrencies = ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'NZD', 'CHF'];
+
+// --- LIVE CURRENCY STRENGTH CALCULATION ---
+export const calculateLiveCurrencyStrength = (allForexData: ForexData[]): CurrencyStrength[] => {
+    const strengthScores: Record<string, { wins: number; total: number }> = {};
+    majorCurrencies.forEach(c => strengthScores[c] = { wins: 0, total: 0 });
+
+    for (const data of allForexData) {
+        if (!data.quote || data.quote.length === 0) continue;
+
+        const base = data.pair.substring(0, 3);
+        const quote = data.pair.substring(4, 7);
+
+        if (majorCurrencies.includes(base) && majorCurrencies.includes(quote)) {
+            const change = data.quote[0].change ?? 0;
+            
+            strengthScores[base].total++;
+            strengthScores[quote].total++;
+
+            if (change > 0) {
+                // Base currency went up
+                strengthScores[base].wins++;
+            } else if (change < 0) {
+                // Quote currency went up (base went down)
+                strengthScores[quote].wins++;
+            }
+        }
+    }
+
+    return majorCurrencies.map(currency => {
+        const { wins, total } = strengthScores[currency];
+        // Score from 0 to 10, where 5 is neutral.
+        const score = total > 0 ? (wins / total) * 10 : 5; 
+        return { currency, strength: parseFloat(score.toFixed(1)) };
+    });
+};
+
+
+export const calculateDScore = (data: ForexData, index: number, liveStrengthData: CurrencyStrength[]): DScore => {
   const quote = data.quote?.[0];
   const price = quote?.price ?? 0;
   const sma50 = data.sma50?.[0]?.sma;
@@ -52,7 +90,7 @@ export const calculateDScore = (data: ForexData, index: number): DScore => {
   // 4. ATR/Volatility (Live)
   const atrVolatility = price > 0 ? Math.min((atr / price) * 100, 1.0) : 0;
 
-  // 5. S/R Retest (NEW LOGIC)
+  // 5. S/R Retest (Live Proxy)
   let srRetest = 0;
   if (price && atr > 0) {
       const retestThreshold = atr * 0.5; // Price must be within 50% of ATR to be a retest
@@ -63,7 +101,7 @@ export const calculateDScore = (data: ForexData, index: number): DScore => {
       }
   }
 
-  // 6. Price Structure (NEW LOGIC)
+  // 6. Price Structure (Live Proxy)
   let priceStructure = 0;
   if (pdi > 0 && mdi > 0) {
       const totalDi = pdi + mdi;
@@ -73,7 +111,7 @@ export const calculateDScore = (data: ForexData, index: number): DScore => {
       priceStructure = Math.min(diDiff / totalDi * 2.0, 1.0); // Max score of 1.0
   }
 
-  // 7. Market Regime Fit (NEW LOGIC)
+  // 7. Market Regime Fit (Live Proxy)
   let marketRegimeFit = 0;
   const isTrendingRegime = adx > 25;
   const isAlignedTrend = trendAlignment === 2.0;
@@ -85,16 +123,16 @@ export const calculateDScore = (data: ForexData, index: number): DScore => {
       marketRegimeFit = 1.0; // Ok fit: not trending, and MAs are mixed (ranging market)
   }
 
-  // 8. Currency Strength (NEW LOGIC)
+  // 8. Currency Strength (Live)
   const baseCurrency = data.pair.substring(0, 3);
   const quoteCurrency = data.pair.substring(4, 7);
-  const baseStrengthData = strengthData.find(s => s.currency === baseCurrency);
-  const quoteStrengthData = strengthData.find(s => s.currency === quoteCurrency);
+  const baseStrengthData = liveStrengthData.find(s => s.currency === baseCurrency);
+  const quoteStrengthData = liveStrengthData.find(s => s.currency === quoteCurrency);
   let currencyStrength = 0;
 
   if (baseStrengthData && quoteStrengthData) {
-    const baseStrength = baseStrengthData.data[baseStrengthData.data.length - 1].strength;
-    const quoteStrength = quoteStrengthData.data[quoteStrengthData.data.length - 1].strength;
+    const baseStrength = baseStrengthData.strength;
+    const quoteStrength = quoteStrengthData.strength;
     const strengthDiff = Math.abs(baseStrength - quoteStrength);
     
     const trendDirection = (buys > sells) ? 'buy' : 'sell';
@@ -102,7 +140,8 @@ export const calculateDScore = (data: ForexData, index: number): DScore => {
     // Reward strength that aligns with trend direction
     if ((trendDirection === 'buy' && baseStrength > quoteStrength) ||
         (trendDirection === 'sell' && quoteStrength > baseStrength)) {
-        currencyStrength = Math.min(strengthDiff / 10.0, 1.0); // Normalize to 0-1 range
+        // Normalize the difference (0-10) to a score of 0-1
+        currencyStrength = Math.min(strengthDiff / 10.0, 1.0); 
     }
   }
 
@@ -131,10 +170,10 @@ export const calculateDScore = (data: ForexData, index: number): DScore => {
     adxStrength,
     maConvergence,
     srRetest,
-    priceStructure,
+    priceStructure: parseFloat(priceStructure.toFixed(1)),
     atrVolatility,
     marketRegimeFit,
-    currencyStrength,
+    currencyStrength: parseFloat(currencyStrength.toFixed(1)),
     signal,
     positions: activePositions,
     trends,
@@ -224,7 +263,7 @@ export const aiReentriesData: AIReentry[] = [
 ];
 
 
-const generateStrengthData = (currency: string) => {
+const generateMockStrengthData = (currency: string): StrengthData => {
     const data = [];
     for (let i = 5; i >= 0; i--) {
         const date = new Date();
@@ -238,16 +277,7 @@ const generateStrengthData = (currency: string) => {
 };
 
 
-export const strengthData: StrengthData[] = [
-    generateStrengthData('EUR'),
-    generateStrengthData('GBP'),
-    generateStrengthData('JPY'),
-    generateStrengthData('USD'),
-    generateStrengthData('CAD'),
-    generateStrengthData('AUD'),
-    generateStrengthData('NZD'),
-    generateStrengthData('CHF'),
-];
+export const strengthData: StrengthData[] = majorCurrencies.map(generateMockStrengthData);
 
 
 export const newsData: NewsEvent[] = [

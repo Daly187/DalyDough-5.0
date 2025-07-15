@@ -1,6 +1,6 @@
 import MarketOverviewTable from '@/components/dashboard/market-overview-table';
 import SystemStatus from '@/components/dashboard/system-status';
-import { activeBotsData, botConfigurationData, aiReentriesData, calculateDScore, pairs } from '@/lib/data';
+import { activeBotsData, botConfigurationData, aiReentriesData, calculateDScore, pairs, calculateLiveCurrencyStrength } from '@/lib/data';
 import ActiveBotsTable from '@/components/bots/active-bots-table';
 import BotConfiguration from '@/components/autobot/bot-configuration';
 import AiOptimizedReentries from '@/components/autobot/ai-optimized-reentries';
@@ -11,9 +11,10 @@ import { DScore } from '@/lib/types';
 
 export default async function DashboardPage() {
   const forexData = await getForexData(pairs);
+  const liveStrengthData = calculateLiveCurrencyStrength(forexData);
 
   const dScoreData: DScore[] = forexData.map((data, index) => 
-    calculateDScore(data, index)
+    calculateDScore(data, index, liveStrengthData)
   );
 
   return (

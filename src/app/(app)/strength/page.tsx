@@ -1,14 +1,13 @@
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import StrengthIndexTable from "@/components/strength/strength-index-table";
-import { strengthData } from "@/lib/data";
+import { calculateLiveCurrencyStrength, pairs } from "@/lib/data";
+import { getForexData } from "@/lib/fmp";
+import type { CurrencyStrength } from "@/lib/types";
 
-export default function StrengthPage() {
-  // We only need the latest strength for each currency for the table
-  const latestStrengthData = strengthData.map(currency => ({
-    currency: currency.currency,
-    strength: currency.data[currency.data.length - 1].strength,
-  }));
+export default async function StrengthPage() {
+  const forexData = await getForexData(pairs);
+  const latestStrengthData: CurrencyStrength[] = calculateLiveCurrencyStrength(forexData);
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
@@ -19,7 +18,7 @@ export default function StrengthPage() {
         <CardHeader>
           <CardTitle>Live Currency Strength</CardTitle>
           <CardDescription>
-            Real-time strength analysis for major currencies. A score of 1 is weakest, 10 is strongest.
+            Real-time strength analysis for major currencies, calculated from daily price changes against a basket of peers. A score of 0 is weakest, 10 is strongest.
           </CardDescription>
         </CardHeader>
         <CardContent>

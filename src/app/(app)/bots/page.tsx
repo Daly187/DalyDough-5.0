@@ -1,15 +1,16 @@
 
 import ActiveBotsTable from '@/components/bots/active-bots-table';
-import { activeBotsData, closedBotsData, calculateDScore, pairs } from '@/lib/data';
+import { activeBotsData, closedBotsData, calculateDScore, pairs, calculateLiveCurrencyStrength } from '@/lib/data';
 import { getForexData } from '@/lib/fmp';
 import { DScore } from '@/lib/types';
 
 
 export default async function BotsPage() {
   const forexData = await getForexData(pairs);
+  const liveStrengthData = calculateLiveCurrencyStrength(forexData);
 
   const dScoreData: DScore[] = forexData.map((data, index) => 
-    calculateDScore(data, index)
+    calculateDScore(data, index, liveStrengthData)
   );
 
   return (
