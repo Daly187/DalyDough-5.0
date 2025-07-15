@@ -1,5 +1,5 @@
 
-import type { DScore, Bot, EquityData, RiskMetric, ApiKey, NewsEvent, BotConfigurationData, AIReentry, MarketRegime, ExposureData, ForexData, StrengthData } from './types';
+import type { DScore, Bot, EquityData, RiskMetric, ApiKey, NewsEvent, BotConfigurationData, AIReentry, MarketRegime, ExposureData, ForexData } from './types';
 
 const getGrade = (score: number): 'A' | 'B' | 'C' => {
   if (score >= 8.5) return 'A';
@@ -17,6 +17,9 @@ export const calculateDScore = (data: ForexData, index: number): DScore => {
 
   const quote = data.quote?.[0];
   const price = quote?.price ?? 0;
+  const sma50 = data.sma50?.[0]?.sma;
+  const sma100 = data.sma100?.[0]?.sma;
+  const sma200 = data.sma200?.[0]?.sma;
 
   // Calculated components
   const adx = data.adx?.[0]?.adx ?? 0;
@@ -25,11 +28,13 @@ export const calculateDScore = (data: ForexData, index: number): DScore => {
   const atr = data.atr?.[0]?.atr ?? 0;
   const atrVolatility = price > 0 ? Math.min( (atr / price) * 100, 1.0) : 0; // ATR as percentage of price, capped at 1
 
+  // --- START REVISED TREND LOGIC ---
   const trends = {
-      h4: Math.random() > 0.5 ? 'buy' : 'sell',
-      d1: Math.random() > 0.5 ? 'buy' : 'sell',
-      w1: Math.random() > 0.5 ? 'buy' : 'sell',
+      h4: Math.random() > 0.5 ? 'buy' : 'sell', // Placeholder as we don't have H4 data
+      d1: (price && sma50 && price > sma50) ? 'buy' : 'sell',
+      w1: (price && sma200 && price > sma200) ? 'buy' : 'sell',
   };
+  // --- END REVISED TREND LOGIC ---
 
   const trendValues = Object.values(trends);
   const buys = trendValues.filter(t => t === 'buy').length;
@@ -44,10 +49,6 @@ export const calculateDScore = (data: ForexData, index: number): DScore => {
 
   // MA Convergence calculation
   let maConvergence = 0;
-  const sma50 = data.sma50?.[0]?.sma;
-  const sma100 = data.sma100?.[0]?.sma;
-  const sma200 = data.sma200?.[0]?.sma;
-
   if (price && sma50 && sma100 && sma200) {
       const isUptrend = price > sma50 && sma50 > sma100 && sma100 > sma200;
       const isDowntrend = price < sma50 && sma50 < sma100 && sma100 < sma200;
@@ -243,4 +244,5 @@ export const exposureData: ExposureData[] = [
     { currency: 'CHF', exposure: 1500.00, type: 'long' },
     { currency: 'NZD', exposure: -500.00, type: 'short' },
 ];
+
 
