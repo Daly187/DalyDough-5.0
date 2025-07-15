@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -93,20 +94,23 @@ export default function AccountManagement() {
                         <ol className="list-decimal list-inside space-y-1">
                             <li>Download the EA file for your platform (MT4/MT5).</li>
                             <li>In MetaTrader, go to `File > Open Data Folder`.</li>
-                            <li>Place the `.ex4` or `.ex5` file in the `MQL4/Experts` or `MQL5/Experts` folder.</li>
+                            <li>Place the `.mq5` file in the `MQL5/Experts` folder.</li>
+                            <li>Open the `.mq5` file in MetaEditor and click "Compile".</li>
                             <li>Refresh your Expert Advisors list in the Navigator panel.</li>
                             <li>Drag the EA onto a chart and enter the unique key above when prompted.</li>
                         </ol>
                     </div>
                 </CardContent>
                 <CardFooter className="grid grid-cols-2 gap-4">
-                    <Button variant="secondary" className="w-full">
+                    <Button variant="secondary" className="w-full" disabled>
                         <Download className="h-4 w-4 mr-2" />
                         Download for MT4
                     </Button>
-                     <Button variant="secondary" className="w-full">
-                        <Download className="h-4 w-4 mr-2" />
-                        Download for MT5
+                     <Button asChild variant="secondary" className="w-full">
+                        <a href="/downloads/DalyDoughConnector.mq5" download>
+                            <Download className="h-4 w-4 mr-2" />
+                            Download for MT5
+                        </a>
                     </Button>
                 </CardFooter>
             </Card>
