@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -16,8 +17,8 @@ interface NewsCalendarProps {
 
 const impactColors = {
   High: 'bg-red-500/20 text-red-400 border-red-500/30',
-  Medium: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-  Low: 'bg-green-500/20 text-green-400 border-green-500/30',
+  Medium: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+  Low: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
 };
 
 export default function NewsCalendar({ events, currencies, impacts }: NewsCalendarProps) {
@@ -27,7 +28,7 @@ export default function NewsCalendar({ events, currencies, impacts }: NewsCalend
   const filteredEvents = React.useMemo(() => {
     return events.filter(event => {
       const currencyMatch = selectedCurrency === 'all' || event.currency === selectedCurrency;
-      const impactMatch = selectedImpact === 'all' || event.impact.toLowerCase() === selectedImpact;
+      const impactMatch = selectedImpact === 'all' || event.impact === selectedImpact;
       return currencyMatch && impactMatch;
     });
   }, [events, selectedCurrency, selectedImpact]);
@@ -50,7 +51,7 @@ export default function NewsCalendar({ events, currencies, impacts }: NewsCalend
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="all">All Impacts</SelectItem>
-                    {impacts.map(i => <SelectItem key={i} value={i.toLowerCase()}>{i}</SelectItem>)}
+                    {impacts.map(i => <SelectItem key={i} value={i}>{i}</SelectItem>)}
                 </SelectContent>
             </Select>
         </div>
