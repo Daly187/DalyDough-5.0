@@ -9,14 +9,15 @@ import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Settings, Lightbulb } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
-import type { BotConfigurationData, DScore } from "@/lib/types";
+import type { BotConfigurationData, DScore, Bot } from "@/lib/types";
 
 interface BotConfigurationProps {
   config: BotConfigurationData;
   allPairs: DScore[];
+  activeBots: Bot[];
 }
 
-export default function BotConfiguration({ config: initialConfig, allPairs }: BotConfigurationProps) {
+export default function BotConfiguration({ config: initialConfig, allPairs, activeBots }: BotConfigurationProps) {
   const [config, setConfig] = React.useState(initialConfig);
   const [minDSize, setMinDSize] = React.useState(7.0);
   const [selectedPair, setSelectedPair] = React.useState<string>("");
@@ -45,6 +46,17 @@ export default function BotConfiguration({ config: initialConfig, allPairs }: Bo
   const filteredPairs = React.useMemo(() => {
     return allPairs.filter(p => p.dScore >= minDSize);
   }, [allPairs, minDSize]);
+
+  const activeBotCounts = React.useMemo(() => {
+    const counts: { [key: string]: number } = {};
+    for (const bot of activeBots) {
+        if (bot.status === 'active') {
+            counts[bot.pair] = (counts[bot.pair] || 0) + 1;
+        }
+    }
+    return counts;
+  }, [activeBots]);
+
 
   React.useEffect(() => {
     if (filteredPairs.length > 0 && !filteredPairs.find(p => p.pair === selectedPair)) {
@@ -76,7 +88,9 @@ export default function BotConfiguration({ config: initialConfig, allPairs }: Bo
                     </SelectTrigger>
                     <SelectContent>
                         {filteredPairs.map(p => (
-                            <SelectItem key={p.id} value={p.pair}>{p.pair} (D-Score: {p.dScore.toFixed(1)})</SelectItem>
+                            <SelectItem key={p.id} value={p.pair}>
+                                {p.pair} (D: {p.dScore.toFixed(1)}, Bots: {activeBotCounts[p.pair] || 0})
+                            </SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
@@ -101,8 +115,8 @@ export default function BotConfiguration({ config: initialConfig, allPairs }: Bo
                 <Input id="initialInvestment" type="number" value={config.initialInvestment} onChange={handleInputChange} />
             </div>
              <div>
-                <Label htmlFor="lotSize">Initial Lot Order</Label>
-                <Input id="lotSize" type="number" value={config.lotSize} onChange={handleInputChange} />
+                <Label htmlFor="initialLotOrder">Initial Lot Order</Label>
+                <Input id="initialLotOrder" type="number" value={config.lotSize} onChange={handleInputChange} />
             </div>
             <div>
                 <Label htmlFor="maxPositions">Max Positions</Label>

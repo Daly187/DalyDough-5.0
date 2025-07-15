@@ -23,7 +23,7 @@ export default function DashboardPage() {
                     <p className="text-muted-foreground">Configure and launch a new bot manually.</p>
                 </div>
             </div>
-            <BotConfiguration config={botConfigurationData} allPairs={dScoreData} />
+            <BotConfiguration config={botConfigurationData} allPairs={dScoreData} activeBots={activeBotsData} />
             <AiOptimizedReentries reentries={aiReentriesData} />
         </div>
       </div>
