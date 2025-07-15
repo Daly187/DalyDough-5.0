@@ -37,6 +37,7 @@ const TrendIndicator = ({ trend }: { trend: 'buy' | 'sell' }) => (
 );
 
 const getBreakdownText = (key: keyof DScore, score: number, trendDirection: 'Buy' | 'Sell' | 'Block') => {
+    if (trendDirection === 'Block') return 'Neutral';
     const trendText = trendDirection === 'Buy' ? 'Buy' : 'Sell';
     switch (key) {
         case 'trendAlignment':
@@ -52,14 +53,14 @@ const getBreakdownText = (key: keyof DScore, score: number, trendDirection: 'Buy
             if (score > 0.5) return 'Partial Agreement';
             return 'Divergent MAs';
         case 'srRetest':
-            if (score > 1.0) return 'Retesting Key Level';
+            if (score > 1.0) return `Confirms ${trendText} at Key Level`;
             return 'Not at a Key Level';
         case 'priceStructure':
             if (score > 0.7) return `Clear ${trendText} Structure`;
             if (score > 0.4) return 'Developing Structure';
             return 'Unclear Structure';
         case 'atrVolatility':
-            if (score > 0.7) return 'High Volatility';
+             if (score > 0.7) return 'High Volatility';
             if (score > 0.4) return 'Moderate Volatility';
             return 'Low Volatility';
         case 'marketRegimeFit':
@@ -139,7 +140,7 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
                 const signal = signalConfig[item.signal];
                 return (
                   <Collapsible asChild key={item.id} open={openRow === item.id} onOpenChange={() => setOpenRow(openRow === item.id ? null : item.id)}>
-                      <React.Fragment>
+                      <tbody className="w-full">
                         <CollapsibleTrigger asChild>
                           <TableRow className="cursor-pointer">
                             <TableCell>
@@ -200,7 +201,7 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
                             </TableCell>
                           </tr>
                         </CollapsibleContent>
-                      </React.Fragment>
+                      </tbody>
                   </Collapsible>
                 );
               })}
