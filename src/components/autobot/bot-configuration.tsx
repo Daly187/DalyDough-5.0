@@ -128,16 +128,8 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
                 <Input id="stopLoss" type="number" value={config.stopLoss} onChange={handleInputChange} />
             </div>
             <div>
-                <Label htmlFor="takeProfit">Take Profit (pips)</Label>
+                <Label htmlFor="takeProfit">Take Profit ($)</Label>
                 <Input id="takeProfit" type="number" value={config.takeProfit} onChange={handleInputChange} />
-            </div>
-             <div>
-                <Label htmlFor="maxDrawdown">Max Drawdown (%)</Label>
-                <Input id="maxDrawdown" type="number" value={config.maxDrawdown} onChange={handleInputChange} />
-            </div>
-            <div>
-                <Label htmlFor="dailyLossLimit">Daily Loss Limit ($)</Label>
-                <Input id="dailyLossLimit" type="number" value={config.dailyLossLimit} onChange={handleInputChange} />
             </div>
             <div className="col-span-1 md:col-span-2 flex items-center justify-between">
                 <div className="flex items-center gap-2">

@@ -86,8 +86,6 @@ export type BotConfigurationData = {
   maxPositions: number;
   stopLoss: number;
   takeProfit: number;
-  maxDrawdown: number;
-  dailyLossLimit: number;
   enableTrailingStop: boolean;
   enableDSizeExit: boolean;
   dSizeExitThreshold: number;

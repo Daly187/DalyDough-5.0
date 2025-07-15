@@ -121,8 +121,6 @@ export const botConfigurationData: BotConfigurationData = {
     maxPositions: 5,
     stopLoss: 50,
     takeProfit: 100,
-    maxDrawdown: 20,
-    dailyLossLimit: 200,
     enableTrailingStop: false,
     enableDSizeExit: true,
     dSizeExitThreshold: 6.0,
