@@ -27,7 +27,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/api/fmp/:path*',
-        destination: 'https://financialmodelingprep.com/api/v3/:path*',
+        destination: `https://financialmodelingprep.com/api/v3/:path*?apikey=${process.env.FMP_API_KEY}`,
       },
     ]
   },

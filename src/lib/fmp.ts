@@ -26,31 +26,18 @@ async function fetchWithCache<T>(url: string, ttl: number = 300): Promise<T | nu
 }
 
 export async function getForexData(pairs: string[]): Promise<ForexData[]> {
-    const API_KEY = "RUTyEslPzCs5tHMBZUUxCr2no36EV45Q";
-    if (!API_KEY) {
-        console.error("FMP_API_KEY is not defined.");
-        return pairs.map(pair => ({
-            pair,
-            quote: null,
-            adx: null,
-            atr: null,
-            sma50: null,
-            sma100: null,
-            sma200: null
-        }));
-    }
 
     const promises = pairs.map(async (pair) => {
         const symbol = pair.replace('/', '');
         
         const apiSymbol = symbol === 'XAUUSD' ? symbol : symbol;
         
-        const quotePromise = fetchWithCache(`${BASE_URL}/quote/${apiSymbol}?apikey=${API_KEY}`);
-        const adxPromise = fetchWithCache(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=14&type=adx&apikey=${API_KEY}`);
-        const atrPromise = fetchWithCache(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=14&type=atr&apikey=${API_KEY}`);
-        const sma50Promise = fetchWithCache(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=50&type=sma&apikey=${API_KEY}`);
-        const sma100Promise = fetchWithCache(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=100&type=sma&apikey=${API_KEY}`);
-        const sma200Promise = fetchWithCache(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=200&type=sma&apikey=${API_KEY}`);
+        const quotePromise = fetchWithCache(`${BASE_URL}/quote/${apiSymbol}`);
+        const adxPromise = fetchWithCache(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=14&type=adx`);
+        const atrPromise = fetchWithCache(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=14&type=atr`);
+        const sma50Promise = fetchWithCache(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=50&type=sma`);
+        const sma100Promise = fetchWithCache(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=100&type=sma`);
+        const sma200Promise = fetchWithCache(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=200&type=sma`);
 
         const [quote, adx, atr, sma50, sma100, sma200] = await Promise.all([
             quotePromise, 
