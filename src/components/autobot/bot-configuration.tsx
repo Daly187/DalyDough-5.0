@@ -139,11 +139,7 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
                 <Label htmlFor="dailyLossLimit">Daily Loss Limit ($)</Label>
                 <Input id="dailyLossLimit" type="number" value={config.dailyLossLimit} onChange={handleInputChange} />
             </div>
-            <div className="flex items-center justify-between col-span-1 md:col-span-2">
-                <Label htmlFor="enableTrailingStop">Enable Trailing Stop</Label>
-                <Switch id="enableTrailingStop" checked={config.enableTrailingStop} onCheckedChange={handleSwitchChange('enableTrailingStop')} />
-            </div>
-             <div className="col-span-1 md:col-span-2 flex items-center justify-between">
+            <div className="col-span-1 md:col-span-2 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <Label htmlFor="enableDSizeExit" className={cn(!config.enableDSizeExit && "text-muted-foreground")}>D-Size Exit Threshold</Label>
                     <Switch id="enableDSizeExit" checked={config.enableDSizeExit} onCheckedChange={handleSwitchChange('enableDSizeExit')} />
@@ -156,6 +152,10 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
                     disabled={!config.enableDSizeExit}
                     className="w-24"
                 />
+            </div>
+            <div className="flex items-center justify-between col-span-1 md:col-span-2">
+                <Label htmlFor="enableTrailingStop">Enable Trailing Stop</Label>
+                <Switch id="enableTrailingStop" checked={config.enableTrailingStop} onCheckedChange={handleSwitchChange('enableTrailingStop')} />
             </div>
              <div>
                 <Label htmlFor="reentryDelay">Re-entry Delay (mins)</Label>
