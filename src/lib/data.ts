@@ -123,40 +123,29 @@ export const calculateDScore = (data: ForexData, index: number, liveStrengthData
 
   // 4. S/R Retest
   let rawSrRetest = 0;
-  const retestThreshold = atr * 1.5; // Price needs to be within 1.5 ATR of an MA
   const mas = [sma50, sma100, sma200];
   for (const ma of mas) {
-      if (Math.abs(price - ma) < retestThreshold) {
-          // Trend is 'buy', price is above MA, and bouncing off it
-          if (trendDirection === 'buy' && price > ma) rawSrRetest = 1.0;
-          // Trend is 'sell', price is below MA, and bouncing off it
-          else if (trendDirection === 'sell' && price < ma) rawSrRetest = 1.0;
-          // Price is near MA but fighting it (e.g., trend is buy but price is below)
-          else rawSrRetest = 0.5;
-          break; // Stop after finding the first retest
+      if (Math.abs(price - ma) < atr * 1.5) { // Check if price is within 1.5 ATR of an MA
+          rawSrRetest = 1.0; // Price is near a key level
+          break; 
       }
   }
 
   // 5. Price Structure
   let rawPriceStructure = 0;
-  const diDiff = Math.abs(pdi - mdi);
-  const correctDirection = (trendDirection === 'buy' && pdi > mdi) || (trendDirection === 'sell' && mdi > pdi);
+  const diDiff = pdi - mdi;
+  const correctDirection = (trendDirection === 'buy' && diDiff > 0) || (trendDirection === 'sell' && diDiff < 0);
   if (correctDirection) {
-      // Score from DI difference of 5 to 35
-      rawPriceStructure = Math.min(Math.max(diDiff - 5, 0) / 30, 1.0);
+      // Scale score based on how dominant the correct DI line is.
+      // A difference of 10 is decent, 25+ is strong.
+      rawPriceStructure = Math.min(Math.abs(diDiff) / 25, 1.0);
   }
   
   // 6. ATR/Volatility
   let rawAtrVolatility = 0;
   const volatilityPercentage = (atr / price); // e.g., 0.005 for 0.5%
-  // Target moderate volatility (0.3% - 1.0%) as ideal for trends
-  if (volatilityPercentage >= 0.003 && volatilityPercentage <= 0.01) {
-    rawAtrVolatility = 1.0;
-  } else if (volatilityPercentage > 0.01 && volatilityPercentage < 0.02) { // High volatility can be risky
-    rawAtrVolatility = 0.5;
-  } else if (volatilityPercentage > 0.001) { // Low but not dead
-    rawAtrVolatility = 0.25;
-  }
+  // Target moderate volatility (0.3% - 1.0%) as ideal. Clamp values to get a score between 0 and 1.
+  rawAtrVolatility = Math.max(0, 1 - Math.abs(volatilityPercentage - 0.006) / 0.006);
 
 
   // 7. Market Regime Fit
@@ -219,7 +208,7 @@ export const calculateDScore = (data: ForexData, index: number, liveStrengthData
     adxStrength,
     maConvergence,
     srRetest,
-    priceStructure: priceStructure,
+    priceStructure,
     atrVolatility,
     marketRegimeFit,
     currencyStrength,
