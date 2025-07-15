@@ -37,28 +37,25 @@ const TrendIndicator = ({ trend }: { trend: 'buy' | 'sell' }) => (
         : <ArrowDown className="h-4 w-4 text-red-400" />
 );
 
-const getBreakdownText = (key: keyof DScore, score: number, trendDirection: 'Buy' | 'Sell' | 'Block') => {
-    const trendText = trendDirection === 'Buy' ? 'Buy' : (trendDirection === 'Sell' ? 'Sell' : 'Trend');
-    
+const getBreakdownText = (key: keyof DScore, score: number) => {
     switch (key) {
         case 'trendAlignment':
-            if (score >= 1.5) return `Confirms ${trendText}`;
-            if (score >= 0.5) return `Weak ${trendText} Agreement`;
-            return 'No Trend Agreement';
+            if (score >= 1.5) return 'Strong Confirmation';
+            if (score >= 0.5) return 'Partial Agreement';
+            return 'No Agreement';
         case 'adxStrength':
-            if (score >= 0.7) return 'Strong Trend Momentum';
+            if (score >= 0.7) return 'Strong Momentum';
             if (score >= 0.4) return 'Developing Momentum';
             return 'Weak Momentum';
         case 'maConvergence':
-            if (score >= 1.0) return `Confirms ${trendText} Momentum`;
-            if (score >= 0.5) return 'Partial Agreement';
-            return 'Divergent MAs';
+            if (score >= 1.0) return 'Strong Convergence';
+            if (score >= 0.5) return 'Partial Convergence';
+            return 'Divergent';
         case 'srRetest':
-            if (score >= 1.0) return `Confirms ${trendText} at Key Level`;
-            if (score > 0) return 'Near Key Level';
-            return 'Not at a Key Level';
+            if (score > 0) return 'At Key Level';
+            return 'Not at Key Level';
         case 'priceStructure':
-            if (score >= 0.7) return `Clear ${trendText} Structure`;
+            if (score >= 0.7) return 'Clear Structure';
             if (score >= 0.4) return 'Developing Structure';
             return 'Unclear Structure';
         case 'atrVolatility':
@@ -66,15 +63,15 @@ const getBreakdownText = (key: keyof DScore, score: number, trendDirection: 'Buy
             if (score >= 0.4) return 'Moderate Volatility';
             return 'Low Volatility';
         case 'marketRegimeFit':
-            if (score >= 1.5) return `Ideal for ${trendText}ing`;
+            if (score >= 1.5) return 'Ideal Fit';
             if (score >= 0.7) return 'Moderate Fit';
-            return 'Poor Fit for Trending';
+            return 'Poor Fit';
         case 'currencyStrength':
-            if (score >= 0.7) return `Strong ${trendText} Confirmation`;
+            if (score >= 0.7) return 'Strong Confirmation';
             if (score >= 0.4) return 'Moderate Confirmation';
             return 'No Confirmation';
         default:
-            return 'Neutral';
+            return '';
     }
 }
 
@@ -156,7 +153,6 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
             </TableHeader>
             <TableBody>
               {sortedData.map((item) => {
-                if (!item) return null; // Add a guard clause for null items
                 const signal = signalConfig[item.signal];
                 const isRowOpen = openRow === item.id;
                 return (
@@ -199,7 +195,7 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
                                           {scoreKeys.map(key => (
                                             <div key={key} className="flex justify-between">
                                                 <span className="text-muted-foreground">{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:</span> 
-                                                <span className="font-semibold text-foreground">{getBreakdownText(key, item[key] as number, item.signal)}</span>
+                                                <span className="font-semibold text-foreground">{getBreakdownText(key, item[key] as number)}</span>
                                             </div>
                                           ))}
                                         </div>
