@@ -17,6 +17,7 @@ import type { DScore } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface MarketOverviewTableProps {
   data: DScore[];
@@ -46,6 +47,8 @@ const TrendIndicator = ({ trend }: { trend: 'buy' | 'sell' }) => (
 export default function MarketOverviewTable({ data }: MarketOverviewTableProps) {
   const [sortKey, setSortKey] = React.useState<SortKey>('dScore');
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc');
+  const [openRow, setOpenRow] = React.useState<string | null>(null);
+
 
   const sortedData = React.useMemo(() => {
     return [...data].sort((a, b) => {
@@ -104,36 +107,59 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
               {sortedData.map((item) => {
                 const signal = signalConfig[item.signal];
                 return (
-                  <TableRow key={item.id}>
-                    <TableCell>
-                      <div className="font-medium">{item.pair}</div>
-                      <div className={cn("text-xs", item.change >= 0 ? 'text-green-400' : 'text-red-400')}>
-                        {item.price.toFixed(item.pair.includes('JPY') ? 3 : 5)}
-                        <span className="ml-1">({item.changesPercentage.toFixed(2)}%)</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-semibold text-lg text-primary">{item.dScore.toFixed(1)}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={cn("font-bold", gradeColors[item.grade])}>
-                          {item.grade}
-                      </Badge>
-                    </TableCell>
-                     <TableCell>
-                        <div className="flex items-center gap-2">
-                           <TrendIndicator trend={item.trends.h4} />
-                           <TrendIndicator trend={item.trends.d1} />
-                           <TrendIndicator trend={item.trends.w1} />
-                        </div>
-                    </TableCell>
-                    <TableCell className="font-semibold">{item.trendAlignment.toFixed(1)}</TableCell>
-                    <TableCell>{item.adxStrength.toFixed(1)}</TableCell>
-                    <TableCell className="text-right">
-                      <div className={cn("flex items-center justify-end gap-2 font-medium", signal.color)}>
-                          {signal.icon}
-                          {signal.label}
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                  <Collapsible asChild key={item.id} open={openRow === item.id} onOpenChange={() => setOpenRow(openRow === item.id ? null : item.id)}>
+                    <>
+                      <CollapsibleTrigger asChild>
+                        <TableRow className="cursor-pointer">
+                          <TableCell>
+                            <div className="font-medium">{item.pair}</div>
+                            <div className={cn("text-xs", item.change >= 0 ? 'text-green-400' : 'text-red-400')}>
+                              {item.price.toFixed(item.pair.includes('JPY') ? 3 : 5)}
+                              <span className="ml-1">({item.changesPercentage.toFixed(2)}%)</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-semibold text-lg text-primary">{item.dScore.toFixed(1)}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={cn("font-bold", gradeColors[item.grade])}>
+                                {item.grade}
+                            </Badge>
+                          </TableCell>
+                           <TableCell>
+                              <div className="flex items-center gap-2">
+                                 <TrendIndicator trend={item.trends.h4} />
+                                 <TrendIndicator trend={item.trends.d1} />
+                                 <TrendIndicator trend={item.trends.w1} />
+                              </div>
+                          </TableCell>
+                          <TableCell className="font-semibold">{item.trendAlignment.toFixed(1)}</TableCell>
+                          <TableCell>{item.adxStrength.toFixed(1)}</TableCell>
+                          <TableCell className="text-right">
+                            <div className={cn("flex items-center justify-end gap-2 font-medium", signal.color)}>
+                                {signal.icon}
+                                {signal.label}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent asChild>
+                        <tr className="bg-muted/50 hover:bg-muted/50">
+                          <TableCell colSpan={7} className="p-0">
+                            <div className="p-4">
+                                <h4 className="font-semibold text-sm mb-2 text-foreground">D-Score Breakdown</h4>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-2 text-xs">
+                                    <div className="flex justify-between"><span className="text-muted-foreground">Trend Alignment:</span> <span className="font-semibold text-foreground">{item.trendAlignment.toFixed(2)}</span></div>
+                                    <div className="flex justify-between"><span className="text-muted-foreground">ADX Strength:</span> <span className="font-semibold text-foreground">{item.adxStrength.toFixed(2)}</span></div>
+                                    <div className="flex justify-between"><span className="text-muted-foreground">S/R Retest:</span> <span className="font-semibold text-foreground">{item.srRetest.toFixed(2)}</span></div>
+                                    <div className="flex justify-between"><span className="text-muted-foreground">Price Structure:</span> <span className="font-semibold text-foreground">{item.priceStructure.toFixed(2)}</span></div>
+                                    <div className="flex justify-between"><span className="text-muted-foreground">ATR/Volatility:</span> <span className="font-semibold text-foreground">{item.atrVolatility.toFixed(2)}</span></div>
+                                    <div className="flex justify-between"><span className="text-muted-foreground">Market Regime Fit:</span> <span className="font-semibold text-foreground">{item.marketRegimeFit.toFixed(2)}</span></div>
+                                </div>
+                            </div>
+                          </TableCell>
+                        </tr>
+                      </CollapsibleContent>
+                    </>
+                  </Collapsible>
                 );
               })}
             </TableBody>
