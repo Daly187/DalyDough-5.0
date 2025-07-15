@@ -141,6 +141,7 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
                                           <div className="flex justify-between"><span className="text-muted-foreground">Price Structure:</span> <span className="font-semibold text-foreground">{item.priceStructure > 0.7 ? 'Clear' : (item.priceStructure > 0.4 ? 'Developing' : 'Unclear')}</span></div>
                                           <div className="flex justify-between"><span className="text-muted-foreground">ATR/Volatility:</span> <span className="font-semibold text-foreground">{(item.atrVolatility*100).toFixed(0)}%</span></div>
                                           <div className="flex justify-between"><span className="text-muted-foreground">Market Regime Fit:</span> <span className="font-semibold text-foreground">{(item.marketRegimeFit*100/2.0).toFixed(0)}%</span></div>
+                                          <div className="flex justify-between"><span className="text-muted-foreground">Currency Strength:</span> <span className="font-semibold text-foreground">{item.currencyStrength > 0.7 ? 'High Mismatch' : (item.currencyStrength > 0.4 ? 'Mismatch' : 'Low Mismatch')}</span></div>
                                       </div>
                                   </div>
                                   <div>
@@ -153,6 +154,7 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
                                           <div className="flex justify-between"><span className="text-muted-foreground">Price Structure:</span> <span className="font-semibold text-foreground">{item.priceStructure.toFixed(2)} / 1.00</span></div>
                                           <div className="flex justify-between"><span className="text-muted-foreground">ATR/Volatility:</span> <span className="font-semibold text-foreground">{item.atrVolatility.toFixed(2)} / 1.00</span></div>
                                           <div className="flex justify-between"><span className="text-muted-foreground">Market Regime Fit:</span> <span className="font-semibold text-foreground">{item.marketRegimeFit.toFixed(2)} / 2.00</span></div>
+                                           <div className="flex justify-between"><span className="text-muted-foreground">Currency Strength:</span> <span className="font-semibold text-foreground">{item.currencyStrength.toFixed(2)} / 1.00</span></div>
                                       </div>
                                   </div>
                               </div>
@@ -170,5 +172,3 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
     </Card>
   );
 }
-
-    
