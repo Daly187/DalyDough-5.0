@@ -104,13 +104,13 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
         <div className="space-y-4">
             <div>
                 <Label htmlFor="minDSize">Min D-Size: <span className="text-primary font-bold">{minDSize.toFixed(1)}</span></Label>
-                <Slider id="minDSize" min={6} max={10} step={0.1} defaultValue={[minDSize]} onValueChange={handleSliderChange} />
+                <Slider id="minDSize" min={0} max={10} step={0.1} value={[minDSize]} onValueChange={handleSliderChange} />
             </div>
             <div>
                 <Label htmlFor="pairSelect">Select Pair ({filteredPairs.length} available)</Label>
                  <Select value={selectedPair} onValueChange={handlePairSelectChange} disabled={filteredPairs.length === 0}>
                     <SelectTrigger id="pairSelect">
-                        <SelectValue placeholder="Select a high-scoring pair" />
+                        <SelectValue placeholder="No pairs match filter" />
                     </SelectTrigger>
                     <SelectContent>
                         {filteredPairs.map(p => (
@@ -291,5 +291,3 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
     </Card>
   );
 }
-
-    

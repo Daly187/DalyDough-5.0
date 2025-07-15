@@ -52,11 +52,11 @@ export const defaultWeights: DScoreWeights = {
     trendAlignment: 2.0,
     adxStrength: 1.0,
     maConvergence: 1.5,
-    srRetest: 0.5,
+    srRetest: 1.5,
     priceStructure: 1.0,
-    atrVolatility: 0.5,
+    atrVolatility: 1.0,
     marketRegimeFit: 2.0,
-    currencyStrength: 1.5,
+    currencyStrength: 1.0,
 };
 
 export const aiRecommendedWeights: DScoreWeights = {
@@ -103,9 +103,7 @@ export const calculateDScore = (data: ForexData, index: number, liveStrengthData
   let rawTrendAlignment = (buys === 2 || sells === 2) ? 1.0 : (buys === 1 || sells === 1) ? 0.25 : 0;
   
   // 2. ADX Strength
-  let rawAdxStrength = 0;
-  if (adx > 25) rawAdxStrength = 1.0;
-  else if (adx > 20) rawAdxStrength = 0.5;
+  let rawAdxStrength = Math.min(Math.max(adx - 20, 0) / 30, 1.0); // Score from ADX 20 to 50
 
   // 3. MA Convergence
   let rawMaConvergence = 0;
@@ -123,44 +121,50 @@ export const calculateDScore = (data: ForexData, index: number, liveStrengthData
 
   // 4. S/R Retest
   let rawSrRetest = 0;
-  const retestThreshold = atr * 0.5;
+  const retestThreshold = atr * 1.5; // Price needs to be within 1.5 ATR of an MA
   const mas = [sma50, sma100, sma200];
   for (const ma of mas) {
       if (Math.abs(price - ma) < retestThreshold) {
-          rawSrRetest = 1.0;
-          break;
+          if ((trendDirection === 'buy' && price > ma) || (trendDirection === 'sell' && price < ma)) {
+            rawSrRetest = 1.0; // Price is bouncing off the MA in the trend direction
+          } else {
+            rawSrRetest = 0.5; // Price is near the MA but fighting it
+          }
+          break; // Stop after finding the first retest
       }
   }
 
   // 5. Price Structure
   let rawPriceStructure = 0;
-  const diDiff = Math.abs(pdi - mdi);
-  if ((trendDirection === 'buy' && pdi > mdi && diDiff > 5) || (trendDirection === 'sell' && mdi > pdi && diDiff > 5)) {
-    rawPriceStructure = Math.min(diDiff / 25, 1.0); // Normalize based on a typical strong diff
+  const diDiff = pdi - mdi;
+  // If trend is buy, we want PDI > MDI. If sell, MDI > PDI.
+  if ((trendDirection === 'buy' && diDiff > 0) || (trendDirection === 'sell' && diDiff < 0)) {
+    // Normalize score based on the difference, capping at a reasonable value like 30
+    rawPriceStructure = Math.min(Math.abs(diDiff) / 30, 1.0);
   }
   
   // 6. ATR/Volatility
   let rawAtrVolatility = 0;
   const volatilityPercentage = (atr / price); // e.g., 0.005 for 0.5%
-  // Target moderate volatility (0.3% - 0.8%) as ideal
-  if (volatilityPercentage >= 0.003 && volatilityPercentage <= 0.008) {
+  // Target moderate volatility (0.3% - 1.0%) as ideal for trends
+  if (volatilityPercentage >= 0.003 && volatilityPercentage <= 0.01) {
     rawAtrVolatility = 1.0;
-  } else if (volatilityPercentage > 0.008) { // High volatility
+  } else if (volatilityPercentage > 0.01) { // High volatility can be risky
     rawAtrVolatility = 0.5;
-  } else { // Low volatility
+  } else { // Low volatility means no movement
     rawAtrVolatility = 0.25;
   }
 
   // 7. Market Regime Fit
   let rawMarketRegimeFit = 0;
   if (adx > 25) { // Trending regime
-      if (rawTrendAlignment === 1.0 && rawMaConvergence === 1.0) {
-          rawMarketRegimeFit = 1.0; // Perfect fit
+      if (rawTrendAlignment === 1.0 && rawMaConvergence > 0) {
+          rawMarketRegimeFit = 1.0; // Good fit
       } else {
           rawMarketRegimeFit = 0.5; // Okay fit
       }
   } else { // Ranging/Dead regime
-      rawMarketRegimeFit = 0.0; // Poor fit
+      rawMarketRegimeFit = 0.0; // Poor fit for a trending strategy
   }
 
   // 8. Currency Strength

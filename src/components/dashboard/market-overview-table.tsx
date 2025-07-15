@@ -12,7 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { ArrowUp, ArrowDown, ArrowUpDown, ChevronsUpDown } from 'lucide-react';
+import { ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import type { DScore } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -38,7 +38,14 @@ const TrendIndicator = ({ trend }: { trend: 'buy' | 'sell' }) => (
 );
 
 const getBreakdownText = (key: keyof DScore, score: number, trendDirection: 'Buy' | 'Sell' | 'Block') => {
-    if (trendDirection === 'Block') return 'Neutral';
+    if (trendDirection === 'Block') {
+      // Provide neutral feedback when blocked, but still based on score
+      switch(key) {
+        case 'trendAlignment': return score > 0 ? 'Partial Agreement' : 'No Agreement';
+        case 'adxStrength': return score > 0 ? 'Some Momentum' : 'Weak Momentum';
+        default: return 'Neutral';
+      }
+    }
     const trendText = trendDirection === 'Buy' ? 'Buy' : 'Sell';
     
     switch (key) {
@@ -48,7 +55,7 @@ const getBreakdownText = (key: keyof DScore, score: number, trendDirection: 'Buy
             return 'No Trend Agreement';
         case 'adxStrength':
             if (score >= 0.7) return 'Strong Trend Momentum';
-            if (score > 0) return 'Developing Momentum';
+            if (score > 0.4) return 'Developing Momentum';
             return 'Weak Momentum';
         case 'maConvergence':
             if (score >= 1.0) return `Confirms ${trendText} Momentum`;
@@ -59,19 +66,19 @@ const getBreakdownText = (key: keyof DScore, score: number, trendDirection: 'Buy
             return 'Not at a Key Level';
         case 'priceStructure':
             if (score >= 0.7) return `Clear ${trendText} Structure`;
-            if (score > 0) return 'Developing Structure';
+            if (score > 0.4) return 'Developing Structure';
             return 'Unclear Structure';
         case 'atrVolatility':
-             if (score >= 0.7) return 'Ideal Volatility';
-            if (score > 0) return 'Moderate Volatility';
+            if (score >= 0.7) return 'Ideal Volatility';
+            if (score > 0.4) return 'Moderate Volatility';
             return 'Low Volatility';
         case 'marketRegimeFit':
-            if (score >= 1.0) return `Ideal for ${trendText}ing`;
-            if (score > 0) return 'Moderate Fit';
+            if (score >= 1.5) return `Ideal for ${trendText}ing`;
+            if (score > 0.7) return 'Moderate Fit';
             return 'Poor Fit for Trending';
         case 'currencyStrength':
             if (score >= 0.7) return `Strong ${trendText} Confirmation`;
-            if (score > 0) return 'Moderate Confirmation';
+            if (score > 0.4) return 'Moderate Confirmation';
             return 'No Confirmation';
         default:
             return 'Neutral';
@@ -130,10 +137,9 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
     'priceStructure', 'atrVolatility', 'marketRegimeFit', 'currencyStrength'
   ];
   
-  const maxScores: Record<keyof DScore, number> = {
-      trendAlignment: 2.0, adxStrength: 1.0, maConvergence: 1.5, srRetest: 0.5,
-      priceStructure: 1.0, atrVolatility: 0.5, marketRegimeFit: 2.0, currencyStrength: 1.5,
-      id: 0, pair: 0, price: 0, change: 0, changesPercentage: 0, dScore: 10, grade: 0, signal: 0, positions: 0, trends: 0
+  const maxScores: Record<string, number> = {
+      trendAlignment: 2.0, adxStrength: 1.0, maConvergence: 1.5, srRetest: 1.5,
+      priceStructure: 1.0, atrVolatility: 1.0, marketRegimeFit: 2.0, currencyStrength: 1.0,
   };
 
   return (
@@ -211,7 +217,7 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
                                           {scoreKeys.map(key => (
                                               <div key={key} className="flex justify-between">
                                                 <span className="text-muted-foreground">{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:</span> 
-                                                <span className="font-semibold text-foreground">{(item[key] as number).toFixed(2)} / {maxScores[key].toFixed(2)}</span>
+                                                <span className="font-semibold text-foreground">{(item[key] as number).toFixed(2)} / {(maxScores[key] || 0).toFixed(2)}</span>
                                               </div>
                                           ))}
                                         </div>
