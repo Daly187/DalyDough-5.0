@@ -83,7 +83,6 @@ export type NewsEvent = {
 
 export type BotConfigurationData = {
   botType: string;
-  initialInvestment: number;
   lotSize: number;
   maxPositions: number;
   stopLoss: number;

@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from 'react';
@@ -7,10 +8,17 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Settings, Lightbulb } from "lucide-react";
+import { Settings, Lightbulb, HelpCircle } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import type { BotConfigurationData, DScore, Bot } from "@/lib/types";
 import { cn } from '@/lib/utils';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+
 
 interface BotConfigurationProps {
   config: BotConfigurationData;
@@ -67,6 +75,22 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
     }
   }, [filteredPairs, selectedPair]);
 
+  const TooltipLabel = ({ htmlFor, label, tooltipText }: { htmlFor: string, label: string, tooltipText: string }) => (
+    <div className="flex items-center gap-2">
+      <Label htmlFor={htmlFor} className="text-muted-foreground">{label}</Label>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger>
+            <HelpCircle className="h-4 w-4 text-muted-foreground" />
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{tooltipText}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    </div>
+  );
+
   return (
     <Card>
       <CardHeader>
@@ -113,16 +137,16 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
                     </Select>
                 </div>
                  <div>
-                    <Label htmlFor="initialInvestment">Initial Investment ($)</Label>
-                    <Input id="initialInvestment" type="number" value={config.initialInvestment} onChange={handleInputChange} />
-                </div>
-                 <div>
                     <Label htmlFor="initialLotOrder">Initial Lot Order</Label>
                     <Input id="initialLotOrder" type="number" value={config.lotSize} onChange={handleInputChange} />
                 </div>
                 <div>
                     <Label htmlFor="maxPositions">Max Positions</Label>
                     <Input id="maxPositions" type="number" value={config.maxPositions} onChange={handleInputChange} />
+                </div>
+                <div>
+                    <Label htmlFor="reentryDelay">Re-entry Delay (mins)</Label>
+                    <Input id="reentryDelay" type="number" value={config.reentryDelay} onChange={handleInputChange} />
                 </div>
                 <div>
                     <Label htmlFor="stopLoss">Stop Loss ($)</Label>
@@ -133,45 +157,58 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
                     <Input id="takeProfit" type="number" value={config.takeProfit} onChange={handleInputChange} />
                 </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-                 <div>
-                    <Label htmlFor="reentryDelay">Re-entry Delay (mins)</Label>
-                    <Input id="reentryDelay" type="number" value={config.reentryDelay} onChange={handleInputChange} />
-                </div>
-            </div>
-            <div className="col-span-2 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <Label htmlFor="enableDSizeExit" className={cn(!config.enableDSizeExit && "text-muted-foreground")}>D-Size Exit Threshold</Label>
-                </div>
-                 <div className="flex items-center gap-2">
-                    <Switch id="enableDSizeExit" checked={config.enableDSizeExit} onCheckedChange={handleSwitchChange('enableDSizeExit')} />
-                    <Input 
-                        id="dSizeExitThreshold" 
-                        type="number" 
-                        value={config.dSizeExitThreshold} 
-                        onChange={handleInputChange} 
-                        disabled={!config.enableDSizeExit}
-                        className="w-24"
-                    />
-                </div>
-            </div>
-            <div className="flex items-center justify-between">
-                <Label htmlFor="enableTrailingStop">Enable Trailing Stop</Label>
-                <Switch id="enableTrailingStop" checked={config.enableTrailingStop} onCheckedChange={handleSwitchChange('enableTrailingStop')} />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+            
+            <div className="space-y-4 pt-2">
                 <div className="flex items-center justify-between">
-                    <Label htmlFor="newsFilter">News Filter</Label>
+                     <TooltipLabel 
+                        htmlFor="enableDSizeExit" 
+                        label="D-Size Exit Threshold" 
+                        tooltipText="If enabled, the bot will stop opening new trades if the D-Size falls below this value." 
+                    />
+                     <div className="flex items-center gap-2">
+                        <Switch id="enableDSizeExit" checked={config.enableDSizeExit} onCheckedChange={handleSwitchChange('enableDSizeExit')} />
+                        <Input 
+                            id="dSizeExitThreshold" 
+                            type="number" 
+                            value={config.dSizeExitThreshold} 
+                            onChange={handleInputChange} 
+                            disabled={!config.enableDSizeExit}
+                            className="w-24"
+                        />
+                    </div>
+                </div>
+                <div className="flex items-center justify-between">
+                    <TooltipLabel 
+                        htmlFor="enableTrailingStop" 
+                        label="Enable Trailing Stop" 
+                        tooltipText="Automatically adjusts the stop loss as the trade moves in your favor." 
+                    />
+                    <Switch id="enableTrailingStop" checked={config.enableTrailingStop} onCheckedChange={handleSwitchChange('enableTrailingStop')} />
+                </div>
+                <div className="flex items-center justify-between">
+                    <TooltipLabel 
+                        htmlFor="newsFilter" 
+                        label="News Filter" 
+                        tooltipText="Prevents opening new trades around high-impact news events." 
+                    />
                     <Switch id="newsFilter" checked={config.newsFilter} onCheckedChange={handleSwitchChange('newsFilter')} />
                 </div>
                 <div className="flex items-center justify-between">
-                    <Label htmlFor="weekendTrading">Weekend Trading</Label>
+                    <TooltipLabel 
+                        htmlFor="weekendTrading" 
+                        label="Weekend Trading" 
+                        tooltipText="Allows the bot to continue running and opening trades over the weekend." 
+                    />
                     <Switch id="weekendTrading" checked={config.weekendTrading} onCheckedChange={handleSwitchChange('weekendTrading')} />
                 </div>
-            </div>
-             <div className="flex items-center justify-between">
-                <Label htmlFor="aiOptimization">AI Optimization</Label>
-                <Switch id="aiOptimization" checked={config.aiOptimization} onCheckedChange={handleSwitchChange('aiOptimization')} />
+                 <div className="flex items-center justify-between">
+                    <TooltipLabel 
+                        htmlFor="aiOptimization" 
+                        label="AI Optimization" 
+                        tooltipText="Enables advanced AI features for enhanced decision-making." 
+                    />
+                    <Switch id="aiOptimization" checked={config.aiOptimization} onCheckedChange={handleSwitchChange('aiOptimization')} />
+                </div>
             </div>
         </div>
          {config.aiOptimization && (

@@ -116,7 +116,6 @@ export const botScannerData: BotScannerData = {
 
 export const botConfigurationData: BotConfigurationData = {
     botType: 'Dynamic DCA',
-    initialInvestment: 1000,
     lotSize: 0.01,
     maxPositions: 5,
     stopLoss: 50,
