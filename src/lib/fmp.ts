@@ -30,6 +30,7 @@ export async function getForexData(pairs: string[]): Promise<ForexData[]> {
     const promises = pairs.map(async (pair) => {
         const symbol = pair.replace('/', '');
         
+        // The API uses XAUUSD without a slash, other pairs with it. This handles the special case.
         const apiSymbol = symbol === 'XAUUSD' ? symbol : symbol;
         
         const quotePromise = fetchWithCache(`${BASE_URL}/quote/${apiSymbol}`);
@@ -59,5 +60,6 @@ export async function getForexData(pairs: string[]): Promise<ForexData[]> {
         };
     });
 
-    return Promise.all(promises);
+    const results = await Promise.all(promises);
+    return results.filter(result => result.quote && result.adx && result.atr && result.sma50 && result.sma100 && result.sma200);
 }
