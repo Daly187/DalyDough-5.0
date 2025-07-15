@@ -11,8 +11,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { ArrowUp, ArrowDown, Minus, ArrowUpDown } from 'lucide-react';
+import { ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import type { DScore } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -28,7 +27,7 @@ type SortKey = keyof DScore;
 const signalConfig = {
     Buy: { color: "text-green-400", icon: <ArrowUp className="h-4 w-4" />, label: "Allow Buy" },
     Sell: { color: "text-red-400", icon: <ArrowDown className="h-4 w-4" />, label: "Allow Sell" },
-    Block: { color: "text-muted-foreground", icon: <Minus className="h-4 w-4" />, label: "Block" },
+    Block: { color: "text-muted-foreground", icon: <div className="h-4 w-4 flex items-center justify-center">-</div>, label: "Block" },
 }
 
 const TrendIndicator = ({ trend }: { trend: 'buy' | 'sell' }) => (
@@ -132,16 +131,30 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
                       <CollapsibleContent asChild>
                         <tr className="bg-muted/50 hover:bg-muted/50">
                           <TableCell colSpan={6} className="p-0">
-                            <div className="p-4">
-                                <h4 className="font-semibold text-sm mb-2 text-foreground">D-Score Breakdown</h4>
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-2 text-xs">
-                                    <div className="flex justify-between"><span className="text-muted-foreground">Trend Alignment:</span> <span className="font-semibold text-foreground">{item.trendAlignment.toFixed(2)}</span></div>
-                                    <div className="flex justify-between"><span className="text-muted-foreground">ADX Strength:</span> <span className="font-semibold text-foreground">{item.adxStrength.toFixed(2)}</span></div>
-                                    <div className="flex justify-between"><span className="text-muted-foreground">MA Convergence:</span> <span className="font-semibold text-foreground">{item.maConvergence.toFixed(2)}</span></div>
-                                    <div className="flex justify-between"><span className="text-muted-foreground">S/R Retest:</span> <span className="font-semibold text-foreground">{item.srRetest.toFixed(2)}</span></div>
-                                    <div className="flex justify-between"><span className="text-muted-foreground">Price Structure:</span> <span className="font-semibold text-foreground">{item.priceStructure.toFixed(2)}</span></div>
-                                    <div className="flex justify-between"><span className="text-muted-foreground">ATR/Volatility:</span> <span className="font-semibold text-foreground">{item.atrVolatility.toFixed(2)}</span></div>
-                                    <div className="flex justify-between"><span className="text-muted-foreground">Market Regime Fit:</span> <span className="font-semibold text-foreground">{item.marketRegimeFit.toFixed(2)}</span></div>
+                            <div className="p-4 grid grid-cols-2 gap-x-8 gap-y-2">
+                                <div>
+                                    <h4 className="font-semibold text-sm mb-2 text-foreground">D-Score Breakdown</h4>
+                                    <div className="space-y-1 text-xs">
+                                        <div className="flex justify-between"><span className="text-muted-foreground">Trend Alignment:</span> <span className="font-semibold text-foreground">{item.trendAlignment > 1.5 ? 'Strong' : (item.trendAlignment > 0.5 ? 'Moderate' : 'Weak')}</span></div>
+                                        <div className="flex justify-between"><span className="text-muted-foreground">ADX Strength:</span> <span className="font-semibold text-foreground">{item.adxStrength > 0.7 ? 'Strong' : (item.adxStrength > 0.4 ? 'Moderate' : 'Weak')}</span></div>
+                                        <div className="flex justify-between"><span className="text-muted-foreground">MA Convergence:</span> <span className="font-semibold text-foreground">{item.maConvergence > 1.0 ? 'Converged' : (item.maConvergence > 0.5 ? 'Partially' : 'Diverged')}</span></div>
+                                        <div className="flex justify-between"><span className="text-muted-foreground">S/R Retest:</span> <span className="font-semibold text-foreground">{(item.srRetest*100/1.5).toFixed(0)}%</span></div>
+                                        <div className="flex justify-between"><span className="text-muted-foreground">Price Structure:</span> <span className="font-semibold text-foreground">{item.priceStructure > 0.7 ? 'Clear' : (item.priceStructure > 0.4 ? 'Developing' : 'Unclear')}</span></div>
+                                        <div className="flex justify-between"><span className="text-muted-foreground">ATR/Volatility:</span> <span className="font-semibold text-foreground">{(item.atrVolatility*100).toFixed(0)}%</span></div>
+                                        <div className="flex justify-between"><span className="text-muted-foreground">Market Regime Fit:</span> <span className="font-semibold text-foreground">{(item.marketRegimeFit*100/2.0).toFixed(0)}%</span></div>
+                                    </div>
+                                </div>
+                                 <div>
+                                    <h4 className="font-semibold text-sm mb-2 text-foreground">Point Allocation</h4>
+                                    <div className="space-y-1 text-xs">
+                                        <div className="flex justify-between"><span className="text-muted-foreground">Trend Alignment:</span> <span className="font-semibold text-foreground">{item.trendAlignment.toFixed(2)} / 2.00</span></div>
+                                        <div className="flex justify-between"><span className="text-muted-foreground">ADX Strength:</span> <span className="font-semibold text-foreground">{item.adxStrength.toFixed(2)} / 1.00</span></div>
+                                        <div className="flex justify-between"><span className="text-muted-foreground">MA Convergence:</span> <span className="font-semibold text-foreground">{item.maConvergence.toFixed(2)} / 1.50</span></div>
+                                        <div className="flex justify-between"><span className="text-muted-foreground">S/R Retest:</span> <span className="font-semibold text-foreground">{item.srRetest.toFixed(2)} / 1.50</span></div>
+                                        <div className="flex justify-between"><span className="text-muted-foreground">Price Structure:</span> <span className="font-semibold text-foreground">{item.priceStructure.toFixed(2)} / 1.00</span></div>
+                                        <div className="flex justify-between"><span className="text-muted-foreground">ATR/Volatility:</span> <span className="font-semibold text-foreground">{item.atrVolatility.toFixed(2)} / 1.00</span></div>
+                                        <div className="flex justify-between"><span className="text-muted-foreground">Market Regime Fit:</span> <span className="font-semibold text-foreground">{item.marketRegimeFit.toFixed(2)} / 2.00</span></div>
+                                    </div>
                                 </div>
                             </div>
                           </TableCell>

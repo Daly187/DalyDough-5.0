@@ -1,5 +1,14 @@
 
 
+export type DScoreWeights = {
+    trendAlignment: number;
+    adxStrength: number;
+    maConvergence: number;
+    srRetest: number;
+    priceStructure: number;
+    atrVolatility: number;
+    marketRegimeFit: number;
+}
 
 export type DScore = {
   id: string;
