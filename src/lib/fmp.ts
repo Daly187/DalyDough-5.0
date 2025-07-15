@@ -17,10 +17,10 @@ async function fetchWithCache<T>(url: string, ttl: number = 300): Promise<T | nu
 }
 
 export async function getForexData(pairs: string[]): Promise<ForexData[]> {
-    // Read the API_KEY inside the function to ensure it's available in the server environment.
-    const API_KEY = process.env.FMP_API_KEY;
+    // Using the provided API key directly to resolve authorization issues.
+    const API_KEY = "RUTyEslPzCs5tHMBZUUxCr2no36EV45Q";
     if (!API_KEY) {
-        console.error("FMP_API_KEY is not defined in environment variables.");
+        console.error("FMP_API_KEY is not defined.");
         // Return empty data for all pairs to avoid crashing the app.
         return pairs.map(pair => ({
             pair,
