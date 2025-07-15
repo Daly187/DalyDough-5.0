@@ -11,7 +11,7 @@ import { LayoutDashboard, Bot, FileText, Newspaper, BarChart2, Settings, Scan, W
 import { cn } from '@/lib/utils';
 
 const navItems = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/bots', label: 'Bots', icon: Bot },
   { href: '/autobot', label: 'Auto Bot', icon: Scan },
   { href: '/strength', label: 'Strength Index', icon: TrendingUp },
