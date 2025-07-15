@@ -207,7 +207,18 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
                         label="Enable Trailing Stop" 
                         tooltipText="Automatically adjusts the stop loss as the trade moves in your favor." 
                     />
-                    <Switch id="enableTrailingStop" checked={config.enableTrailingStop} onCheckedChange={handleSwitchChange('enableTrailingStop')} />
+                    <div className="flex items-center gap-2">
+                        <Switch id="enableTrailingStop" checked={config.enableTrailingStop} onCheckedChange={handleSwitchChange('enableTrailingStop')} />
+                        <Input 
+                            id="trailingStopPips" 
+                            type="number" 
+                            value={config.trailingStopPips} 
+                            onChange={handleInputChange} 
+                            disabled={!config.enableTrailingStop}
+                            className="w-24"
+                            placeholder="pips"
+                        />
+                    </div>
                 </div>
                  <div className="flex items-center justify-between">
                     <TooltipLabel 

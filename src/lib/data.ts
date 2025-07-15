@@ -128,6 +128,7 @@ export const botConfigurationData: BotConfigurationData = {
     enableDSizeExit: true,
     dSizeExitThreshold: 6.0,
     enableTrailingStop: false,
+    trailingStopPips: 20,
     newsFilter: true,
     weekendTrading: false,
     aiOptimization: true,

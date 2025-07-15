@@ -1,4 +1,5 @@
 
+
 export type DScore = {
   id: string;
   pair: string;
@@ -76,6 +77,7 @@ export type BotConfigurationData = {
   enableDSizeExit: boolean;
   dSizeExitThreshold: number;
   enableTrailingStop: boolean;
+  trailingStopPips: number;
   newsFilter: boolean;
   weekendTrading: boolean;
   aiOptimization: boolean;
