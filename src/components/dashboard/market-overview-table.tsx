@@ -139,8 +139,8 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
               {sortedData.map((item) => {
                 const signal = signalConfig[item.signal];
                 return (
-                  <Collapsible asChild key={item.id} open={openRow === item.id} onOpenChange={() => setOpenRow(openRow === item.id ? null : item.id)}>
-                      <tbody className="w-full">
+                   <Collapsible asChild key={item.id} open={openRow === item.id} onOpenChange={() => setOpenRow(openRow === item.id ? null : item.id)}>
+                      <React.Fragment>
                         <CollapsibleTrigger asChild>
                           <TableRow className="cursor-pointer">
                             <TableCell>
@@ -201,7 +201,7 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
                             </TableCell>
                           </tr>
                         </CollapsibleContent>
-                      </tbody>
+                      </React.Fragment>
                   </Collapsible>
                 );
               })}
