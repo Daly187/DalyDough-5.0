@@ -6,25 +6,32 @@ const BASE_URL = '/api/fmp';
 
 async function fetchWithCache<T>(url: string, ttl: number = 300): Promise<T | null> {
     try {
-        const res = await fetch(url, { next: { revalidate: ttl } });
+        const res = await fetch(url, { 
+            // We use cache: 'no-store' during development to ensure we get fresh data,
+            // but revalidate on production builds.
+            cache: process.env.NODE_ENV === 'development' ? 'no-store' : undefined,
+            next: { revalidate: ttl } 
+        });
+
         if (!res.ok) {
             console.error(`Failed to fetch ${url}: HTTP ${res.status} ${res.statusText}`);
             const errorBody = await res.text();
             console.error('Error body:', errorBody);
             return null;
         }
+
         const data = await res.json();
-        // The free FMP plan sometimes returns an error object with a success response code
+        
         if (data && data['Error Message']) {
             console.error(`API Error for ${url}: ${data['Error Message']}`);
             return null;
         }
-        // Also handle cases where FMP returns an empty array for a valid request
+
         if (Array.isArray(data) && data.length === 0) {
-            // This is a valid response, but contains no data. Log it for info but don't treat as an error.
-            console.warn(`Received empty array for ${url}`);
-            return null; 
+            console.warn(`Received empty array for ${url}, which may be expected.`);
+            return data as T; // Return the empty array, don't treat as null
         }
+
         return data as T;
     } catch (error) {
         console.error(`Network or JSON parsing error fetching ${url}:`, error);
@@ -65,6 +72,5 @@ export async function getForexData(pairs: string[]): Promise<ForexData[]> {
     });
 
     const results = await Promise.all(promises);
-    // The filtering will happen in the component that uses the data, based on what's available.
     return results;
 }

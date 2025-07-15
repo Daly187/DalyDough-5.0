@@ -1,6 +1,4 @@
 
-'use client';
-
 import * as React from 'react';
 import MarketOverviewTable from '@/components/dashboard/market-overview-table';
 import SystemStatus from '@/components/dashboard/system-status';
@@ -10,83 +8,39 @@ import BotConfiguration from '@/components/autobot/bot-configuration';
 import AiOptimizedReentries from '@/components/autobot/ai-optimized-reentries';
 import { Rocket } from 'lucide-react';
 import { getForexData } from '@/lib/fmp';
-import type { DScore, ForexData, DScoreWeights } from '@/lib/types';
-import { Skeleton } from '@/components/ui/skeleton';
+import type { DScore, DScoreWeights } from '@/lib/types';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-const DashboardLoadingSkeleton = () => (
-  <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
-    <Skeleton className="h-[76px] w-full" />
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      <div className="lg:col-span-2 flex flex-col gap-8">
-        <Skeleton className="h-[460px] w-full" />
-        <Skeleton className="h-[320px] w-full" />
-      </div>
-      <div className="lg:col-span-1 flex flex-col gap-8">
-        <div className="flex items-center gap-4">
-            <Skeleton className="h-8 w-8 rounded-full" />
-            <div className="space-y-2">
-                <Skeleton className="h-6 w-48" />
-                <Skeleton className="h-4 w-64" />
-            </div>
-        </div>
-        <Skeleton className="h-[700px] w-full" />
-        <Skeleton className="h-[300px] w-full" />
-      </div>
-    </div>
-  </div>
-);
+// Note: We are making this a server component for more reliable data fetching.
+// The 'use client' components will still work inside it.
 
+export default async function DashboardPage() {
+  
+  // This logic now runs on the server before the page is sent to the client.
+  const forexData = await getForexData(defaultPairs);
 
-export default function DashboardPage() {
-  const [dScoreData, setDScoreData] = React.useState<DScore[]>([]);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    async function loadData() {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Fetch user weights from local storage
-        const savedWeightsRaw = localStorage.getItem('d_score_weights');
-        let weights: DScoreWeights | null = null;
-        if (savedWeightsRaw) {
-          try {
-            weights = JSON.parse(savedWeightsRaw);
-          } catch (e) {
-            console.error("Failed to parse weights from localStorage", e);
-          }
-        }
-        
-        const forexData = await getForexData(defaultPairs);
-        if (!forexData) {
-            throw new Error("Failed to fetch forex data");
-        }
-        const liveStrengthData = calculateLiveCurrencyStrength(forexData);
-
-        const calculatedDScoreData: DScore[] = forexData
-          .map((data, index) => calculateDScore(data, index, liveStrengthData, weights)) // Pass weights
-          .filter(Boolean) as DScore[];
-        
-        setDScoreData(calculatedDScoreData);
-      } catch (e) {
-        console.error("Error loading dashboard data:", e);
-        setError("Failed to load market data. Please try refreshing the page.");
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadData();
-  }, []);
-
-  if (loading) {
-    return <DashboardLoadingSkeleton />;
+  if (!forexData || forexData.length === 0) {
+      return (
+        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Error</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-destructive">Failed to load market data. The API might be temporarily unavailable or the API key is invalid. Please check the console for more details.</p>
+                </CardContent>
+            </Card>
+        </main>
+      )
   }
 
-  if (error) {
-    return <div className="flex justify-center items-center h-full p-8 text-destructive">{error}</div>;
-  }
+  const liveStrengthData = calculateLiveCurrencyStrength(forexData);
+  
+  // We pass null for weights, so it uses the defaults. The settings page handles custom weights via localStorage on the client.
+  const dScoreData: DScore[] = forexData
+    .map((data, index) => calculateDScore(data, index, liveStrengthData, null))
+    .filter((d): d is DScore => d !== null);
+
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
