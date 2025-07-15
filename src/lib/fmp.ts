@@ -34,8 +34,7 @@ async function fetchWithCache<T>(url: string, ttl: number = 300): Promise<T | nu
 
 export async function getForexData(pairs: string[]): Promise<ForexData[]> {
     const promises = pairs.map(async (pair) => {
-        const symbol = pair.replace('/', '');
-        const apiSymbol = symbol === 'XAUUSD' ? symbol : symbol;
+        const apiSymbol = pair.replace('/', '');
         
         const quotePromise = fetchWithCache(`${BASE_URL}/quote/${apiSymbol}`);
         const adxPromise = fetchWithCache(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=14&type=adx`);
