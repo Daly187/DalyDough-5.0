@@ -89,6 +89,7 @@ export type BotConfigurationData = {
   maxDrawdown: number;
   dailyLossLimit: number;
   enableTrailingStop: boolean;
+  enableDSizeExit: boolean;
   dSizeExitThreshold: number;
   reentryDelay: number;
   newsFilter: boolean;

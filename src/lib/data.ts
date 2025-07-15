@@ -124,6 +124,7 @@ export const botConfigurationData: BotConfigurationData = {
     maxDrawdown: 20,
     dailyLossLimit: 200,
     enableTrailingStop: false,
+    enableDSizeExit: true,
     dSizeExitThreshold: 6.0,
     reentryDelay: 15,
     newsFilter: true,

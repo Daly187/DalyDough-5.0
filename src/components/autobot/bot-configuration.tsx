@@ -10,6 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Settings, Lightbulb } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import type { BotConfigurationData, DScore, Bot } from "@/lib/types";
+import { cn } from '@/lib/utils';
 
 interface BotConfigurationProps {
   config: BotConfigurationData;
@@ -142,9 +143,19 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
                 <Label htmlFor="enableTrailingStop">Enable Trailing Stop</Label>
                 <Switch id="enableTrailingStop" checked={config.enableTrailingStop} onCheckedChange={handleSwitchChange('enableTrailingStop')} />
             </div>
-             <div>
-                <Label htmlFor="dSizeExitThreshold">D-Size Exit Threshold</Label>
-                <Input id="dSizeExitThreshold" type="number" value={config.dSizeExitThreshold} onChange={handleInputChange} />
+             <div className="col-span-1 md:col-span-2 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <Label htmlFor="enableDSizeExit" className={cn(!config.enableDSizeExit && "text-muted-foreground")}>D-Size Exit Threshold</Label>
+                    <Switch id="enableDSizeExit" checked={config.enableDSizeExit} onCheckedChange={handleSwitchChange('enableDSizeExit')} />
+                </div>
+                <Input 
+                    id="dSizeExitThreshold" 
+                    type="number" 
+                    value={config.dSizeExitThreshold} 
+                    onChange={handleInputChange} 
+                    disabled={!config.enableDSizeExit}
+                    className="w-24"
+                />
             </div>
              <div>
                 <Label htmlFor="reentryDelay">Re-entry Delay (mins)</Label>
