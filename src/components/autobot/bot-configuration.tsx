@@ -163,7 +163,7 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
                      <TooltipLabel 
                         htmlFor="enableDSizeExit" 
                         label="D-Size Exit Threshold" 
-                        tooltipText="If enabled, the bot will stop opening new trades if the D-Size falls below this value." 
+                        tooltipText="If enabled, the bot will stop opening new trades and close at the next Take Profit if the D-Size falls below this value." 
                     />
                      <div className="flex items-center gap-2">
                         <Switch id="enableDSizeExit" checked={config.enableDSizeExit} onCheckedChange={handleSwitchChange('enableDSizeExit')} />
