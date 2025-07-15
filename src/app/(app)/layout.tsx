@@ -1,3 +1,5 @@
+
+'use client';
 import { cn } from '@/lib/utils';
 import {
   Sidebar,
@@ -10,12 +12,19 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import SidebarNav from '@/components/sidebar-nav';
 import Header from '@/components/header';
+import { useAuth } from '@/context/auth-context';
+import { Button } from '@/components/ui/button';
+import { LogOut } from 'lucide-react';
+import ProtectedRoute from '@/components/auth/protected-route';
+import { Skeleton } from '@/components/ui/skeleton';
 
-export default function AppLayout({
+function AppLayoutContent({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const { user, loading, signOut } = useAuth();
+
   return (
     <SidebarProvider>
       <Sidebar>
@@ -29,16 +38,31 @@ export default function AppLayout({
           <SidebarNav />
         </SidebarContent>
         <SidebarFooter>
-          <div className="flex items-center gap-3">
-            <Avatar>
-              <AvatarImage src="https://placehold.co/40x40.png" alt="@trader" />
-              <AvatarFallback>T</AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col">
-              <span className="text-sm font-medium text-foreground">John Trader</span>
-              <span className="text-xs text-muted-foreground">john.trader@email.com</span>
+          {loading ? (
+             <div className="flex items-center gap-3">
+              <Skeleton className="h-10 w-10 rounded-full" />
+              <div className="flex flex-col gap-1">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-3 w-32" />
+              </div>
             </div>
-          </div>
+          ) : user ? (
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarImage src={user.photoURL || `https://placehold.co/40x40.png`} alt={user.displayName || 'User'} />
+                  <AvatarFallback>{user.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-foreground">{user.displayName}</span>
+                  <span className="text-xs text-muted-foreground">{user.email}</span>
+                </div>
+              </div>
+              <Button variant="ghost" size="icon" onClick={signOut} className="shrink-0">
+                  <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : null}
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
@@ -47,4 +71,16 @@ export default function AppLayout({
       </SidebarInset>
     </SidebarProvider>
   );
+}
+
+export default function AppLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+     <ProtectedRoute>
+      <AppLayoutContent>{children}</AppLayoutContent>
+    </ProtectedRoute>
+  )
 }

@@ -55,8 +55,11 @@ export default function LandingPage() {
           <span className="sr-only">DalyDough</span>
         </Link>
         <nav className="ml-auto flex gap-4 sm:gap-6">
-          <Link href="/dashboard">
+          <Link href="/login">
             <Button>Login</Button>
+          </Link>
+          <Link href="/signup">
+            <Button variant="outline">Sign Up</Button>
           </Link>
         </nav>
       </header>
@@ -74,7 +77,7 @@ export default function LandingPage() {
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                   <Link href="/dashboard">
+                   <Link href="/signup">
                     <Button size="lg">Get Started</Button>
                   </Link>
                 </div>
