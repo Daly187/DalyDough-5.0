@@ -16,7 +16,7 @@ export const calculateDScore = (data: ForexData, index: number): DScore => {
   const marketRegimeFit = Math.random() * 2.0;
 
   const quote = data.quote?.[0];
-  const price = quote?.price ?? 1;
+  const price = quote?.price ?? 0;
 
   // Calculated components
   const adx = data.adx?.[0]?.adx ?? 0;
@@ -243,3 +243,4 @@ export const exposureData: ExposureData[] = [
     { currency: 'CHF', exposure: 1500.00, type: 'long' },
     { currency: 'NZD', exposure: -500.00, type: 'short' },
 ];
+
