@@ -97,72 +97,79 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
                 </Select>
             </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <Label htmlFor="botType">Bot Type</Label>
-                <Select value={config.botType} onValueChange={handleSelectChange('botType')}>
-                    <SelectTrigger id="botType">
-                        <SelectValue placeholder="Select bot type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="Dynamic DCA">Dynamic DCA</SelectItem>
-                        <SelectItem value="Trend Rider">Trend Rider</SelectItem>
-                        <SelectItem value="Mean Reversion">Mean Reversion</SelectItem>
-                    </SelectContent>
-                </Select>
+        <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <Label htmlFor="botType">Bot Type</Label>
+                    <Select value={config.botType} onValueChange={handleSelectChange('botType')}>
+                        <SelectTrigger id="botType">
+                            <SelectValue placeholder="Select bot type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="Dynamic DCA">Dynamic DCA</SelectItem>
+                            <SelectItem value="Trend Rider">Trend Rider</SelectItem>
+                            <SelectItem value="Mean Reversion">Mean Reversion</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+                 <div>
+                    <Label htmlFor="initialInvestment">Initial Investment ($)</Label>
+                    <Input id="initialInvestment" type="number" value={config.initialInvestment} onChange={handleInputChange} />
+                </div>
+                 <div>
+                    <Label htmlFor="initialLotOrder">Initial Lot Order</Label>
+                    <Input id="initialLotOrder" type="number" value={config.lotSize} onChange={handleInputChange} />
+                </div>
+                <div>
+                    <Label htmlFor="maxPositions">Max Positions</Label>
+                    <Input id="maxPositions" type="number" value={config.maxPositions} onChange={handleInputChange} />
+                </div>
+                <div>
+                    <Label htmlFor="stopLoss">Stop Loss ($)</Label>
+                    <Input id="stopLoss" type="number" value={config.stopLoss} onChange={handleInputChange} />
+                </div>
+                <div>
+                    <Label htmlFor="takeProfit">Take Profit ($)</Label>
+                    <Input id="takeProfit" type="number" value={config.takeProfit} onChange={handleInputChange} />
+                </div>
             </div>
-             <div>
-                <Label htmlFor="initialInvestment">Initial Investment ($)</Label>
-                <Input id="initialInvestment" type="number" value={config.initialInvestment} onChange={handleInputChange} />
+            <div className="grid grid-cols-2 gap-4">
+                 <div>
+                    <Label htmlFor="reentryDelay">Re-entry Delay (mins)</Label>
+                    <Input id="reentryDelay" type="number" value={config.reentryDelay} onChange={handleInputChange} />
+                </div>
             </div>
-             <div>
-                <Label htmlFor="initialLotOrder">Initial Lot Order</Label>
-                <Input id="initialLotOrder" type="number" value={config.lotSize} onChange={handleInputChange} />
-            </div>
-            <div>
-                <Label htmlFor="maxPositions">Max Positions</Label>
-                <Input id="maxPositions" type="number" value={config.maxPositions} onChange={handleInputChange} />
-            </div>
-            <div>
-                <Label htmlFor="stopLoss">Stop Loss ($)</Label>
-                <Input id="stopLoss" type="number" value={config.stopLoss} onChange={handleInputChange} />
-            </div>
-            <div>
-                <Label htmlFor="takeProfit">Take Profit ($)</Label>
-                <Input id="takeProfit" type="number" value={config.takeProfit} onChange={handleInputChange} />
-            </div>
-            <div>
-                <Label htmlFor="reentryDelay">Re-entry Delay (mins)</Label>
-                <Input id="reentryDelay" type="number" value={config.reentryDelay} onChange={handleInputChange} />
-            </div>
-            <div></div>
-            <div className="col-span-1 md:col-span-2 flex items-center justify-between">
+            <div className="col-span-2 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <Label htmlFor="enableDSizeExit" className={cn(!config.enableDSizeExit && "text-muted-foreground")}>D-Size Exit Threshold</Label>
-                    <Switch id="enableDSizeExit" checked={config.enableDSizeExit} onCheckedChange={handleSwitchChange('enableDSizeExit')} />
                 </div>
-                <Input 
-                    id="dSizeExitThreshold" 
-                    type="number" 
-                    value={config.dSizeExitThreshold} 
-                    onChange={handleInputChange} 
-                    disabled={!config.enableDSizeExit}
-                    className="w-24"
-                />
+                 <div className="flex items-center gap-2">
+                    <Switch id="enableDSizeExit" checked={config.enableDSizeExit} onCheckedChange={handleSwitchChange('enableDSizeExit')} />
+                    <Input 
+                        id="dSizeExitThreshold" 
+                        type="number" 
+                        value={config.dSizeExitThreshold} 
+                        onChange={handleInputChange} 
+                        disabled={!config.enableDSizeExit}
+                        className="w-24"
+                    />
+                </div>
             </div>
-            <div className="flex items-center justify-between col-span-1 md:col-span-2">
+            <div className="flex items-center justify-between">
                 <Label htmlFor="enableTrailingStop">Enable Trailing Stop</Label>
                 <Switch id="enableTrailingStop" checked={config.enableTrailingStop} onCheckedChange={handleSwitchChange('enableTrailingStop')} />
             </div>
-            <div className="flex items-center justify-between">
-                <Label htmlFor="newsFilter">News Filter</Label>
-                <Switch id="newsFilter" checked={config.newsFilter} onCheckedChange={handleSwitchChange('newsFilter')} />
+            <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center justify-between">
+                    <Label htmlFor="newsFilter">News Filter</Label>
+                    <Switch id="newsFilter" checked={config.newsFilter} onCheckedChange={handleSwitchChange('newsFilter')} />
+                </div>
+                <div className="flex items-center justify-between">
+                    <Label htmlFor="weekendTrading">Weekend Trading</Label>
+                    <Switch id="weekendTrading" checked={config.weekendTrading} onCheckedChange={handleSwitchChange('weekendTrading')} />
+                </div>
             </div>
-            <div className="flex items-center justify-between">
-                <Label htmlFor="weekendTrading">Weekend Trading</Label>
-                <Switch id="weekendTrading" checked={config.weekendTrading} onCheckedChange={handleSwitchChange('weekendTrading')} />
-            </div>
-             <div className="flex items-center justify-between col-span-1 md:col-span-2">
+             <div className="flex items-center justify-between">
                 <Label htmlFor="aiOptimization">AI Optimization</Label>
                 <Switch id="aiOptimization" checked={config.aiOptimization} onCheckedChange={handleSwitchChange('aiOptimization')} />
             </div>
