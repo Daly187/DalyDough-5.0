@@ -5,6 +5,47 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Bot, Scan, Newspaper } from 'lucide-react';
 import Image from 'next/image';
 
+const HeroGraphic = () => (
+    <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" className="mx-auto aspect-video overflow-hidden rounded-xl object-cover sm:w-full lg:order-last lg:aspect-square">
+        <g transform="translate(200, 200)">
+            {/* <!-- Body --> */}
+            <path d="M -100 80 C -120 -50, 120 -50, 100 80 Z" fill="hsl(var(--primary))" />
+            
+            {/* <!-- Eyes --> */}
+            <g transform="translate(-40, -10)">
+                <circle cx="0" cy="0" r="25" fill="white" />
+                <circle cx="0" cy="0" r="10" fill="black" />
+                <circle cx="5" cy="-5" r="3" fill="white" />
+            </g>
+            <g transform="translate(40, -10)">
+                <circle cx="0" cy="0" r="25" fill="white" />
+                <circle cx="0" cy="0" r="10" fill="black" />
+                <circle cx="5" cy="-5" r="3" fill="white" />
+            </g>
+
+            {/* <!-- Mouth --> */}
+            <path d="M -30 40 Q 0 60, 30 40" stroke="white" strokeWidth="5" fill="none" strokeLinecap="round" />
+
+            {/* <!-- Antenna --> */}
+            <line x1="0" y1="-70" x2="0" y2="-100" stroke="hsl(var(--primary))" strokeWidth="5" />
+            <circle cx="0" cy="-110" r="10" fill="hsl(var(--accent))" />
+            <circle cx="0" cy="-110" r="5" fill="white" />
+
+            {/* <!-- Floating Shapes --> */}
+            <g transform="translate(-150, -50) rotate(-15)">
+                <rect x="-15" y="-15" width="30" height="30" rx="5" fill="hsl(var(--chart-2))" opacity="0.8" />
+            </g>
+             <g transform="translate(160, -30) rotate(20)">
+                <path d="M 0 -20 L 20 15 L -20 15 Z" fill="hsl(var(--chart-4))" opacity="0.8" />
+            </g>
+             <g transform="translate(140, 90) rotate(-10)">
+                <circle cx="0" cy="0" r="18" fill="hsl(var(--chart-5))" opacity="0.8" />
+            </g>
+        </g>
+    </svg>
+);
+
+
 export default function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen bg-background font-body">
@@ -38,14 +79,7 @@ export default function LandingPage() {
                   </Link>
                 </div>
               </div>
-              <Image
-                src="https://placehold.co/600x400.png"
-                width="600"
-                height="400"
-                alt="Hero"
-                data-ai-hint="cartoon robot finance"
-                className="mx-auto aspect-video overflow-hidden rounded-xl object-cover sm:w-full lg:order-last lg:aspect-square"
-              />
+              <HeroGraphic />
             </div>
           </div>
         </section>
