@@ -10,31 +10,26 @@ const getGrade = (score: number): 'A' | 'B' | 'C' => {
 export const pairs = ['AUD/CAD', 'AUD/CHF', 'AUD/JPY', 'AUD/NZD', 'AUD/USD', 'CAD/JPY', 'CHF/JPY', 'EUR/CAD', 'EUR/CHF', 'EUR/GBP', 'EUR/JPY', 'EUR/NZD', 'EUR/TRY', 'EUR/USD', 'GBP/AUD', 'GBP/CAD', 'GBP/CHF', 'GBP/JPY', 'GBP/USD', 'NZD/CAD', 'NZD/CHF', 'NZD/JPY', 'NZD/USD', 'USD/CAD', 'USD/CHF', 'USD/JPY', 'USD/TRY', 'USD/ZAR', 'XAU/USD'];
 
 export const calculateDScore = (data: ForexData, index: number): DScore => {
-  // Mocked components
-  const srRetest = Math.random() * 1.5;
-  const priceStructure = Math.random() * 1.0;
-  const marketRegimeFit = Math.random() * 2.0;
-
   const quote = data.quote?.[0];
   const price = quote?.price ?? 0;
   const sma50 = data.sma50?.[0]?.sma;
   const sma100 = data.sma100?.[0]?.sma;
   const sma200 = data.sma200?.[0]?.sma;
-
-  // Calculated components
   const adx = data.adx?.[0]?.adx ?? 0;
-  const adxStrength = Math.min(adx / 50, 1.0); // Capped at 1.0 for scores > 50
-  
   const atr = data.atr?.[0]?.atr ?? 0;
-  const atrVolatility = price > 0 ? Math.min( (atr / price) * 100, 1.0) : 0; // ATR as percentage of price, capped at 1
 
-  // --- START REVISED TREND LOGIC ---
+  // --- START REVISED SCORING LOGIC ---
+  
+  // Calculated components
+  const adxStrength = Math.min(adx / 50, 1.0); // Capped at 1.0 for scores > 50
+  const atrVolatility = price > 0 ? Math.min((atr / price) * 100, 1.0) : 0; // ATR as percentage of price, capped at 1
+
+  // Trends based on Price vs. MAs
   const trends = {
-      h4: Math.random() > 0.5 ? 'buy' : 'sell', // Placeholder as we don't have H4 data
+      h4: (price && sma50 && price > sma50) ? 'buy' : 'sell', // H4 trend as a proxy of D1
       d1: (price && sma50 && price > sma50) ? 'buy' : 'sell',
       w1: (price && sma200 && price > sma200) ? 'buy' : 'sell',
   };
-  // --- END REVISED TREND LOGIC ---
 
   const trendValues = Object.values(trends);
   const buys = trendValues.filter(t => t === 'buy').length;
@@ -64,6 +59,11 @@ export const calculateDScore = (data: ForexData, index: number): DScore => {
       }
   }
 
+  // More deterministic (though still placeholder) logic for other factors
+  const priceStructure = adx > 25 ? 0.8 : 0.4; // Better structure in trending markets
+  const srRetest = (maConvergence > 1.0) ? 1.2 : 0.6; // Higher chance of retest in converged markets
+  const marketRegimeFit = (adx > 25 && trendAlignment > 1.5) ? 1.8 : 0.7; // Better fit if trend is strong
+
   const totalScore = trendAlignment + adxStrength + atrVolatility + srRetest + priceStructure + marketRegimeFit + maConvergence;
   
   let signal: 'Buy' | 'Sell' | 'Block' = 'Block';
@@ -71,6 +71,9 @@ export const calculateDScore = (data: ForexData, index: number): DScore => {
     if (buys > sells) signal = 'Buy';
     if (sells > buys) signal = 'Sell';
   }
+
+  // Calculate active positions for this pair
+  const activePositions = activeBotsData.filter(bot => bot.pair === data.pair && bot.status === 'active').length;
 
   return {
     id: `${index + 1}`,
@@ -88,7 +91,7 @@ export const calculateDScore = (data: ForexData, index: number): DScore => {
     atrVolatility,
     marketRegimeFit,
     signal,
-    positions: Math.floor(Math.random() * 6), // Mocked
+    positions: activePositions,
     trends,
   };
 };
@@ -244,5 +247,6 @@ export const exposureData: ExposureData[] = [
     { currency: 'CHF', exposure: 1500.00, type: 'long' },
     { currency: 'NZD', exposure: -500.00, type: 'short' },
 ];
+
 
 
