@@ -1,14 +1,17 @@
 
-
 import ActiveBotsTable from '@/components/bots/active-bots-table';
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { activeBotsData, closedBotsData, dScoreData } from '@/lib/data';
-import { Pause, ShieldAlert, Trash2 } from 'lucide-react';
+import { activeBotsData, closedBotsData, calculateDScore, pairs } from '@/lib/data';
+import { getForexData } from '@/lib/fmp';
+import { DScore } from '@/lib/types';
 
-export default function BotsPage() {
+
+export default async function BotsPage() {
+  const forexData = await getForexData(pairs);
+
+  const dScoreData: DScore[] = forexData.map((data, index) => 
+    calculateDScore(data, index)
+  );
+
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
       <div className="flex items-center">
