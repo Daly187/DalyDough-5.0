@@ -27,14 +27,27 @@ export async function getForexData(pairs: string[]): Promise<ForexData[]> {
         const quotePromise = fetchWithCache(`${BASE_URL}/quote/${apiSymbol}?apikey=${API_KEY}`);
         const adxPromise = fetchWithCache(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=14&type=adx&apikey=${API_KEY}`);
         const atrPromise = fetchWithCache(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=14&type=atr&apikey=${API_KEY}`);
+        const sma50Promise = fetchWithCache(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=50&type=sma&apikey=${API_KEY}`);
+        const sma100Promise = fetchWithCache(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=100&type=sma&apikey=${API_KEY}`);
+        const sma200Promise = fetchWithCache(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=200&type=sma&apikey=${API_KEY}`);
 
-        const [quote, adx, atr] = await Promise.all([quotePromise, adxPromise, atrPromise]);
+        const [quote, adx, atr, sma50, sma100, sma200] = await Promise.all([
+            quotePromise, 
+            adxPromise, 
+            atrPromise,
+            sma50Promise,
+            sma100Promise,
+            sma200Promise
+        ]);
         
         return {
             pair,
             quote,
             adx,
-            atr
+            atr,
+            sma50,
+            sma100,
+            sma200
         };
     });
 

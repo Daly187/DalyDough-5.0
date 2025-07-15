@@ -42,6 +42,7 @@ export default function DScoreExplanationSheet({ isOpen, onOpenChange, pairData 
             srRetest: pairData.srRetest,
             priceStructure: pairData.priceStructure,
             marketRegimeFit: pairData.marketRegimeFit,
+            maConvergence: pairData.maConvergence,
         };
         
         const result = await getDScoreExplanation(input);
@@ -61,6 +62,7 @@ export default function DScoreExplanationSheet({ isOpen, onOpenChange, pairData 
   const scoreFactors = [
     { label: "Trend Alignment", value: pairData?.trendAlignment, max: 2.0 },
     { label: "ADX Strength", value: pairData?.adxStrength, max: 1.0 },
+    { label: "MA Convergence", value: pairData?.maConvergence, max: 1.5 },
     { label: "S/R Retest", value: pairData?.srRetest, max: 1.5 },
     { label: "Price Structure", value: pairData?.priceStructure, max: 1.0 },
     { label: "ATR/Volatility", value: pairData?.atrVolatility, max: 1.0 },

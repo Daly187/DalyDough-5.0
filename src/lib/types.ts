@@ -10,6 +10,7 @@ export type DScore = {
   grade: 'A' | 'B' | 'C';
   trendAlignment: number; // 0-2.0
   adxStrength: number; // 0-1.0
+  maConvergence: number; // 0-1.5
   srRetest: number; // 0-1.5
   priceStructure: number; // 0-1.0
   atrVolatility: number; // 0-1.0
@@ -167,9 +168,22 @@ type FMPATR = {
     atr: number;
 };
 
+type FMPSMA = {
+    date: string;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume: number;
+    sma: number;
+};
+
 export type ForexData = {
     pair: string;
     quote: FMPQuote[] | null;
     adx: FMPADX[] | null;
     atr: FMPATR[] | null;
+    sma50: FMPSMA[] | null;
+    sma100: FMPSMA[] | null;
+    sma200: FMPSMA[] | null;
 };

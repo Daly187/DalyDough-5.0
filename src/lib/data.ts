@@ -1,8 +1,8 @@
 import type { DScore, Bot, EquityData, RiskMetric, ApiKey, NewsEvent, BotConfigurationData, AIReentry, MarketRegime, ExposureData, ForexData, StrengthData } from './types';
 
 const getGrade = (score: number): 'A' | 'B' | 'C' => {
-  if (score >= 8.0) return 'A';
-  if (score >= 6.0) return 'B';
+  if (score >= 8.5) return 'A';
+  if (score >= 7.0) return 'B';
   return 'C';
 };
 
@@ -15,13 +15,13 @@ export const calculateDScore = (data: ForexData, index: number): DScore => {
   const marketRegimeFit = Math.random() * 2.0;
 
   const quote = data.quote?.[0];
+  const price = quote?.price ?? 1;
 
   // Calculated components
   const adx = data.adx?.[0]?.adx ?? 0;
   const adxStrength = Math.min(adx / 50, 1.0); // Capped at 1.0 for scores > 50
   
   const atr = data.atr?.[0]?.atr ?? 0;
-  const price = quote?.price ?? 1;
   const atrVolatility = Math.min( (atr / price) * 100, 1.0); // ATR as percentage of price, capped at 1
 
   const trends = {
@@ -41,7 +41,28 @@ export const calculateDScore = (data: ForexData, index: number): DScore => {
     trendAlignment = 1.0; // Half points
   }
 
-  const totalScore = trendAlignment + adxStrength + atrVolatility + srRetest + priceStructure + marketRegimeFit;
+  // MA Convergence calculation
+  let maConvergence = 0;
+  const sma50 = data.sma50?.[0]?.sma;
+  const sma100 = data.sma100?.[0]?.sma;
+  const sma200 = data.sma200?.[0]?.sma;
+
+  if (sma50 && sma100 && sma200) {
+      const isUptrend = price > sma50 && sma50 > sma100 && sma100 > sma200;
+      const isDowntrend = price < sma50 && sma50 < sma100 && sma100 < sma200;
+
+      if (isUptrend || isDowntrend) {
+          maConvergence = 1.5; // Full points for perfect alignment
+      } else {
+          const uptrendPartial = (price > sma50 && sma50 > sma100) || (sma50 > sma100 && sma100 > sma200);
+          const downtrendPartial = (price < sma50 && sma50 < sma100) || (sma50 < sma100 && sma100 < sma200);
+          if (uptrendPartial || downtrendPartial) {
+              maConvergence = 0.75; // Half points for partial alignment
+          }
+      }
+  }
+
+  const totalScore = trendAlignment + adxStrength + atrVolatility + srRetest + priceStructure + marketRegimeFit + maConvergence;
   
   let signal: 'Buy' | 'Sell' | 'Block' = 'Block';
   if (totalScore >= 7.0) {
@@ -59,6 +80,7 @@ export const calculateDScore = (data: ForexData, index: number): DScore => {
     grade: getGrade(totalScore),
     trendAlignment,
     adxStrength,
+    maConvergence,
     srRetest,
     priceStructure,
     atrVolatility,
