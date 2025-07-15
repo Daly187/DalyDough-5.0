@@ -141,20 +141,44 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
                     <Input id="initialLotOrder" type="number" value={config.lotSize} onChange={handleInputChange} />
                 </div>
                 <div>
+                    <Label htmlFor="gridLevels">Grid Levels</Label>
+                    <Input id="gridLevels" type="number" value={config.gridLevels} onChange={handleInputChange} />
+                </div>
+                 <div>
+                    <Label htmlFor="gridDistance">Grid Distance (pips)</Label>
+                    <Input id="gridDistance" type="number" value={config.gridDistance} onChange={handleInputChange} />
+                </div>
+                <div>
+                    <Label htmlFor="lotSizeMultiplier">Lot Size Multiplier</Label>
+                    <Input id="lotSizeMultiplier" type="number" value={config.lotSizeMultiplier} onChange={handleInputChange} />
+                </div>
+                 <div>
                     <Label htmlFor="maxPositions">Max Positions</Label>
                     <Input id="maxPositions" type="number" value={config.maxPositions} onChange={handleInputChange} />
                 </div>
                 <div>
-                    <Label htmlFor="reentryDelay">Re-entry Delay (mins)</Label>
-                    <Input id="reentryDelay" type="number" value={config.reentryDelay} onChange={handleInputChange} />
+                    <Label htmlFor="takeProfitType">Take Profit Type</Label>
+                    <Select value={config.takeProfitType} onValueChange={handleSelectChange('takeProfitType')}>
+                        <SelectTrigger id="takeProfitType">
+                            <SelectValue/>
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="fixed">Fixed Amount ($)</SelectItem>
+                            <SelectItem value="average">Average Price (pips)</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div>
+                    <Label htmlFor="takeProfit">Take Profit Value</Label>
+                    <Input id="takeProfit" type="number" value={config.takeProfit} onChange={handleInputChange} />
                 </div>
                 <div>
                     <Label htmlFor="stopLoss">Stop Loss ($)</Label>
                     <Input id="stopLoss" type="number" value={config.stopLoss} onChange={handleInputChange} />
                 </div>
                 <div>
-                    <Label htmlFor="takeProfit">Take Profit ($)</Label>
-                    <Input id="takeProfit" type="number" value={config.takeProfit} onChange={handleInputChange} />
+                    <Label htmlFor="reentryDelay">Re-entry Delay (mins)</Label>
+                    <Input id="reentryDelay" type="number" value={config.reentryDelay} onChange={handleInputChange} />
                 </div>
             </div>
             
@@ -184,6 +208,25 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
                         tooltipText="Automatically adjusts the stop loss as the trade moves in your favor." 
                     />
                     <Switch id="enableTrailingStop" checked={config.enableTrailingStop} onCheckedChange={handleSwitchChange('enableTrailingStop')} />
+                </div>
+                 <div className="flex items-center justify-between">
+                    <TooltipLabel 
+                        htmlFor="closeOnRetrace" 
+                        label="Close on Retrace" 
+                        tooltipText="Close the entire grid if price retraces a certain percentage from its furthest point." 
+                    />
+                     <div className="flex items-center gap-2">
+                        <Switch id="closeOnRetrace" checked={config.closeOnRetrace} onCheckedChange={handleSwitchChange('closeOnRetrace')} />
+                        <Input 
+                            id="retracePercentage" 
+                            type="number" 
+                            value={config.retracePercentage} 
+                            onChange={handleInputChange} 
+                            disabled={!config.closeOnRetrace}
+                            className="w-24"
+                            placeholder="%"
+                        />
+                    </div>
                 </div>
                 <div className="flex items-center justify-between">
                     <TooltipLabel 

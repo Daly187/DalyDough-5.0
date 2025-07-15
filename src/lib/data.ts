@@ -1,4 +1,4 @@
-import type { DScore, Bot, EquityData, RiskMetric, ApiKey, BotScannerData, CotData, NewsEvent, BotConfigurationData, AIReentry, MarketRegime } from './types';
+import type { DScore, Bot, EquityData, RiskMetric, ApiKey, BotScannerData, CotData, NewsEvent, BotConfigurationData, AIReentry, MarketRegime, ExposureData } from './types';
 
 const getGrade = (score: number): 'A' | 'B' | 'C' => {
   if (score >= 8.0) return 'A';
@@ -54,17 +54,17 @@ const generateRandomDScore = (pair: string, index: number): DScore => {
 export const dScoreData: DScore[] = pairs.map(generateRandomDScore);
 
 export const activeBotsData: Bot[] = [
-  { id: 'bot1', pair: 'EUR/USD', strategy: 'DCA Grid', status: 'active', profit_loss: 152.3, entry_time: '2024-05-20T10:30:00Z', d_score_entry: 8.2, stopLoss: 50, takeProfit: 100 },
-  { id: 'bot2', pair: 'GBP/USD', strategy: 'Trend Rider', status: 'active', profit_loss: -45.1, entry_time: '2024-05-20T11:05:00Z', d_score_entry: 7.5, stopLoss: 50, takeProfit: 100 },
-  { id: 'bot3', pair: 'AUD/USD', strategy: 'Breakout', status: 'active', profit_loss: 210.55, entry_time: '2024-05-20T14:00:00Z', d_score_entry: 9.1, stopLoss: 50, takeProfit: 100 },
-  { id: 'bot4', pair: 'USD/JPY', strategy: 'DCA Grid', status: 'paused', profit_loss: 89.7, entry_time: '2024-05-19T22:15:00Z', d_score_entry: 6.8, stopLoss: 50, takeProfit: 100 },
-  { id: 'bot5', pair: 'XAU/USD', strategy: 'DCA Grid', status: 'error', profit_loss: -112.0, entry_time: '2024-05-18T08:45:00Z', d_score_entry: 8.8, d_score_exit: 5.4, stopLoss: 50, takeProfit: 100 },
+  { id: 'bot1', pair: 'EUR/USD', strategy: 'DCA Grid', status: 'active', profit_loss: 152.3, drawdown: 25.5, entry_time: '2024-05-20T10:30:00Z', d_score_entry: 8.2, stopLoss: 50, takeProfit: 100 },
+  { id: 'bot2', pair: 'GBP/USD', strategy: 'Trend Rider', status: 'active', profit_loss: -45.1, drawdown: 78.2, entry_time: '2024-05-20T11:05:00Z', d_score_entry: 7.5, stopLoss: 50, takeProfit: 100 },
+  { id: 'bot3', pair: 'AUD/USD', strategy: 'Breakout', status: 'active', profit_loss: 210.55, drawdown: 15.0, entry_time: '2024-05-20T14:00:00Z', d_score_entry: 9.1, stopLoss: 50, takeProfit: 100 },
+  { id: 'bot4', pair: 'USD/JPY', strategy: 'DCA Grid', status: 'paused', profit_loss: 89.7, drawdown: 110.8, entry_time: '2024-05-19T22:15:00Z', d_score_entry: 6.8, stopLoss: 50, takeProfit: 100 },
+  { id: 'bot5', pair: 'XAU/USD', strategy: 'DCA Grid', status: 'error', profit_loss: -112.0, drawdown: 150.0, entry_time: '2024-05-18T08:45:00Z', d_score_entry: 8.8, d_score_exit: 5.4, stopLoss: 50, takeProfit: 100 },
 ];
 
 export const closedBotsData: Bot[] = [
-    { id: 'bot6', pair: 'EUR/CAD', strategy: 'Trend Rider', status: 'closed', profit_loss: 345.12, entry_time: '2024-05-18T10:00:00Z', d_score_entry: 8.5, d_score_exit: 7.0 },
-    { id: 'bot7', pair: 'NZD/USD', strategy: 'Breakout', status: 'closed', profit_loss: -88.40, entry_time: '2024-05-17T15:30:00Z', d_score_entry: 7.8, d_score_exit: 6.1 },
-    { id: 'bot8', pair: 'GBP/JPY', strategy: 'DCA Grid', status: 'closed', profit_loss: 512.60, entry_time: '2024-05-19T09:00:00Z', d_score_entry: 9.2, d_score_exit: 7.5 },
+    { id: 'bot6', pair: 'EUR/CAD', strategy: 'Trend Rider', status: 'closed', profit_loss: 345.12, drawdown: 0, entry_time: '2024-05-18T10:00:00Z', d_score_entry: 8.5, d_score_exit: 7.0 },
+    { id: 'bot7', pair: 'NZD/USD', strategy: 'Breakout', status: 'closed', profit_loss: -88.40, drawdown: 0, entry_time: '2024-05-17T15:30:00Z', d_score_entry: 7.8, d_score_exit: 6.1 },
+    { id: 'bot8', pair: 'GBP/JPY', strategy: 'DCA Grid', status: 'closed', profit_loss: 512.60, drawdown: 0, entry_time: '2024-05-19T09:00:00Z', d_score_entry: 9.2, d_score_exit: 7.5 },
 ];
 
 
@@ -123,7 +123,7 @@ export const botConfigurationData: BotConfigurationData = {
     lotSize: 0.01,
     maxPositions: 5,
     reentryDelay: 15,
-    stopLoss: 50,
+    stopLoss: 500,
     takeProfit: 100,
     enableDSizeExit: true,
     dSizeExitThreshold: 6.0,
@@ -131,6 +131,12 @@ export const botConfigurationData: BotConfigurationData = {
     newsFilter: true,
     weekendTrading: false,
     aiOptimization: true,
+    gridLevels: 5,
+    gridDistance: 20,
+    lotSizeMultiplier: 1.5,
+    takeProfitType: 'fixed',
+    closeOnRetrace: false,
+    retracePercentage: 50,
 };
 
 export const aiReentriesData: AIReentry[] = [
@@ -190,3 +196,14 @@ export const marketRegimeData: MarketRegime[] = pairs.map(pair => ({
     bollingerWidth: Math.random() * 0.05,
     maSlopes: 'Up, Up, Down',
 }));
+
+export const exposureData: ExposureData[] = [
+    { currency: 'EUR', exposure: 12500.50, type: 'long' },
+    { currency: 'USD', exposure: -8500.00, type: 'short' },
+    { currency: 'GBP', exposure: 7800.75, type: 'long' },
+    { currency: 'JPY', exposure: -15000.00, type: 'short' },
+    { currency: 'AUD', exposure: 4200.25, type: 'long' },
+    { currency: 'CAD', exposure: -2300.00, type: 'short' },
+    { currency: 'CHF', exposure: 1500.00, type: 'long' },
+    { currency: 'NZD', exposure: -500.00, type: 'short' },
+];

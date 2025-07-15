@@ -29,6 +29,7 @@ export type Bot = {
   strategy: string;
   status: 'active' | 'paused' | 'error' | 'close_at_tp' | 'closed';
   profit_loss: number;
+  drawdown: number;
   entry_time: string;
   d_score_entry: number;
   d_score_exit?: number;
@@ -78,6 +79,12 @@ export type BotConfigurationData = {
   newsFilter: boolean;
   weekendTrading: boolean;
   aiOptimization: boolean;
+  gridLevels: number;
+  gridDistance: number;
+  lotSizeMultiplier: number;
+  takeProfitType: 'fixed' | 'average';
+  closeOnRetrace: boolean;
+  retracePercentage: number;
 }
 
 export type AIReentry = {
@@ -116,3 +123,9 @@ export type MarketRegime = {
   bollingerWidth: number;
   maSlopes: string;
 };
+
+export type ExposureData = {
+    currency: string;
+    exposure: number;
+    type: 'long' | 'short';
+}

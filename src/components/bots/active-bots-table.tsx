@@ -82,6 +82,7 @@ export default function ActiveBotsTable({ data, allPairs, title, description, is
                     <TableHead>Strategy</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>P/L</TableHead>
+                    <TableHead>Drawdown</TableHead>
                     <TableHead>Entry D-Score</TableHead>
                     <TableHead>{isClosed ? 'Exit D-Score' : 'Current D-Score'}</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -102,6 +103,9 @@ export default function ActiveBotsTable({ data, allPairs, title, description, is
                         </TableCell>
                         <TableCell className={cn(bot.profit_loss >= 0 ? 'text-green-400' : 'text-red-400')}>
                             {bot.profit_loss >= 0 ? '+' : ''}${bot.profit_loss.toFixed(2)}
+                        </TableCell>
+                         <TableCell className='text-yellow-400'>
+                            ${bot.drawdown.toFixed(2)}
                         </TableCell>
                         <TableCell>{bot.d_score_entry.toFixed(1)}</TableCell>
                         <TableCell>{isClosed ? bot.d_score_exit?.toFixed(1) : getCurrentDScore(bot.pair)?.toFixed(1) ?? 'N/A'}</TableCell>
