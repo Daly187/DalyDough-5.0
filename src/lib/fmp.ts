@@ -1,3 +1,4 @@
+
 import type { ForexData } from './types';
 
 // Use a relative path for the proxied API route
@@ -7,30 +8,33 @@ async function fetchWithCache<T>(url: string, ttl: number = 300): Promise<T | nu
     try {
         const res = await fetch(url, { next: { revalidate: ttl } });
         if (!res.ok) {
-            console.error(`Failed to fetch ${url}: ${res.statusText}`);
+            console.error(`Failed to fetch ${url}: HTTP ${res.status} ${res.statusText}`);
             const errorBody = await res.text();
             console.error('Error body:', errorBody);
             return null;
         }
         const data = await res.json();
         // The free FMP plan sometimes returns an error object with a success response code
-        if (data['Error Message']) {
+        if (data && data['Error Message']) {
             console.error(`API Error for ${url}: ${data['Error Message']}`);
             return null;
         }
+        // Also handle cases where FMP returns an empty array for a valid request
+        if (Array.isArray(data) && data.length === 0) {
+            // This is a valid response, but contains no data. Log it for info but don't treat as an error.
+            console.warn(`Received empty array for ${url}`);
+            return null; 
+        }
         return data as T;
     } catch (error) {
-        console.error(`Error fetching ${url}:`, error);
+        console.error(`Network or JSON parsing error fetching ${url}:`, error);
         return null;
     }
 }
 
 export async function getForexData(pairs: string[]): Promise<ForexData[]> {
-
     const promises = pairs.map(async (pair) => {
         const symbol = pair.replace('/', '');
-        
-        // The API uses XAUUSD without a slash, other pairs with it. This handles the special case.
         const apiSymbol = symbol === 'XAUUSD' ? symbol : symbol;
         
         const quotePromise = fetchWithCache(`${BASE_URL}/quote/${apiSymbol}`);
@@ -49,6 +53,7 @@ export async function getForexData(pairs: string[]): Promise<ForexData[]> {
             sma200Promise
         ]);
         
+        // Return the object with potentially null fields. The calculation function will handle this.
         return {
             pair,
             quote,
@@ -61,5 +66,6 @@ export async function getForexData(pairs: string[]): Promise<ForexData[]> {
     });
 
     const results = await Promise.all(promises);
-    return results.filter(result => result.quote && result.adx && result.atr && result.sma50 && result.sma100 && result.sma200);
+    // The filtering will happen in the component that uses the data, based on what's available.
+    return results;
 }

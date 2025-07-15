@@ -1,6 +1,6 @@
 
 
-import type { DScore, Bot, EquityData, RiskMetric, ApiKey, NewsEvent, BotConfigurationData, AIReentry, MarketRegime, ExposureData, ForexData, StrengthData, DScoreWeights } from './types';
+import type { DScore, Bot, EquityData, RiskMetric, ApiKey, NewsEvent, BotConfigurationData, AIReentry, MarketRegime, ExposureData, ForexData, CurrencyStrength, StrengthData, DScoreWeights } from './types';
 
 const getGrade = (score: number): 'A' | 'B' | 'C' => {
   if (score >= 8.5) return 'A';
@@ -18,7 +18,7 @@ export const calculateLiveCurrencyStrength = (allForexData: ForexData[]): Curren
     majorCurrencies.forEach(c => strengthScores[c] = { wins: 0, total: 0 });
 
     for (const data of allForexData) {
-        if (!data.quote || data.quote.length === 0) continue;
+        if (!data.quote || !Array.isArray(data.quote) || data.quote.length === 0) continue;
 
         const base = data.pair.substring(0, 3);
         const quote = data.pair.substring(4, 7);
@@ -80,6 +80,7 @@ export const calculateDScore = (data: ForexData, index: number, liveStrengthData
   const atrData = Array.isArray(data.atr) && data.atr.length > 0 ? data.atr[0] : null;
 
   if (!quote || !sma50 || !sma100 || !sma200 || !adxData || !atrData) {
+    // console.warn(`Missing essential data for ${data.pair}. Skipping D-Score calculation.`);
     return null; // Return null if essential data is missing
   }
 
@@ -126,22 +127,23 @@ export const calculateDScore = (data: ForexData, index: number, liveStrengthData
   const mas = [sma50, sma100, sma200];
   for (const ma of mas) {
       if (Math.abs(price - ma) < retestThreshold) {
-          if ((trendDirection === 'buy' && price > ma) || (trendDirection === 'sell' && price < ma)) {
-            rawSrRetest = 1.0; // Price is bouncing off the MA in the trend direction
-          } else {
-            rawSrRetest = 0.5; // Price is near the MA but fighting it
-          }
+          // Trend is 'buy', price is above MA, and bouncing off it
+          if (trendDirection === 'buy' && price > ma) rawSrRetest = 1.0;
+          // Trend is 'sell', price is below MA, and bouncing off it
+          else if (trendDirection === 'sell' && price < ma) rawSrRetest = 1.0;
+          // Price is near MA but fighting it (e.g., trend is buy but price is below)
+          else rawSrRetest = 0.5;
           break; // Stop after finding the first retest
       }
   }
 
   // 5. Price Structure
   let rawPriceStructure = 0;
-  const diDiff = pdi - mdi;
-  // If trend is buy, we want PDI > MDI. If sell, MDI > PDI.
-  if ((trendDirection === 'buy' && diDiff > 0) || (trendDirection === 'sell' && diDiff < 0)) {
-    // Normalize score based on the difference, capping at a reasonable value like 30
-    rawPriceStructure = Math.min(Math.abs(diDiff) / 30, 1.0);
+  const diDiff = Math.abs(pdi - mdi);
+  const correctDirection = (trendDirection === 'buy' && pdi > mdi) || (trendDirection === 'sell' && mdi > pdi);
+  if (correctDirection) {
+      // Score from DI difference of 5 to 35
+      rawPriceStructure = Math.min(Math.max(diDiff - 5, 0) / 30, 1.0);
   }
   
   // 6. ATR/Volatility
@@ -150,11 +152,12 @@ export const calculateDScore = (data: ForexData, index: number, liveStrengthData
   // Target moderate volatility (0.3% - 1.0%) as ideal for trends
   if (volatilityPercentage >= 0.003 && volatilityPercentage <= 0.01) {
     rawAtrVolatility = 1.0;
-  } else if (volatilityPercentage > 0.01) { // High volatility can be risky
+  } else if (volatilityPercentage > 0.01 && volatilityPercentage < 0.02) { // High volatility can be risky
     rawAtrVolatility = 0.5;
-  } else { // Low volatility means no movement
+  } else if (volatilityPercentage > 0.001) { // Low but not dead
     rawAtrVolatility = 0.25;
   }
+
 
   // 7. Market Regime Fit
   let rawMarketRegimeFit = 0;
@@ -176,8 +179,12 @@ export const calculateDScore = (data: ForexData, index: number, liveStrengthData
   let rawCurrencyStrength = 0;
   if (baseStrengthData && quoteStrengthData) {
     const strengthDiff = baseStrengthData.strength - quoteStrengthData.strength; // positive if base is stronger
-    if ((trendDirection === 'buy' && strengthDiff > 2) || (trendDirection === 'sell' && strengthDiff < -2)) {
-        rawCurrencyStrength = Math.min(Math.abs(strengthDiff) / 5.0, 1.0); // Normalize against a significant diff of 5
+    const strengthDiffAbs = Math.abs(strengthDiff);
+    
+    // Check if strength direction matches trend direction
+    if ((trendDirection === 'buy' && strengthDiff > 0) || (trendDirection === 'sell' && strengthDiff < 0)) {
+        // Score from a difference of 2 up to 7
+        rawCurrencyStrength = Math.min(Math.max(strengthDiffAbs - 2, 0) / 5.0, 1.0);
     }
   }
 
