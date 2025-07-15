@@ -138,9 +138,10 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
             <TableBody>
               {sortedData.map((item) => {
                 const signal = signalConfig[item.signal];
+                const isRowOpen = openRow === item.id;
                 return (
                    <React.Fragment key={item.id}>
-                      <TableRow onClick={() => setOpenRow(openRow === item.id ? null : item.id)} className="cursor-pointer">
+                      <TableRow onClick={() => setOpenRow(isRowOpen ? null : item.id)} className="cursor-pointer" data-state={isRowOpen ? 'open' : 'closed'}>
                         <TableCell>
                           <div className="font-medium">{item.pair}</div>
                           <div className={cn("text-xs", item.change >= 0 ? 'text-green-400' : 'text-red-400')}>
@@ -164,7 +165,7 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
                           </div>
                         </TableCell>
                       </TableRow>
-                      {openRow === item.id && (
+                      {isRowOpen && (
                         <TableRow className="bg-muted/50 hover:bg-muted/50">
                             <TableCell colSpan={6} className="p-0">
                                 <div className="p-4 grid grid-cols-2 gap-x-8 gap-y-2">
