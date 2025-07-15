@@ -15,54 +15,77 @@ export const calculateDScore = (data: ForexData, index: number): DScore => {
   const sma50 = data.sma50?.[0]?.sma;
   const sma100 = data.sma100?.[0]?.sma;
   const sma200 = data.sma200?.[0]?.sma;
-  const adx = data.adx?.[0]?.adx ?? 0;
+  const adxData = data.adx?.[0];
+  const adx = adxData?.adx ?? 0;
+  const pdi = adxData?.pdi ?? 0;
+  const mdi = adxData?.mdi ?? 0;
   const atr = data.atr?.[0]?.atr ?? 0;
 
   // --- START REVISED SCORING LOGIC ---
   
-  // Calculated components
-  const adxStrength = Math.min(adx / 50, 1.0); // Capped at 1.0 for scores > 50
-  const atrVolatility = price > 0 ? Math.min((atr / price) * 100, 1.0) : 0; // ATR as percentage of price, capped at 1
-
-  // Trends based on Price vs. MAs
+  // 1. Trend Alignment (Live)
   const trends = {
       d1: (price && sma50 && price > sma50) ? 'buy' : 'sell',
       w1: (price && sma200 && price > sma200) ? 'buy' : 'sell',
   };
-
   const trendValues = Object.values(trends);
   const buys = trendValues.filter(t => t === 'buy').length;
   const sells = trendValues.filter(t => t === 'sell').length;
-  
-  let trendAlignment = 0;
-  if (buys === 2 || sells === 2) {
-    trendAlignment = 2.0; // Max points for full alignment
-  } else {
-    trendAlignment = 0.5; // Minimal points for mixed alignment
-  }
+  let trendAlignment = (buys === 2 || sells === 2) ? 2.0 : 0.5;
 
+  // 2. ADX Strength (Live)
+  const adxStrength = Math.min(adx / 50, 1.0);
 
-  // MA Convergence calculation
+  // 3. MA Convergence (Live)
   let maConvergence = 0;
   if (price && sma50 && sma100 && sma200) {
       const isUptrend = price > sma50 && sma50 > sma100 && sma100 > sma200;
       const isDowntrend = price < sma50 && sma50 < sma100 && sma100 < sma200;
-
-      if (isUptrend || isDowntrend) {
-          maConvergence = 1.5; // Full points for perfect alignment
-      } else {
+      if (isUptrend || isDowntrend) maConvergence = 1.5;
+      else {
           const uptrendPartial = (price > sma50 && sma50 > sma100) || (sma50 > sma100 && sma100 > sma200);
           const downtrendPartial = (price < sma50 && sma50 < sma100) || (sma50 < sma100 && sma100 < sma200);
-          if (uptrendPartial || downtrendPartial) {
-              maConvergence = 0.75; // Half points for partial alignment
-          }
+          if (uptrendPartial || downtrendPartial) maConvergence = 0.75;
       }
   }
 
-  // More deterministic (though still placeholder) logic for other factors
-  const priceStructure = adx > 25 ? 0.8 : 0.4; // Better structure in trending markets
-  const srRetest = (maConvergence > 1.0) ? 1.2 : 0.6; // Higher chance of retest in converged markets
-  const marketRegimeFit = (adx > 25 && trendAlignment > 1.5) ? 1.8 : 0.7; // Better fit if trend is strong
+  // 4. ATR/Volatility (Live)
+  const atrVolatility = price > 0 ? Math.min((atr / price) * 100, 1.0) : 0;
+
+  // 5. S/R Retest (NEW LOGIC)
+  let srRetest = 0;
+  if (price && atr > 0) {
+      const retestThreshold = atr * 0.5; // Price must be within 50% of ATR to be a retest
+      if ((sma50 && Math.abs(price - sma50) < retestThreshold) ||
+          (sma100 && Math.abs(price - sma100) < retestThreshold) ||
+          (sma200 && Math.abs(price - sma200) < retestThreshold)) {
+          srRetest = 1.5; // Full points if retesting a major MA
+      }
+  }
+
+  // 6. Price Structure (NEW LOGIC)
+  let priceStructure = 0;
+  if (pdi > 0 && mdi > 0) {
+      const totalDi = pdi + mdi;
+      const diDiff = Math.abs(pdi - mdi);
+      // Score based on how dominant one DI is over the other.
+      // A large difference indicates a clearer trend structure.
+      priceStructure = Math.min(diDiff / totalDi * 2.0, 1.0); // Max score of 1.0
+  }
+
+  // 7. Market Regime Fit (NEW LOGIC)
+  let marketRegimeFit = 0;
+  const isTrendingRegime = adx > 25;
+  const isAlignedTrend = trendAlignment === 2.0;
+  if (isTrendingRegime && isAlignedTrend) {
+      marketRegimeFit = 2.0; // Perfect fit: high ADX and aligned trends
+  } else if (isTrendingRegime && !isAlignedTrend) {
+      marketRegimeFit = 0.5; // Bad fit: trending but MAs are not aligned
+  } else if (!isTrendingRegime && !isAlignedTrend) {
+      marketRegimeFit = 1.0; // Ok fit: not trending, and MAs are mixed (ranging market)
+  }
+
+  // --- END REVISED SCORING LOGIC ---
 
   const totalScore = trendAlignment + adxStrength + atrVolatility + srRetest + priceStructure + marketRegimeFit + maConvergence;
   
@@ -72,7 +95,6 @@ export const calculateDScore = (data: ForexData, index: number): DScore => {
     if (sells > buys) signal = 'Sell';
   }
 
-  // Calculate active positions for this pair
   const activePositions = activeBotsData.filter(bot => bot.pair === data.pair && bot.status === 'active').length;
 
   return {
