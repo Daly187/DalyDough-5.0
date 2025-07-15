@@ -23,7 +23,7 @@ export const calculateDScore = (data: ForexData, index: number): DScore => {
   const adxStrength = Math.min(adx / 50, 1.0); // Capped at 1.0 for scores > 50
   
   const atr = data.atr?.[0]?.atr ?? 0;
-  const atrVolatility = Math.min( (atr / price) * 100, 1.0); // ATR as percentage of price, capped at 1
+  const atrVolatility = price > 0 ? Math.min( (atr / price) * 100, 1.0) : 0; // ATR as percentage of price, capped at 1
 
   const trends = {
       h4: Math.random() > 0.5 ? 'buy' : 'sell',
@@ -48,7 +48,7 @@ export const calculateDScore = (data: ForexData, index: number): DScore => {
   const sma100 = data.sma100?.[0]?.sma;
   const sma200 = data.sma200?.[0]?.sma;
 
-  if (sma50 && sma100 && sma200) {
+  if (price && sma50 && sma100 && sma200) {
       const isUptrend = price > sma50 && sma50 > sma100 && sma100 > sma200;
       const isDowntrend = price < sma50 && sma50 < sma100 && sma100 < sma200;
 
@@ -74,7 +74,7 @@ export const calculateDScore = (data: ForexData, index: number): DScore => {
   return {
     id: `${index + 1}`,
     pair: data.pair,
-    price: quote?.price ?? 0,
+    price: price,
     change: quote?.change ?? 0,
     changesPercentage: quote?.changesPercentage ?? 0,
     dScore: totalScore,
