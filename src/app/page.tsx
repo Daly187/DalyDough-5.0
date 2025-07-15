@@ -1,12 +1,21 @@
 import MarketOverviewTable from '@/components/dashboard/market-overview-table';
 import SystemStatus from '@/components/dashboard/system-status';
-import { dScoreData, activeBotsData, botConfigurationData, aiReentriesData } from '@/lib/data';
+import { activeBotsData, botConfigurationData, aiReentriesData, calculateDScore, pairs } from '@/lib/data';
 import ActiveBotsTable from '@/components/bots/active-bots-table';
 import BotConfiguration from '@/components/autobot/bot-configuration';
 import AiOptimizedReentries from '@/components/autobot/ai-optimized-reentries';
 import { Rocket } from 'lucide-react';
+import { getForexData } from '@/lib/fmp';
+import { DScore } from '@/lib/types';
 
-export default function DashboardPage() {
+
+export default async function DashboardPage() {
+  const forexData = await getForexData(pairs);
+
+  const dScoreData: DScore[] = forexData.map((data, index) => 
+    calculateDScore(data, index)
+  );
+
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
       <SystemStatus />

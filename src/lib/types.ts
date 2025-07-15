@@ -55,18 +55,6 @@ export type ApiKey = {
   key: string;
 };
 
-export type BotScannerData = {
-    minDSize: number;
-    maxDSize: number;
-    stopScore: number;
-    stopLoss: number;
-    takeProfit: number;
-    maxBotsPerPair: number;
-    scanInterval: number;
-    autoLaunch: boolean;
-    pairs: string[];
-}
-
 export type BotConfigurationData = {
   botType: string;
   lotSize: number;
@@ -132,3 +120,58 @@ export type ExposureData = {
     exposure: number;
     type: 'long' | 'short';
 }
+
+// FMP Types
+type FMPQuote = {
+    symbol: string;
+    name: string;
+    price: number;
+    changesPercentage: number;
+    change: number;
+    dayLow: number;
+    dayHigh: number;
+    yearHigh: number;
+    yearLow: number;
+    marketCap: number | null;
+    priceAvg50: number;
+    priceAvg200: number;
+    exchange: string;
+    volume: number;
+    avgVolume: number;
+    open: number;
+    previousClose: number;
+    eps: number | null;
+    pe: number | null;
+    earningsAnnouncement: string | null;
+    sharesOutstanding: number | null;
+    timestamp: number;
+};
+
+type FMPADX = {
+    date: string;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume: number;
+    adx: number;
+    pdi: number;
+    mdi: number;
+};
+
+type FMPATR = {
+    date: string;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume: number;
+    atr: number;
+};
+
+export type ForexData = {
+    pair: string;
+    quote: FMPQuote[] | null;
+    adx: FMPADX[] | null;
+    atr: FMPATR[] | null;
+};

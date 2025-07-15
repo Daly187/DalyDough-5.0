@@ -1,4 +1,4 @@
-import type { DScore, Bot, EquityData, RiskMetric, ApiKey, BotScannerData, CotData, NewsEvent, BotConfigurationData, AIReentry, MarketRegime, ExposureData } from './types';
+import type { DScore, Bot, EquityData, RiskMetric, ApiKey, CotData, NewsEvent, BotConfigurationData, AIReentry, MarketRegime, ExposureData, ForexData } from './types';
 
 const getGrade = (score: number): 'A' | 'B' | 'C' => {
   if (score >= 8.0) return 'A';
@@ -6,17 +6,24 @@ const getGrade = (score: number): 'A' | 'B' | 'C' => {
   return 'C';
 };
 
-const pairs = ['AUD/CAD', 'AUD/CHF', 'AUD/JPY', 'AUD/NZD', 'AUD/USD', 'CAD/JPY', 'CHF/JPY', 'EUR/CAD', 'EUR/CHF', 'EUR/GBP', 'EUR/JPY', 'EUR/NZD', 'EUR/TRY', 'EUR/USD', 'GBP/AUD', 'GBP/CAD', 'GBP/CHF', 'GBP/JPY', 'GBP/USD', 'NZD/CAD', 'NZD/CHF', 'NZD/JPY', 'NZD/USD', 'USD/CAD', 'USD/CHF', 'USD/JPY', 'USD/TRY', 'USD/ZAR', 'XAU/USD'];
+export const pairs = ['AUD/CAD', 'AUD/CHF', 'AUD/JPY', 'AUD/NZD', 'AUD/USD', 'CAD/JPY', 'CHF/JPY', 'EUR/CAD', 'EUR/CHF', 'EUR/GBP', 'EUR/JPY', 'EUR/NZD', 'EUR/TRY', 'EUR/USD', 'GBP/AUD', 'GBP/CAD', 'GBP/CHF', 'GBP/JPY', 'GBP/USD', 'NZD/CAD', 'NZD/CHF', 'NZD/JPY', 'NZD/USD', 'USD/CAD', 'USD/CHF', 'USD/JPY', 'USD/TRY', 'USD/ZAR', 'XAU/USD'];
 
-const generateRandomDScore = (pair: string, index: number): DScore => {
+export const calculateDScore = (data: ForexData, index: number): DScore => {
+  // Mocked components for now
   const cotBias = Math.random() * 1.5;
-  const trendAlignment = Math.random() * 2.0;
-  const adx = Math.random() * 100;
-  const adxStrength = Math.min(adx / 50, 1.0); // Capped at 1.0 for scores > 50
-  const atrVolatility = Math.random() * 1.0;
   const srRetest = Math.random() * 1.5;
   const priceStructure = Math.random() * 1.0;
   const marketRegimeFit = Math.random() * 2.0;
+
+  // Calculated components
+  const adx = data.adx?.[0]?.adx ?? 0;
+  const adxStrength = Math.min(adx / 50, 1.0); // Capped at 1.0 for scores > 50
+  
+  const atr = data.atr?.[0]?.atr ?? 0;
+  const price = data.quote?.[0]?.price ?? 1;
+  const atrVolatility = Math.min( (atr / price) * 100, 1.0); // ATR as percentage of price, capped at 1
+
+  const trendAlignment = Math.random() * 2.0; // Keep this mocked for now
 
   const totalScore = cotBias + trendAlignment + adxStrength + atrVolatility + srRetest + priceStructure + marketRegimeFit;
   
@@ -27,7 +34,7 @@ const generateRandomDScore = (pair: string, index: number): DScore => {
 
   return {
     id: `${index + 1}`,
-    pair,
+    pair: data.pair,
     dScore: totalScore,
     grade: getGrade(totalScore),
     cotBias,
@@ -37,21 +44,18 @@ const generateRandomDScore = (pair: string, index: number): DScore => {
     priceStructure,
     atrVolatility,
     marketRegimeFit,
-    regimeMultiplier: Math.random() * 0.4 + 0.8,
-    cot: Math.floor(Math.random() * 150 - 75),
+    regimeMultiplier: Math.random() * 0.4 + 0.8, // Mocked
+    cot: Math.floor(Math.random() * 150 - 75), // Mocked
     adx: Math.floor(adx),
     signal,
-    positions: Math.floor(Math.random() * 6),
-    trends: {
+    positions: Math.floor(Math.random() * 6), // Mocked
+    trends: { // Mocked
       h4: Math.random() > 0.5 ? 'buy' : 'sell',
       d1: Math.random() > 0.5 ? 'buy' : 'sell',
       w1: Math.random() > 0.5 ? 'buy' : 'sell',
     },
   };
 };
-
-
-export const dScoreData: DScore[] = pairs.map(generateRandomDScore);
 
 export const activeBotsData: Bot[] = [
   { id: 'bot1', pair: 'EUR/USD', strategy: 'DCA Grid', status: 'active', profit_loss: 152.3, drawdown: 25.5, entry_time: '2024-05-20T10:30:00Z', d_score_entry: 8.2, stopLoss: 50, takeProfit: 100 },
@@ -99,24 +103,12 @@ export const riskMetricsData: RiskMetric[] = [
 ];
 
 export const apiKeysData: ApiKey[] = [
-    { id: 'fmp', name: 'Financial Modeling Prep', key: 'RUTyEslPzCs5tHMBZUUxCr2no36EV45Q' },
+    { id: 'fmp', name: 'Financial Modeling Prep', key: process.env.FMP_API_KEY || 'RUTyEslPzCs5tHMBZUUxCr2no36EV45Q' },
     { id: 'cftc', name: 'CFTC API URL', key: 'https://www.cftc.gov/files/dea/newcot/' },
     { id: 'google', name: 'Google API Key', key: 'AIzaSyDjnRhuk8OkL12nwepY_YgeoVRS6VFVGGc' },
     { id: 'supabase_prod_url', name: 'Supabase URL (Prod)', key: 'https://rptysuvzufliibffzqgk.supabase.co' },
     { id: 'supabase_prod_anon', name: 'Supabase Anon Key (Prod)', key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' },
 ];
-
-export const botScannerData: BotScannerData = {
-    minDSize: 7.5,
-    maxDSize: 10.0,
-    stopScore: 6.0,
-    stopLoss: 20,
-    takeProfit: 40,
-    maxBotsPerPair: 2,
-    scanInterval: 5,
-    autoLaunch: true,
-    pairs,
-};
 
 export const botConfigurationData: BotConfigurationData = {
     botType: 'Dynamic DCA',
