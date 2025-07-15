@@ -10,7 +10,13 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
+// Robust check to ensure all required environment variables are present.
+if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+  console.error('Firebase config is missing. Check your .env file and ensure NEXT_PUBLIC_ variables are set.');
+}
+
 // Initialize Firebase
+// The getApps().length check prevents re-initializing the app on hot reloads.
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
