@@ -15,7 +15,6 @@ import Header from '@/components/header';
 import { useAuth } from '@/context/auth-context';
 import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
-import ProtectedRoute from '@/components/auth/protected-route';
 import { Skeleton } from '@/components/ui/skeleton';
 
 function AppLayoutContent({
@@ -62,7 +61,18 @@ function AppLayoutContent({
                   <LogOut className="h-4 w-4" />
               </Button>
             </div>
-          ) : null}
+          ) : (
+             <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarImage src={`https://placehold.co/40x40.png`} alt='Guest User' />
+                  <AvatarFallback>G</AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-foreground">Guest User</span>
+                  <span className="text-xs text-muted-foreground">guest@dalydough.com</span>
+                </div>
+              </div>
+          )}
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
@@ -79,8 +89,6 @@ export default function AppLayout({
   children: React.ReactNode;
 }>) {
   return (
-     <ProtectedRoute>
       <AppLayoutContent>{children}</AppLayoutContent>
-    </ProtectedRoute>
   )
 }
