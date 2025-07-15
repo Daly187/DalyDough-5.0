@@ -108,7 +108,7 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
                 const signal = signalConfig[item.signal];
                 return (
                   <Collapsible asChild key={item.id} open={openRow === item.id} onOpenChange={() => setOpenRow(openRow === item.id ? null : item.id)}>
-                    <>
+                    <React.Fragment>
                       <CollapsibleTrigger asChild>
                         <TableRow className="cursor-pointer">
                           <TableCell>
@@ -158,7 +158,7 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
                           </TableCell>
                         </tr>
                       </CollapsibleContent>
-                    </>
+                    </React.Fragment>
                   </Collapsible>
                 );
               })}
