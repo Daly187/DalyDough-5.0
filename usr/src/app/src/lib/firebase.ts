@@ -1,9 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 
-// This is a critical debugging step.
-console.log("Firebase API Key seen by the app:", process.env.NEXT_PUBLIC_FIREBASE_API_KEY);
-
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
