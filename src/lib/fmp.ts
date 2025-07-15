@@ -1,7 +1,6 @@
 import type { ForexData } from './types';
 
 const BASE_URL = 'https://financialmodelingprep.com/api/v3';
-const API_KEY = process.env.FMP_API_KEY;
 
 async function fetchWithCache<T>(url: string, ttl: number = 300): Promise<T | null> {
     try {
@@ -18,6 +17,22 @@ async function fetchWithCache<T>(url: string, ttl: number = 300): Promise<T | nu
 }
 
 export async function getForexData(pairs: string[]): Promise<ForexData[]> {
+    // Read the API_KEY inside the function to ensure it's available in the server environment.
+    const API_KEY = process.env.FMP_API_KEY;
+    if (!API_KEY) {
+        console.error("FMP_API_KEY is not defined in environment variables.");
+        // Return empty data for all pairs to avoid crashing the app.
+        return pairs.map(pair => ({
+            pair,
+            quote: null,
+            adx: null,
+            atr: null,
+            sma50: null,
+            sma100: null,
+            sma200: null
+        }));
+    }
+
     const promises = pairs.map(async (pair) => {
         const symbol = pair.replace('/', '');
         
