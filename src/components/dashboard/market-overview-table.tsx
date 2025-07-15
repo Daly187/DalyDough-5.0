@@ -25,12 +25,6 @@ interface MarketOverviewTableProps {
 
 type SortKey = keyof DScore;
 
-const gradeColors = {
-  A: 'bg-green-500/20 text-green-400 border-green-500/30',
-  B: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-  C: 'bg-red-500/20 text-red-400 border-red-500/30',
-};
-
 const signalConfig = {
     Buy: { color: "text-green-400", icon: <ArrowUp className="h-4 w-4" />, label: "Allow Buy" },
     Sell: { color: "text-red-400", icon: <ArrowDown className="h-4 w-4" />, label: "Allow Sell" },
@@ -96,7 +90,6 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
               <TableRow>
                 <SortableHeader tkey="pair" label="Pair" />
                 <SortableHeader tkey="dScore" label="D-Score" />
-                <SortableHeader tkey="grade" label="Grade" />
                 <TableHead>Trend (4h/1d/1w)</TableHead>
                 <SortableHeader tkey="trendAlignment" label="Trend Score" />
                 <SortableHeader tkey="adxStrength" label="ADX" />
@@ -119,11 +112,6 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
                             </div>
                           </TableCell>
                           <TableCell className="font-semibold text-lg text-primary">{item.dScore.toFixed(1)}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className={cn("font-bold", gradeColors[item.grade])}>
-                                {item.grade}
-                            </Badge>
-                          </TableCell>
                            <TableCell>
                               <div className="flex items-center gap-2">
                                  <TrendIndicator trend={item.trends.h4} />
@@ -143,7 +131,7 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
                       </CollapsibleTrigger>
                       <CollapsibleContent asChild>
                         <tr className="bg-muted/50 hover:bg-muted/50">
-                          <TableCell colSpan={7} className="p-0">
+                          <TableCell colSpan={6} className="p-0">
                             <div className="p-4">
                                 <h4 className="font-semibold text-sm mb-2 text-foreground">D-Score Breakdown</h4>
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-2 text-xs">
