@@ -180,15 +180,25 @@ export const cotData: CotData[] = [
 
 
 export const newsData: NewsEvent[] = [
-    { id: '1', time: '8:30am', currency: 'USD', impact: 'High', event: 'Core CPI (MoM)', actual: '0.3%', forecast: '0.3%', previous: '0.4%' },
-    { id: '2', time: '8:30am', currency: 'USD', impact: 'High', event: 'CPI (MoM)', actual: '0.3%', forecast: '0.4%', previous: '0.4%' },
-    { id: '3', time: '2:00pm', currency: 'USD', impact: 'High', event: 'FOMC Economic Projections', actual: null, forecast: null, previous: null },
-    { id: '4', time: '2:00pm', currency: 'USD', impact: 'High', event: 'FOMC Statement', actual: null, forecast: null, previous: null },
-    { id: '5', time: '2:00pm', currency: 'USD', impact: 'High', event: 'Federal Funds Rate', actual: '<5.50%', forecast: '<5.50%', previous: '<5.50%' },
-    { id: '6', time: '2:30pm', currency: 'USD', impact: 'High', event: 'FOMC Press Conference', actual: null, forecast: null, previous: null },
-    { id: '7', time: '8:30am', currency: 'CAD', impact: 'Low', event: 'NHPI (MoM)', actual: null, forecast: '0.2%', previous: '0.2%' },
-    { id: '8', time: '5:00pm', currency: 'NZD', impact: 'Medium', event: 'Visitor Arrivals (MoM)', actual: null, forecast: null, previous: '-2.9%' },
+  // Monday
+  { id: '1', date: 'MONDAY, JUL 15', time: '8:30am', currency: 'CAD', impact: 'Medium', event: 'Manufacturing Sales (MoM)', actual: null, forecast: '1.1%', previous: '1.1%' },
+  { id: '2', date: 'MONDAY, JUL 15', time: '8:30am', currency: 'USD', impact: 'Low', event: 'Empire State Manufacturing Index', actual: null, forecast: '-2.1', previous: '-6.0' },
+  // Tuesday
+  { id: '3', date: 'TUESDAY, JUL 16', time: '8:30am', currency: 'USD', impact: 'High', event: 'Core Retail Sales (MoM)', actual: null, forecast: '0.2%', previous: '0.2%' },
+  { id: '4', date: 'TUESDAY, JUL 16', time: '8:30am', currency: 'USD', impact: 'High', event: 'Retail Sales (MoM)', actual: null, forecast: '0.3%', previous: '0.1%' },
+  { id: '5', date: 'TUESDAY, JUL 16', time: '9:15am', currency: 'USD', impact: 'Medium', event: 'Industrial Production (MoM)', actual: null, forecast: '0.1%', previous: '0.9%' },
+  { id: '6', date: 'TUESDAY, JUL 16', time: '4:00pm', currency: 'USD', impact: 'Low', event: 'TIC Long-Term Purchases', actual: null, forecast: null, previous: '$123.1B' },
+  // Wednesday
+  { id: '7', date: 'WEDNESDAY, JUL 17', time: '8:30am', currency: 'USD', impact: 'Medium', event: 'Building Permits', actual: null, forecast: '1.45M', previous: '1.39M' },
+  { id: '8', date: 'WEDNESDAY, JUL 17', time: '10:30am', currency: 'USD', impact: 'Low', event: 'Crude Oil Inventories', actual: null, forecast: '-2.1M', previous: '-2.5M' },
+  // Thursday
+  { id: '9', date: 'THURSDAY, JUL 18', time: '8:30am', currency: 'USD', impact: 'High', event: 'Unemployment Claims', actual: null, forecast: '239K', previous: '242K' },
+  { id: '10', date: 'THURSDAY, JUL 18', time: '8:30am', currency: 'USD', impact: 'Medium', event: 'Philly Fed Manufacturing Index', actual: null, forecast: '4.8', previous: '4.5' },
+  // Friday
+  { id: '11', date: 'FRIDAY, JUL 19', time: '10:00am', currency: 'USD', impact: 'Low', event: 'Existing Home Sales', actual: null, forecast: '4.12M', previous: '4.14M' },
+  { id: '12', date: 'FRIDAY, JUL 19', time: '2:00pm', currency: 'USD', impact: 'High', event: 'FOMC Member Barkin Speaks', actual: null, forecast: null, previous: null },
 ];
+
 
 
 export const marketRegimeData: MarketRegime[] = pairs.map(pair => ({

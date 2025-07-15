@@ -107,6 +107,7 @@ export type CotData = {
 
 export type NewsEvent = {
   id: string;
+  date: string;
   time: string;
   currency: string;
   impact: 'High' | 'Medium' | 'Low';

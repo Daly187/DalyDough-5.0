@@ -25,12 +25,18 @@ export default function NewsCalendar({ events, currencies, impacts }: NewsCalend
   const [selectedCurrency, setSelectedCurrency] = React.useState('all');
   const [selectedImpact, setSelectedImpact] = React.useState('all');
 
-  const filteredEvents = React.useMemo(() => {
-    return events.filter(event => {
+  const groupedEvents = React.useMemo(() => {
+    const filteredEvents = events.filter(event => {
       const currencyMatch = selectedCurrency === 'all' || event.currency === selectedCurrency;
       const impactMatch = selectedImpact === 'all' || event.impact === selectedImpact;
       return currencyMatch && impactMatch;
     });
+
+    return filteredEvents.reduce((acc, event) => {
+      (acc[event.date] = acc[event.date] || []).push(event);
+      return acc;
+    }, {} as Record<string, NewsEvent[]>);
+
   }, [events, selectedCurrency, selectedImpact]);
 
   return (
@@ -59,6 +65,7 @@ export default function NewsCalendar({ events, currencies, impacts }: NewsCalend
             <Table>
                 <TableHeader>
                     <TableRow>
+                        <TableHead className="w-[200px]">Date</TableHead>
                         <TableHead>Time</TableHead>
                         <TableHead>Currency</TableHead>
                         <TableHead>Impact</TableHead>
@@ -69,21 +76,30 @@ export default function NewsCalendar({ events, currencies, impacts }: NewsCalend
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {filteredEvents.map((event) => (
-                    <TableRow key={event.id}>
-                        <TableCell>{event.time}</TableCell>
-                        <TableCell>{event.currency}</TableCell>
-                        <TableCell>
-                        <Badge variant="outline" className={cn(impactColors[event.impact])}>
-                            {event.impact}
-                        </Badge>
-                        </TableCell>
-                        <TableCell className="font-medium">{event.event}</TableCell>
-                        <TableCell>{event.actual ?? '-'}</TableCell>
-                        <TableCell>{event.forecast ?? '-'}</TableCell>
-                        <TableCell>{event.previous ?? '-'}</TableCell>
-                    </TableRow>
-                    ))}
+                  {Object.keys(groupedEvents).map(date => (
+                      <React.Fragment key={date}>
+                          {groupedEvents[date].map((event, index) => (
+                              <TableRow key={event.id}>
+                                  {index === 0 && (
+                                      <TableCell rowSpan={groupedEvents[date].length} className="align-top font-semibold text-foreground">
+                                          {date}
+                                      </TableCell>
+                                  )}
+                                  <TableCell>{event.time}</TableCell>
+                                  <TableCell>{event.currency}</TableCell>
+                                  <TableCell>
+                                      <Badge variant="outline" className={cn(impactColors[event.impact])}>
+                                          {event.impact}
+                                      </Badge>
+                                  </TableCell>
+                                  <TableCell className="font-medium">{event.event}</TableCell>
+                                  <TableCell>{event.actual ?? '–'}</TableCell>
+                                  <TableCell>{event.forecast ?? '–'}</TableCell>
+                                  <TableCell>{event.previous ?? '–'}</TableCell>
+                              </TableRow>
+                          ))}
+                      </React.Fragment>
+                  ))}
                 </TableBody>
             </Table>
         </ScrollArea>
