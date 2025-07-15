@@ -6,11 +6,11 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Link, Download, KeyRound, RefreshCw } from "lucide-react";
+import { Download, KeyRound, RefreshCw, CheckCircle2, ShieldCheck, List } from "lucide-react";
 
 export default function AccountManagement() {
     const [apiKey, setApiKey] = React.useState('');
+    const [isConnected, setIsConnected] = React.useState(true); // Mock status
 
     const generateApiKey = () => {
         const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -26,50 +26,8 @@ export default function AccountManagement() {
     }, []);
 
     return (
-        <div className="grid gap-8 md:grid-cols-2">
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 font-headline">
-                        <Link className="h-5 w-5" />
-                        Link Trading Account
-                    </CardTitle>
-                    <CardDescription>Connect your MT4 or MT5 account to start trading.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="platform">Platform</Label>
-                        <Select>
-                            <SelectTrigger id="platform">
-                                <SelectValue placeholder="Select Platform" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="mt4">MetaTrader 4</SelectItem>
-                                <SelectItem value="mt5">MetaTrader 5</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="accountId">Account ID</Label>
-                        <Input id="accountId" placeholder="Enter your account ID" />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="password">Password</Label>
-                        <Input id="password" type="password" placeholder="Enter your account password" />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="server">Server</Label>
-                        <Input id="server" placeholder="Enter your broker's server" />
-                    </div>
-                </CardContent>
-                <CardFooter>
-                    <Button className="w-full">
-                        <Link className="h-4 w-4 mr-2" />
-                        Connect Account
-                    </Button>
-                </CardFooter>
-            </Card>
-
-            <Card>
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+            <Card className="lg:col-span-1">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 font-headline">
                         <Download className="h-5 w-5" />
@@ -89,17 +47,6 @@ export default function AccountManagement() {
                             </Button>
                         </div>
                     </div>
-                    <div className="text-xs text-muted-foreground p-4 bg-muted/50 rounded-lg space-y-2">
-                        <p className="font-semibold">Installation Steps:</p>
-                        <ol className="list-decimal list-inside space-y-1">
-                            <li>Download the EA file for your platform (MT4/MT5).</li>
-                            <li>In MetaTrader, go to `File > Open Data Folder`.</li>
-                            <li>Place the `.mq5` file in the `MQL5/Experts` folder.</li>
-                            <li>Open the `.mq5` file in MetaEditor and click "Compile".</li>
-                            <li>Refresh your Expert Advisors list in the Navigator panel.</li>
-                            <li>Drag the EA onto a chart and enter the unique key above when prompted.</li>
-                        </ol>
-                    </div>
                 </CardContent>
                 <CardFooter className="grid grid-cols-2 gap-4">
                     <Button variant="secondary" className="w-full" disabled>
@@ -113,6 +60,49 @@ export default function AccountManagement() {
                         </a>
                     </Button>
                 </CardFooter>
+            </Card>
+
+             <Card className="lg:col-span-1">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 font-headline">
+                        <ShieldCheck className="h-5 w-5" />
+                        Connection Status
+                    </CardTitle>
+                    <CardDescription>Monitor the link between DalyDough and your MT5.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                     <div className="flex items-center justify-center flex-col gap-2 p-4 bg-muted rounded-lg">
+                        <CheckCircle2 className="h-12 w-12 text-green-500" />
+                        <p className="font-semibold text-lg text-foreground">Connected</p>
+                        <p className="text-sm text-muted-foreground">Last heartbeat: just now</p>
+                    </div>
+                    <div className="text-xs text-muted-foreground space-y-2">
+                        <p className="font-semibold">Connection Steps:</p>
+                        <ol className="list-decimal list-inside space-y-1">
+                            <li>Download the EA file for your platform (MT4/MT5).</li>
+                            <li>In MetaTrader, place the `.mq5` file in the `MQL5/Experts` folder and compile it.</li>
+                            <li>Drag the compiled EA onto any chart.</li>
+                            <li>In the EA's "Inputs" tab, paste your unique EA key.</li>
+                            <li>Ensure "Allow WebRequest" is enabled in the EA's "Common" tab.</li>
+                            <li>The status above should turn to "Connected".</li>
+                        </ol>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card className="lg:col-span-1">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 font-headline">
+                        <List className="h-5 w-5" />
+                        Connected Accounts
+                    </CardTitle>
+                    <CardDescription>A list of your currently linked trading accounts.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-center justify-center text-center text-sm text-muted-foreground h-48 border-2 border-dashed rounded-lg">
+                        <p>No accounts have been linked via the EA yet.</p>
+                    </div>
+                </CardContent>
             </Card>
         </div>
     );
