@@ -1,15 +1,24 @@
 import type { ForexData } from './types';
 
-const BASE_URL = 'https://financialmodelingprep.com/api/v3';
+// Use a relative path for the proxied API route
+const BASE_URL = '/api/fmp';
 
 async function fetchWithCache<T>(url: string, ttl: number = 300): Promise<T | null> {
     try {
         const res = await fetch(url, { next: { revalidate: ttl } });
         if (!res.ok) {
             console.error(`Failed to fetch ${url}: ${res.statusText}`);
+            const errorBody = await res.text();
+            console.error('Error body:', errorBody);
             return null;
         }
-        return await res.json() as T;
+        const data = await res.json();
+        // The free FMP plan sometimes returns an error object with a success response code
+        if (data['Error Message']) {
+            console.error(`API Error for ${url}: ${data['Error Message']}`);
+            return null;
+        }
+        return data as T;
     } catch (error) {
         console.error(`Error fetching ${url}:`, error);
         return null;
@@ -17,11 +26,9 @@ async function fetchWithCache<T>(url: string, ttl: number = 300): Promise<T | nu
 }
 
 export async function getForexData(pairs: string[]): Promise<ForexData[]> {
-    // Using the provided API key directly to resolve authorization issues.
     const API_KEY = "RUTyEslPzCs5tHMBZUUxCr2no36EV45Q";
     if (!API_KEY) {
         console.error("FMP_API_KEY is not defined.");
-        // Return empty data for all pairs to avoid crashing the app.
         return pairs.map(pair => ({
             pair,
             quote: null,
@@ -36,7 +43,6 @@ export async function getForexData(pairs: string[]): Promise<ForexData[]> {
     const promises = pairs.map(async (pair) => {
         const symbol = pair.replace('/', '');
         
-        // FMP uses 'XAUUSD' for Gold
         const apiSymbol = symbol === 'XAUUSD' ? symbol : symbol;
         
         const quotePromise = fetchWithCache(`${BASE_URL}/quote/${apiSymbol}?apikey=${API_KEY}`);
