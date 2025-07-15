@@ -3,6 +3,9 @@ import NewsCalendar from "@/components/news/news-calendar";
 import { newsData } from "@/lib/data";
 
 export default function NewsPage() {
+  const currencies = Array.from(new Set(newsData.map(event => event.currency)));
+  const impacts = ['High', 'Medium', 'Low'];
+
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
       <div className="flex items-center">
@@ -16,7 +19,7 @@ export default function NewsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <NewsCalendar events={newsData} />
+          <NewsCalendar events={newsData} currencies={currencies} impacts={impacts} />
         </CardContent>
       </Card>
     </main>
