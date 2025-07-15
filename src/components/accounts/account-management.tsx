@@ -54,7 +54,7 @@ export default function AccountManagement() {
                         Download for MT4
                     </Button>
                      <Button asChild variant="secondary" className="w-full">
-                        <a href="/downloads/DalyDoughConnector.mq5" download>
+                        <a href="/downloads/DalyDoughEA.mq5" download>
                             <Download className="h-4 w-4 mr-2" />
                             Download for MT5
                         </a>
