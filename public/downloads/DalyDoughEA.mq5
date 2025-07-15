@@ -1,22 +1,16 @@
 //+------------------------------------------------------------------+
 //|                                           DalyDoughEA.mq5 |
 //|                      Copyright 2024, DalyDough Team |
-//|                                     https://dalydough.com |
+//|                                      https://dalydough.com |
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2024, DalyDough Team"
 #property link      "https://dalydough.com"
 #property version   "1.5"
-#property description "Connects MetaTrader 5 to the DalyDough web application."
 
 //--- EA inputs
-input string ApiKey = "PASTE_YOUR_KEY_FROM_DALYDOUGH_APP_HERE"; // Your unique key from the Accounts page
-
-// The base URL of your DalyDough application. 
-// For local testing, use a tunneling service like ngrok to expose your local server.
-// Example: https://your-ngrok-url.io
-input string AppBaseURL = "http://localhost:9002"; 
-
-input int    RefreshSeconds = 5; // How often to check for new commands in seconds
+input string ApiKey             = "PASTE_YOUR_KEY_FROM_DALYDOUGH_APP_HERE";         // Your unique key from the Accounts page
+input string API_ENDPOINT       = "https://your-app-name.web.app/api/bot-commands"; // Paste your deployed Firebase App URL here
+input int    JsonRefreshSeconds = 15;                                              // How often to check for new commands
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
@@ -24,11 +18,11 @@ input int    RefreshSeconds = 5; // How often to check for new commands in secon
 int OnInit()
   {
 //--- Print program info for debugging
-   Print("DalyDough Connector v", MQL5InfoString(MQL5_PROGRAM_VERSION), " starting...");
-   Print("Connecting to: ", AppBaseURL);
+   Print("DalyDough Connector Starting...");
+   Print("Target API Endpoint: ", API_ENDPOINT);
    
 //--- Set timer to fetch commands
-   EventSetTimer(RefreshSeconds);
+   EventSetTimer(JsonRefreshSeconds);
    Comment("DalyDough Status: Initialized");
    return(INIT_SUCCEEDED);
   }
@@ -41,7 +35,6 @@ void OnDeinit(const int reason)
 //--- Kill the timer
    EventKillTimer();
    Comment("DalyDough Status: Stopped");
-   Print("DalyDough Connector stopped. Reason: ", reason);
   }
 
 //+------------------------------------------------------------------+
@@ -60,17 +53,17 @@ void FetchCommands()
   {
    char post_data[], result_data[];
    string result_headers;
-   string url = AppBaseURL + "/api/bot-commands?key=" + ApiKey;
+   string url = API_ENDPOINT + "?key=" + ApiKey;
    
 //--- Send GET request
    ResetLastError();
-   long retcode = WebRequest("GET", url, NULL, NULL, 5000, post_data, 0, result_data, result_headers);
+   int retcode = WebRequest("GET", url, NULL, NULL, 5000, post_data, 0, result_data, result_headers);
    
 //--- Handle response
    if(retcode == -1)
      {
       Print("WebRequest failed. Error code: ", GetLastError());
-      Comment("DalyDough Status: Connection Error");
+      Comment("DalyDough Status: Connection Error. Check URL and API Key.");
      }
    else if(retcode == 200)
      {
