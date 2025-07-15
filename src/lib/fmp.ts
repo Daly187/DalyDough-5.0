@@ -4,17 +4,18 @@ import type { ForexData } from './types';
 // When running on the server, we can call the API directly.
 // On the client, we use the proxy to avoid CORS and hide the key.
 const IS_SERVER = typeof window === 'undefined';
-const FMP_API_KEY = process.env.FMP_API_KEY;
+const FMP_API_KEY = process.env.NEXT_PUBLIC_FMP_API_KEY;
 const BASE_URL = IS_SERVER 
     ? `https://financialmodelingprep.com/api/v3`
     : '/api/fmp';
 
 async function fetchWithCache<T>(url: string, ttl: number = 300): Promise<T | null> {
-    // Append API key for direct server-side calls
+    // Append API key for direct server-side calls if not using proxy
     const finalUrl = IS_SERVER ? `${url}?apikey=${FMP_API_KEY}` : url;
 
     try {
         const res = await fetch(finalUrl, { 
+            // Disable cache in development to see changes, use revalidation in production.
             cache: process.env.NODE_ENV === 'development' ? 'no-store' : undefined,
             next: { revalidate: ttl } 
         });
@@ -28,13 +29,13 @@ async function fetchWithCache<T>(url: string, ttl: number = 300): Promise<T | nu
 
         const data = await res.json();
         
-        if (data && data['Error Message']) {
-            console.error(`API Error for ${finalUrl}: ${data['Error Message']}`);
+        if (data && (data['Error Message'] || data.error)) {
+            console.error(`API Error for ${finalUrl}: ${data['Error Message'] || data.error}`);
             return null;
         }
 
         if (Array.isArray(data) && data.length === 0) {
-            // This is an expected empty response, not an error.
+            // This can be an expected empty response for some indicators, not necessarily an error.
             return data as T;
         }
 
@@ -78,5 +79,6 @@ export async function getForexData(pairs: string[]): Promise<ForexData[]> {
     });
 
     const results = await Promise.all(promises);
-    return results;
+    // Filter out any pairs that had a complete failure to fetch essential data.
+    return results.filter(result => result.quote);
 }

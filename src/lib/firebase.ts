@@ -1,5 +1,6 @@
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+
+import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
+import { getAuth, type Auth } from 'firebase/auth';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -10,14 +11,18 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Robust check to ensure all required environment variables are present.
-if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
-  console.error('Firebase config is missing. Check your .env file and ensure NEXT_PUBLIC_ variables are set.');
+let app: FirebaseApp | null = null;
+let auth: Auth | null = null;
+
+// Robust check to ensure all required environment variables are present and not placeholders.
+if (firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith('YOUR_')) {
+  // Initialize Firebase only if the config is valid.
+  // The getApps().length check prevents re-initializing the app on hot reloads.
+  app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+  auth = getAuth(app);
+} else {
+  console.error('Firebase config is missing or uses placeholder values. Check your .env file and ensure NEXT_PUBLIC_FIREBASE_ variables are set. Authentication will be disabled.');
 }
 
-// Initialize Firebase
-// The getApps().length check prevents re-initializing the app on hot reloads.
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-const auth = getAuth(app);
 
 export { app, auth };

@@ -23,6 +23,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
 
   useEffect(() => {
+    if (!auth) {
+      // If firebase auth is not initialized, we are not loading and have no user.
+      setLoading(false);
+      return;
+    }
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
@@ -32,6 +37,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signInWithGoogle = async () => {
+    if (!auth) {
+        toast({
+            variant: "destructive",
+            title: "Configuration Error",
+            description: "Firebase is not configured. Please add your credentials to the .env file.",
+        });
+        return;
+    }
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
@@ -47,6 +60,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
+    if (!auth) {
+       toast({
+        variant: "destructive",
+        title: "Configuration Error",
+        description: "Firebase is not configured correctly for sign out.",
+      });
+      return;
+    }
     try {
       await firebaseSignOut(auth);
       router.push('/login');
