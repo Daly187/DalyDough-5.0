@@ -1,4 +1,5 @@
 
+
 import type { DScore, Bot, EquityData, RiskMetric, ApiKey, NewsEvent, BotConfigurationData, AIReentry, MarketRegime, ExposureData, ForexData, StrengthData, CurrencyStrength, DScoreWeights } from './types';
 
 const getGrade = (score: number): 'A' | 'B' | 'C' => {
@@ -102,14 +103,15 @@ export const calculateDScore = (data: ForexData, index: number, liveStrengthData
   // 4. ATR/Volatility (0-1)
   let rawAtrVolatility = 0;
   if (price > 0 && atr > 0) {
-      // ATR as a percentage of price, normalized. e.g. 1% vol = 0.5 score
-      rawAtrVolatility = Math.min((atr / price) * 50, 1.0);
+      // ATR as a percentage of price, targeting ~0.5% as a moderate score
+      const volatilityPercentage = (atr / price);
+      rawAtrVolatility = Math.min(volatilityPercentage * 100, 1.0);
   }
 
   // 5. S/R Retest (0-1)
   let rawSrRetest = 0;
   if (price && atr > 0) {
-    const retestThreshold = atr * 1.5; 
+    const retestThreshold = atr * 0.5; // Tighter threshold
     const mas = [sma50, sma100, sma200].filter(Boolean) as number[];
     for (const ma of mas) {
         if (Math.abs(price - ma) < retestThreshold) {
@@ -122,9 +124,9 @@ export const calculateDScore = (data: ForexData, index: number, liveStrengthData
   // 6. Price Structure (0-1)
   let rawPriceStructure = 0;
   if (pdi > 0 && mdi > 0) {
-      const totalDi = pdi + mdi;
       const diDiff = Math.abs(pdi - mdi);
-      rawPriceStructure = Math.min((diDiff / totalDi), 1.0);
+      // Normalize based on a typical range for strong trends (e.g., diff of 15+)
+      rawPriceStructure = Math.min(diDiff / 20, 1.0);
   }
 
   // 7. Market Regime Fit (0-1)
@@ -342,3 +344,4 @@ export const exposureData: ExposureData[] = [
     { currency: 'CHF', exposure: 1500.00, type: 'long' },
     { currency: 'NZD', exposure: -500.00, type: 'short' },
 ];
+

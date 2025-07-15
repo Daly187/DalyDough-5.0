@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from 'react';
@@ -16,7 +17,6 @@ import type { DScore } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface MarketOverviewTableProps {
   data: DScore[];
@@ -188,11 +188,11 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
                                             <div className="flex justify-between"><span className="text-muted-foreground">Trend Alignment:</span> <span className="font-semibold text-foreground">{item.trendAlignment.toFixed(2)} / 2.00</span></div>
                                             <div className="flex justify-between"><span className="text-muted-foreground">ADX Strength:</span> <span className="font-semibold text-foreground">{item.adxStrength.toFixed(2)} / 1.00</span></div>
                                             <div className="flex justify-between"><span className="text-muted-foreground">MA Convergence:</span> <span className="font-semibold text-foreground">{item.maConvergence.toFixed(2)} / 1.50</span></div>
-                                            <div className="flex justify-between"><span className="text-muted-foreground">S/R Retest:</span> <span className="font-semibold text-foreground">{item.srRetest.toFixed(2)} / 1.50</span></div>
+                                            <div className="flex justify-between"><span className="text-muted-foreground">S/R Retest:</span> <span className="font-semibold text-foreground">{item.srRetest.toFixed(2)} / 0.50</span></div>
                                             <div className="flex justify-between"><span className="text-muted-foreground">Price Structure:</span> <span className="font-semibold text-foreground">{item.priceStructure.toFixed(2)} / 1.00</span></div>
-                                            <div className="flex justify-between"><span className="text-muted-foreground">ATR/Volatility:</span> <span className="font-semibold text-foreground">{item.atrVolatility.toFixed(2)} / 1.00</span></div>
+                                            <div className="flex justify-between"><span className="text-muted-foreground">ATR/Volatility:</span> <span className="font-semibold text-foreground">{item.atrVolatility.toFixed(2)} / 0.50</span></div>
                                             <div className="flex justify-between"><span className="text-muted-foreground">Market Regime Fit:</span> <span className="font-semibold text-foreground">{item.marketRegimeFit.toFixed(2)} / 2.00</span></div>
-                                             <div className="flex justify-between"><span className="text-muted-foreground">Currency Strength:</span> <span className="font-semibold text-foreground">{item.currencyStrength.toFixed(2)} / 1.00</span></div>
+                                             <div className="flex justify-between"><span className="text-muted-foreground">Currency Strength:</span> <span className="font-semibold text-foreground">{item.currencyStrength.toFixed(2)} / 1.50</span></div>
                                         </div>
                                     </div>
                                 </div>
@@ -209,3 +209,4 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
     </Card>
   );
 }
+
