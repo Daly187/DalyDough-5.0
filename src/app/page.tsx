@@ -1,4 +1,4 @@
-import MeatMarketTable from '@/components/dashboard/meat-market-table';
+import MarketOverviewTable from '@/components/dashboard/market-overview-table';
 import SystemStatus from '@/components/dashboard/system-status';
 import { dScoreData, activeBotsData, botConfigurationData, aiReentriesData } from '@/lib/data';
 import ActiveBotsTable from '@/components/bots/active-bots-table';
@@ -11,11 +11,11 @@ export default function DashboardPage() {
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
       <SystemStatus />
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-1 flex flex-col gap-8">
-          <MeatMarketTable data={dScoreData} />
+        <div className="lg:col-span-2 flex flex-col gap-8">
+          <MarketOverviewTable data={dScoreData} />
           <ActiveBotsTable data={activeBotsData.slice(0, 4)} title="Active Bots" description="A real-time overview of all currently running trade bots." />
         </div>
-        <div className="lg:col-span-2 flex flex-col gap-8">
+        <div className="lg:col-span-1 flex flex-col gap-8">
             <div className="flex items-center gap-4">
                 <Rocket className="h-8 w-8 text-primary" />
                 <div>
