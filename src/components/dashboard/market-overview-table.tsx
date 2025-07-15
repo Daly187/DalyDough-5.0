@@ -100,67 +100,67 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
                 const signal = signalConfig[item.signal];
                 return (
                   <Collapsible asChild key={item.id} open={openRow === item.id} onOpenChange={() => setOpenRow(openRow === item.id ? null : item.id)}>
-                    <React.Fragment>
-                      <CollapsibleTrigger asChild>
-                        <TableRow className="cursor-pointer">
-                          <TableCell>
-                            <div className="font-medium">{item.pair}</div>
-                            <div className={cn("text-xs", item.change >= 0 ? 'text-green-400' : 'text-red-400')}>
-                              {item.price.toFixed(item.pair.includes('JPY') ? 3 : 5)}
-                              <span className="ml-1">({item.changesPercentage.toFixed(2)}%)</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="font-semibold text-lg text-primary">{item.dScore.toFixed(1)}</TableCell>
-                           <TableCell>
-                              <div className="flex items-center gap-2">
-                                 <TrendIndicator trend={item.trends.h4} />
-                                 <TrendIndicator trend={item.trends.d1} />
-                                 <TrendIndicator trend={item.trends.w1} />
+                      <tbody>
+                        <CollapsibleTrigger asChild>
+                          <TableRow className="cursor-pointer">
+                            <TableCell>
+                              <div className="font-medium">{item.pair}</div>
+                              <div className={cn("text-xs", item.change >= 0 ? 'text-green-400' : 'text-red-400')}>
+                                {item.price.toFixed(item.pair.includes('JPY') ? 3 : 5)}
+                                <span className="ml-1">({item.changesPercentage.toFixed(2)}%)</span>
                               </div>
-                          </TableCell>
-                          <TableCell className="font-semibold">{item.trendAlignment.toFixed(1)}</TableCell>
-                          <TableCell>{item.adxStrength.toFixed(1)}</TableCell>
-                          <TableCell className="text-right">
-                            <div className={cn("flex items-center justify-end gap-2 font-medium", signal.color)}>
-                                {signal.icon}
-                                {signal.label}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent asChild>
-                        <tr className="bg-muted/50 hover:bg-muted/50">
-                          <TableCell colSpan={6} className="p-0">
-                            <div className="p-4 grid grid-cols-2 gap-x-8 gap-y-2">
-                                <div>
-                                    <h4 className="font-semibold text-sm mb-2 text-foreground">D-Score Breakdown</h4>
-                                    <div className="space-y-1 text-xs">
-                                        <div className="flex justify-between"><span className="text-muted-foreground">Trend Alignment:</span> <span className="font-semibold text-foreground">{item.trendAlignment > 1.5 ? 'Strong' : (item.trendAlignment > 0.5 ? 'Moderate' : 'Weak')}</span></div>
-                                        <div className="flex justify-between"><span className="text-muted-foreground">ADX Strength:</span> <span className="font-semibold text-foreground">{item.adxStrength > 0.7 ? 'Strong' : (item.adxStrength > 0.4 ? 'Moderate' : 'Weak')}</span></div>
-                                        <div className="flex justify-between"><span className="text-muted-foreground">MA Convergence:</span> <span className="font-semibold text-foreground">{item.maConvergence > 1.0 ? 'Converged' : (item.maConvergence > 0.5 ? 'Partially' : 'Diverged')}</span></div>
-                                        <div className="flex justify-between"><span className="text-muted-foreground">S/R Retest:</span> <span className="font-semibold text-foreground">{(item.srRetest*100/1.5).toFixed(0)}%</span></div>
-                                        <div className="flex justify-between"><span className="text-muted-foreground">Price Structure:</span> <span className="font-semibold text-foreground">{item.priceStructure > 0.7 ? 'Clear' : (item.priceStructure > 0.4 ? 'Developing' : 'Unclear')}</span></div>
-                                        <div className="flex justify-between"><span className="text-muted-foreground">ATR/Volatility:</span> <span className="font-semibold text-foreground">{(item.atrVolatility*100).toFixed(0)}%</span></div>
-                                        <div className="flex justify-between"><span className="text-muted-foreground">Market Regime Fit:</span> <span className="font-semibold text-foreground">{(item.marketRegimeFit*100/2.0).toFixed(0)}%</span></div>
-                                    </div>
+                            </TableCell>
+                            <TableCell className="font-semibold text-lg text-primary">{item.dScore.toFixed(1)}</TableCell>
+                            <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <TrendIndicator trend={item.trends.h4} />
+                                  <TrendIndicator trend={item.trends.d1} />
+                                  <TrendIndicator trend={item.trends.w1} />
                                 </div>
-                                 <div>
-                                    <h4 className="font-semibold text-sm mb-2 text-foreground">Point Allocation</h4>
-                                    <div className="space-y-1 text-xs">
-                                        <div className="flex justify-between"><span className="text-muted-foreground">Trend Alignment:</span> <span className="font-semibold text-foreground">{item.trendAlignment.toFixed(2)} / 2.00</span></div>
-                                        <div className="flex justify-between"><span className="text-muted-foreground">ADX Strength:</span> <span className="font-semibold text-foreground">{item.adxStrength.toFixed(2)} / 1.00</span></div>
-                                        <div className="flex justify-between"><span className="text-muted-foreground">MA Convergence:</span> <span className="font-semibold text-foreground">{item.maConvergence.toFixed(2)} / 1.50</span></div>
-                                        <div className="flex justify-between"><span className="text-muted-foreground">S/R Retest:</span> <span className="font-semibold text-foreground">{item.srRetest.toFixed(2)} / 1.50</span></div>
-                                        <div className="flex justify-between"><span className="text-muted-foreground">Price Structure:</span> <span className="font-semibold text-foreground">{item.priceStructure.toFixed(2)} / 1.00</span></div>
-                                        <div className="flex justify-between"><span className="text-muted-foreground">ATR/Volatility:</span> <span className="font-semibold text-foreground">{item.atrVolatility.toFixed(2)} / 1.00</span></div>
-                                        <div className="flex justify-between"><span className="text-muted-foreground">Market Regime Fit:</span> <span className="font-semibold text-foreground">{item.marketRegimeFit.toFixed(2)} / 2.00</span></div>
-                                    </div>
-                                </div>
-                            </div>
-                          </TableCell>
-                        </tr>
-                      </CollapsibleContent>
-                    </React.Fragment>
+                            </TableCell>
+                            <TableCell className="font-semibold">{item.trendAlignment.toFixed(1)}</TableCell>
+                            <TableCell>{item.adxStrength.toFixed(1)}</TableCell>
+                            <TableCell className="text-right">
+                              <div className={cn("flex items-center justify-end gap-2 font-medium", signal.color)}>
+                                  {signal.icon}
+                                  {signal.label}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent asChild>
+                          <tr className="bg-muted/50 hover:bg-muted/50">
+                            <TableCell colSpan={6} className="p-0">
+                              <div className="p-4 grid grid-cols-2 gap-x-8 gap-y-2">
+                                  <div>
+                                      <h4 className="font-semibold text-sm mb-2 text-foreground">D-Score Breakdown</h4>
+                                      <div className="space-y-1 text-xs">
+                                          <div className="flex justify-between"><span className="text-muted-foreground">Trend Alignment:</span> <span className="font-semibold text-foreground">{item.trendAlignment > 1.5 ? 'Strong' : (item.trendAlignment > 0.5 ? 'Moderate' : 'Weak')}</span></div>
+                                          <div className="flex justify-between"><span className="text-muted-foreground">ADX Strength:</span> <span className="font-semibold text-foreground">{item.adxStrength > 0.7 ? 'Strong' : (item.adxStrength > 0.4 ? 'Moderate' : 'Weak')}</span></div>
+                                          <div className="flex justify-between"><span className="text-muted-foreground">MA Convergence:</span> <span className="font-semibold text-foreground">{item.maConvergence > 1.0 ? 'Converged' : (item.maConvergence > 0.5 ? 'Partially' : 'Diverged')}</span></div>
+                                          <div className="flex justify-between"><span className="text-muted-foreground">S/R Retest:</span> <span className="font-semibold text-foreground">{(item.srRetest*100/1.5).toFixed(0)}%</span></div>
+                                          <div className="flex justify-between"><span className="text-muted-foreground">Price Structure:</span> <span className="font-semibold text-foreground">{item.priceStructure > 0.7 ? 'Clear' : (item.priceStructure > 0.4 ? 'Developing' : 'Unclear')}</span></div>
+                                          <div className="flex justify-between"><span className="text-muted-foreground">ATR/Volatility:</span> <span className="font-semibold text-foreground">{(item.atrVolatility*100).toFixed(0)}%</span></div>
+                                          <div className="flex justify-between"><span className="text-muted-foreground">Market Regime Fit:</span> <span className="font-semibold text-foreground">{(item.marketRegimeFit*100/2.0).toFixed(0)}%</span></div>
+                                      </div>
+                                  </div>
+                                  <div>
+                                      <h4 className="font-semibold text-sm mb-2 text-foreground">Point Allocation</h4>
+                                      <div className="space-y-1 text-xs">
+                                          <div className="flex justify-between"><span className="text-muted-foreground">Trend Alignment:</span> <span className="font-semibold text-foreground">{item.trendAlignment.toFixed(2)} / 2.00</span></div>
+                                          <div className="flex justify-between"><span className="text-muted-foreground">ADX Strength:</span> <span className="font-semibold text-foreground">{item.adxStrength.toFixed(2)} / 1.00</span></div>
+                                          <div className="flex justify-between"><span className="text-muted-foreground">MA Convergence:</span> <span className="font-semibold text-foreground">{item.maConvergence.toFixed(2)} / 1.50</span></div>
+                                          <div className="flex justify-between"><span className="text-muted-foreground">S/R Retest:</span> <span className="font-semibold text-foreground">{item.srRetest.toFixed(2)} / 1.50</span></div>
+                                          <div className="flex justify-between"><span className="text-muted-foreground">Price Structure:</span> <span className="font-semibold text-foreground">{item.priceStructure.toFixed(2)} / 1.00</span></div>
+                                          <div className="flex justify-between"><span className="text-muted-foreground">ATR/Volatility:</span> <span className="font-semibold text-foreground">{item.atrVolatility.toFixed(2)} / 1.00</span></div>
+                                          <div className="flex justify-between"><span className="text-muted-foreground">Market Regime Fit:</span> <span className="font-semibold text-foreground">{item.marketRegimeFit.toFixed(2)} / 2.00</span></div>
+                                      </div>
+                                  </div>
+                              </div>
+                            </TableCell>
+                          </tr>
+                        </CollapsibleContent>
+                      </tbody>
                   </Collapsible>
                 );
               })}
