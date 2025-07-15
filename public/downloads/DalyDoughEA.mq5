@@ -8,20 +8,17 @@
 #property version   "1.5"
 
 //--- EA inputs
-input string ApiKey             = "PASTE_YOUR_KEY_FROM_DALYDOUGH_APP_HERE"; // Your unique key from the Accounts page
-input string API_ENDPOINT       = "https://your-api-endpoint.com/bot-commands"; // The server endpoint to get commands
-input int    JsonRefreshSeconds = 15;                                       // How often to check for new commands
+input string ApiKey          = "PASTE_YOUR_KEY_FROM_DALYDOUGH_APP_HERE"; // Your unique key from the Accounts page
+input string AppBaseUrl      = "https://your-app-url.web.app";   // The URL of your deployed DalyDough app
+input int    RefreshSeconds  = 15;                               // How often to check for new commands
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
 int OnInit()
   {
-//--- Print program info for debugging
-   Print("DalyDough EA Starting...");
-   
-//--- Set timer to fetch commands
-   EventSetTimer(JsonRefreshSeconds);
+   Print("DalyDough Connector Starting...");
+   EventSetTimer(RefreshSeconds);
    Comment("DalyDough Status: Initialized");
    return(INIT_SUCCEEDED);
   }
@@ -31,7 +28,6 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
   {
-//--- Kill the timer
    EventKillTimer();
    Comment("DalyDough Status: Stopped");
   }
@@ -41,7 +37,6 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTimer()
   {
-//--- Fetch commands from the server
    FetchCommands();
   }
 
@@ -52,29 +47,26 @@ void FetchCommands()
   {
    char post_data[], result_data[];
    string result_headers;
-   string url = API_ENDPOINT + "?key=" + ApiKey;
+   string url = AppBaseUrl + "/api/bot-commands?key=" + ApiKey;
    
-//--- Send GET request
    ResetLastError();
-   long retcode = WebRequest("GET", url, NULL, NULL, 5000, post_data, 0, result_data, result_headers);
+   int retcode = WebRequest("GET", url, NULL, NULL, 5000, post_data, 0, result_data, result_headers);
    
-//--- Handle response
    if(retcode == -1)
      {
       Print("WebRequest failed. Error code: ", GetLastError());
-      Comment("DalyDough Status: Connection Error");
+      Comment("DalyDough Status: Connection Error " + (string)GetLastError());
      }
    else if(retcode == 200)
      {
       Comment("DalyDough Status: Connected");
-      //--- Convert result to string and process JSON
       string json_response = CharArrayToString(result_data);
       Print("Received response: ", json_response);
-      // ProcessJsonResponse(json_response); // Placeholder for future logic
+      // Future logic to parse JSON and execute commands will go here.
      }
    else
      {
       Print("WebRequest returned status code: ", retcode);
-      Comment("DalyDough Status: Error Code " + (string)retcode);
+      Comment("DalyDough Status: HTTP Error " + (string)retcode);
      }
   }
