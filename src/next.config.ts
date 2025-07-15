@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
@@ -21,6 +22,14 @@ const nextConfig: NextConfig = {
         hostname: 'lh3.googleusercontent.com',
       }
     ],
+  },
+   async rewrites() {
+    return [
+      {
+        source: '/api/fmp/:path*',
+        destination: `https://financialmodelingprep.com/api/v3/:path*?apikey=${process.env.FMP_API_KEY}`,
+      },
+    ]
   },
 };
 
