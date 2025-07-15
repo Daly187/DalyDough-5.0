@@ -8,6 +8,8 @@ import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { DScoreWeights } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
+import { HelpCircle } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface DScoreWeightsProps {
   initialWeights: DScoreWeights;
@@ -31,6 +33,16 @@ const weightLabels: Record<keyof DScoreWeights, string> = {
     priceStructure: 'Price Structure',
     atrVolatility: 'ATR/Volatility',
     marketRegimeFit: 'Market Regime Fit'
+};
+
+const tooltipTexts: Record<keyof DScoreWeights, string> = {
+    trendAlignment: 'Scores the alignment of trends across 4-hour, daily, and weekly timeframes.',
+    adxStrength: 'Measures the strength of the current trend using the Average Directional Index (ADX).',
+    maConvergence: 'Scores the alignment of 50, 100, and 200-period moving averages to confirm momentum.',
+    srRetest: 'Identifies if the price is currently retesting a significant support or resistance level.',
+    priceStructure: 'Analyzes the clarity of market structure (e.g., higher highs and higher lows).',
+    atrVolatility: 'Measures market volatility using the Average True Range (ATR) as a percentage of price.',
+    marketRegimeFit: 'Assesses how well the current price action fits a trending or ranging market model.'
 };
 
 export default function DScoreWeights({ initialWeights }: DScoreWeightsProps) {
@@ -76,6 +88,22 @@ export default function DScoreWeights({ initialWeights }: DScoreWeightsProps) {
     setWeights(newWeights);
   };
 
+  const TooltipLabel = ({ htmlFor, label, tooltipText }: { htmlFor: string, label: string, tooltipText: string }) => (
+    <div className="flex items-center gap-2">
+      <Label htmlFor={htmlFor}>{label}</Label>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{tooltipText}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    </div>
+  );
+
   return (
     <Card>
       <CardHeader>
@@ -93,7 +121,7 @@ export default function DScoreWeights({ initialWeights }: DScoreWeightsProps) {
         {weightKeys.map((key) => (
           <div key={key} className="space-y-2">
             <div className="flex justify-between items-center">
-                <Label htmlFor={key}>{weightLabels[key]}</Label>
+                <TooltipLabel htmlFor={key} label={weightLabels[key]} tooltipText={tooltipTexts[key]} />
                 <span className="font-mono text-sm font-semibold text-primary">{weights[key].toFixed(2)} pts</span>
             </div>
             <Slider
