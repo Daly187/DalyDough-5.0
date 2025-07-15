@@ -1,3 +1,5 @@
+"use client"
+
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from "recharts"
 
 import {
@@ -35,7 +37,7 @@ export default function GlobalExposure({ data }: GlobalExposureProps) {
   const chartData = data.map(item => ({
     currency: item.currency,
     long: item.type === 'long' ? item.exposure : 0,
-    short: item.type === 'short' ? item.exposure : 0,
+    short: item.type === 'short' ? -Math.abs(item.exposure) : 0,
   }));
 
   return (
@@ -49,6 +51,7 @@ export default function GlobalExposure({ data }: GlobalExposureProps) {
           <BarChart
             data={chartData}
             layout="vertical"
+            stackOffset="sign"
             margin={{ left: 10, right: 10, top: 10, bottom: 10 }}
           >
             <CartesianGrid horizontal={false} strokeDasharray="3 3" />
