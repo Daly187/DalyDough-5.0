@@ -22,7 +22,8 @@ const weightKeys: (keyof DScoreWeights)[] = [
     'srRetest',
     'priceStructure',
     'atrVolatility',
-    'marketRegimeFit'
+    'marketRegimeFit',
+    'currencyStrength'
 ];
 
 const weightLabels: Record<keyof DScoreWeights, string> = {
@@ -32,17 +33,19 @@ const weightLabels: Record<keyof DScoreWeights, string> = {
     srRetest: 'S/R Retest',
     priceStructure: 'Price Structure',
     atrVolatility: 'ATR/Volatility',
-    marketRegimeFit: 'Market Regime Fit'
+    marketRegimeFit: 'Market Regime Fit',
+    currencyStrength: 'Currency Strength'
 };
 
 const tooltipTexts: Record<keyof DScoreWeights, string> = {
-    trendAlignment: 'Scores the alignment of trends across 4-hour, daily, and weekly timeframes.',
+    trendAlignment: 'Scores the alignment of trends across daily and weekly timeframes.',
     adxStrength: 'Measures the strength of the current trend using the Average Directional Index (ADX).',
     maConvergence: 'Scores the alignment of 50, 100, and 200-period moving averages to confirm momentum.',
-    srRetest: 'Identifies if the price is currently retesting a significant support or resistance level.',
-    priceStructure: 'Analyzes the clarity of market structure (e.g., higher highs and higher lows).',
+    srRetest: 'Identifies if the price is currently retesting a significant support or resistance level (major MAs).',
+    priceStructure: 'Analyzes the clarity of market structure based on +DI vs -DI separation.',
     atrVolatility: 'Measures market volatility using the Average True Range (ATR) as a percentage of price.',
-    marketRegimeFit: 'Assesses how well the current price action fits a trending or ranging market model.'
+    marketRegimeFit: 'Assesses how well the current price action fits a trending or ranging market model.',
+    currencyStrength: 'Scores the strength difference between the base and quote currency.'
 };
 
 export default function DScoreWeights({ initialWeights }: DScoreWeightsProps) {

@@ -1,3 +1,4 @@
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ApiKeys from "@/components/settings/api-keys";
 import DScoreWeights from "@/components/settings/d-score-weights";
@@ -8,10 +9,11 @@ export default function SettingsPage() {
     trendAlignment: 2.0,
     adxStrength: 1.0,
     maConvergence: 1.5,
-    srRetest: 1.5,
+    srRetest: 1.0,
     priceStructure: 1.0,
     atrVolatility: 1.0,
-    marketRegimeFit: 2.0,
+    marketRegimeFit: 1.5,
+    currencyStrength: 1.0,
   };
 
   return (

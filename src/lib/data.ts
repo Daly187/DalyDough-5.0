@@ -1,5 +1,5 @@
 
-import type { DScore, Bot, EquityData, RiskMetric, ApiKey, NewsEvent, BotConfigurationData, AIReentry, MarketRegime, ExposureData, ForexData } from './types';
+import type { DScore, Bot, EquityData, RiskMetric, ApiKey, NewsEvent, BotConfigurationData, AIReentry, MarketRegime, ExposureData, ForexData, StrengthData } from './types';
 
 const getGrade = (score: number): 'A' | 'B' | 'C' => {
   if (score >= 8.5) return 'A';
@@ -85,9 +85,31 @@ export const calculateDScore = (data: ForexData, index: number): DScore => {
       marketRegimeFit = 1.0; // Ok fit: not trending, and MAs are mixed (ranging market)
   }
 
+  // 8. Currency Strength (NEW LOGIC)
+  const baseCurrency = data.pair.substring(0, 3);
+  const quoteCurrency = data.pair.substring(4, 7);
+  const baseStrengthData = strengthData.find(s => s.currency === baseCurrency);
+  const quoteStrengthData = strengthData.find(s => s.currency === quoteCurrency);
+  let currencyStrength = 0;
+
+  if (baseStrengthData && quoteStrengthData) {
+    const baseStrength = baseStrengthData.data[baseStrengthData.data.length - 1].strength;
+    const quoteStrength = quoteStrengthData.data[quoteStrengthData.data.length - 1].strength;
+    const strengthDiff = Math.abs(baseStrength - quoteStrength);
+    
+    const trendDirection = (buys > sells) ? 'buy' : 'sell';
+    
+    // Reward strength that aligns with trend direction
+    if ((trendDirection === 'buy' && baseStrength > quoteStrength) ||
+        (trendDirection === 'sell' && quoteStrength > baseStrength)) {
+        currencyStrength = Math.min(strengthDiff / 10.0, 1.0); // Normalize to 0-1 range
+    }
+  }
+
+
   // --- END REVISED SCORING LOGIC ---
 
-  const totalScore = trendAlignment + adxStrength + atrVolatility + srRetest + priceStructure + marketRegimeFit + maConvergence;
+  const totalScore = trendAlignment + adxStrength + atrVolatility + srRetest + priceStructure + marketRegimeFit + maConvergence + currencyStrength;
   
   let signal: 'Buy' | 'Sell' | 'Block' = 'Block';
   if (totalScore >= 7.0) {
@@ -112,6 +134,7 @@ export const calculateDScore = (data: ForexData, index: number): DScore => {
     priceStructure,
     atrVolatility,
     marketRegimeFit,
+    currencyStrength,
     signal,
     positions: activePositions,
     trends,
@@ -269,9 +292,3 @@ export const exposureData: ExposureData[] = [
     { currency: 'CHF', exposure: 1500.00, type: 'long' },
     { currency: 'NZD', exposure: -500.00, type: 'short' },
 ];
-
-
-
-
-
-    

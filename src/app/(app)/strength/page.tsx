@@ -1,8 +1,15 @@
+
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import StrengthIndexChart from "@/components/strength/strength-index-chart";
+import StrengthIndexTable from "@/components/strength/strength-index-table";
 import { strengthData } from "@/lib/data";
 
 export default function StrengthPage() {
+  // We only need the latest strength for each currency for the table
+  const latestStrengthData = strengthData.map(currency => ({
+    currency: currency.currency,
+    strength: currency.data[currency.data.length - 1].strength,
+  }));
+
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
       <div className="flex items-center">
@@ -10,13 +17,13 @@ export default function StrengthPage() {
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>Multi-Timeframe Strength Analysis</CardTitle>
+          <CardTitle>Live Currency Strength</CardTitle>
           <CardDescription>
-            6 weeks of historical strength data for major currencies based on 4h, 1d, and 1w trend alignment.
+            Real-time strength analysis for major currencies. A score of 1 is weakest, 10 is strongest.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <StrengthIndexChart data={strengthData} />
+          <StrengthIndexTable data={latestStrengthData} />
         </CardContent>
       </Card>
     </main>

@@ -8,6 +8,7 @@ export type DScoreWeights = {
     priceStructure: number;
     atrVolatility: number;
     marketRegimeFit: number;
+    currencyStrength: number;
 }
 
 export type DScore = {
@@ -25,6 +26,7 @@ export type DScore = {
   priceStructure: number; // 0-1.0
   atrVolatility: number; // 0-1.0
   marketRegimeFit: number; // 0-2.0
+  currencyStrength: number; // 0-1.0
   signal: 'Buy' | 'Sell' | 'Block';
   positions?: number;
   trends: {
@@ -92,6 +94,11 @@ export type AIReentry = {
   lotSize: number;
   condition: string;
 }
+
+export type CurrencyStrength = {
+  currency: string;
+  strength: number;
+};
 
 export type StrengthData = {
   currency: string;
@@ -196,5 +203,3 @@ export type ForexData = {
     sma100: FMPSMA[] | null;
     sma200: FMPSMA[] | null;
 };
-
-    
