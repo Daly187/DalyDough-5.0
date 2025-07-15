@@ -123,7 +123,7 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
                 <Input id="maxPositions" type="number" value={config.maxPositions} onChange={handleInputChange} />
             </div>
             <div>
-                <Label htmlFor="stopLoss">Stop Loss (pips)</Label>
+                <Label htmlFor="stopLoss">Stop Loss ($)</Label>
                 <Input id="stopLoss" type="number" value={config.stopLoss} onChange={handleInputChange} />
             </div>
             <div>
