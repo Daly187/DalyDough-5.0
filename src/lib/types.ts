@@ -1,5 +1,6 @@
 
 
+
 export type DScore = {
   id: string;
   pair: string;
@@ -7,7 +8,6 @@ export type DScore = {
   change: number;
   changesPercentage: number;
   dScore: number;
-  grade: 'A' | 'B' | 'C';
   trendAlignment: number; // 0-2.0
   adxStrength: number; // 0-1.0
   maConvergence: number; // 0-1.5
