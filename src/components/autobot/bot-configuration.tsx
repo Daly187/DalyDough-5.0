@@ -2,13 +2,13 @@
 "use client";
 
 import * as React from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Settings, Lightbulb, HelpCircle } from "lucide-react";
+import { Settings, Lightbulb, HelpCircle, Rocket } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import type { BotConfigurationData, DScore, Bot } from "@/lib/types";
 import { cn } from '@/lib/utils';
@@ -18,6 +18,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { Button } from '../ui/button';
 
 
 interface BotConfigurationProps {
@@ -107,7 +108,7 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
             </div>
             <div>
                 <Label htmlFor="pairSelect">Select Pair ({filteredPairs.length} available)</Label>
-                 <Select value={selectedPair} onValueChange={handlePairSelectChange}>
+                 <Select value={selectedPair} onValueChange={handlePairSelectChange} disabled={filteredPairs.length === 0}>
                     <SelectTrigger id="pairSelect">
                         <SelectValue placeholder="Select a high-scoring pair" />
                     </SelectTrigger>
@@ -281,6 +282,14 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
             </Alert>
         )}
       </CardContent>
+      <CardFooter>
+        <Button className="w-full" disabled={!selectedPair}>
+            <Rocket className="h-4 w-4 mr-2" />
+            Launch Manual Bot
+        </Button>
+      </CardFooter>
     </Card>
   );
 }
+
+    
