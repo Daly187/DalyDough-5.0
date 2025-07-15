@@ -97,7 +97,6 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
                 <TableHead>Trend (4h/1d/1w)</TableHead>
                 <SortableHeader tkey="cot" label="COT" />
                 <SortableHeader tkey="adx" label="ADX" />
-                <SortableHeader tkey="spread" label="Spread" />
                 <TableHead className="text-right">Entry Signal</TableHead>
               </TableRow>
             </TableHeader>
@@ -122,7 +121,6 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
                     </TableCell>
                     <TableCell>{item.cot}</TableCell>
                     <TableCell>{item.adx}</TableCell>
-                    <TableCell>{item.spread.toFixed(1)}</TableCell>
                     <TableCell className="text-right">
                       <div className={cn("flex items-center justify-end gap-2 font-medium", signal.color)}>
                           {signal.icon}
@@ -139,4 +137,3 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
     </Card>
   );
 }
-

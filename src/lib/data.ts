@@ -1,4 +1,4 @@
-import type { DScore, Bot, EquityData, RiskMetric, ApiKey, BotScannerData, CotData, NewsEvent, BotConfigurationData, AIReentry } from './types';
+import type { DScore, Bot, EquityData, RiskMetric, ApiKey, BotScannerData, CotData, NewsEvent, BotConfigurationData, AIReentry, MarketRegime } from './types';
 
 const getGrade = (score: number): 'A' | 'B' | 'C' => {
   if (score >= 8.0) return 'A';
@@ -9,16 +9,17 @@ const getGrade = (score: number): 'A' | 'B' | 'C' => {
 const pairs = ['AUD/CAD', 'AUD/CHF', 'AUD/JPY', 'AUD/NZD', 'AUD/USD', 'CAD/JPY', 'CHF/JPY', 'EUR/CAD', 'EUR/CHF', 'EUR/GBP', 'EUR/JPY', 'EUR/NZD', 'EUR/TRY', 'EUR/USD', 'GBP/AUD', 'GBP/CAD', 'GBP/CHF', 'GBP/JPY', 'GBP/USD', 'NZD/CAD', 'NZD/CHF', 'NZD/JPY', 'NZD/USD', 'USD/CAD', 'USD/CHF', 'USD/JPY', 'USD/TRY', 'USD/ZAR', 'XAU/USD'];
 
 const generateRandomDScore = (pair: string, index: number): DScore => {
-  const dScore = Math.random() * 4 + 6; // 6.0 - 10.0
-  const cotBias = Math.random() * 1.5 + 0.5;
-  const trendAlignment = Math.random() * 2 + 1;
-  const adx = Math.random() * 50 + 10;
-  const adxStrength = adx / 60;
-  const srRetest = Math.random() * 1.5 + 0.5;
-  const priceStructure = Math.random() * 0.5 + 0.5;
-  const spread = Math.random() * 1.5 + 0.3;
-  const spreadCheck = 1 - Math.min(spread / 2, 1);
-  const totalScore = dScore;
+  const cotBias = Math.random() * 1.5;
+  const trendAlignment = Math.random() * 2.0;
+  const adx = Math.random() * 100;
+  const adxStrength = Math.min(adx / 50, 1.0); // Capped at 1.0 for scores > 50
+  const atrVolatility = Math.random() * 1.0;
+  const srRetest = Math.random() * 1.5;
+  const priceStructure = Math.random() * 1.0;
+  const marketRegimeFit = Math.random() * 2.0;
+
+  const totalScore = cotBias + trendAlignment + adxStrength + atrVolatility + srRetest + priceStructure + marketRegimeFit;
+  
   let signal: 'Buy' | 'Sell' | 'Block' = 'Block';
   if (totalScore >= 7.0) {
     signal = Math.random() > 0.5 ? 'Buy' : 'Sell';
@@ -34,13 +35,11 @@ const generateRandomDScore = (pair: string, index: number): DScore => {
     adxStrength,
     srRetest,
     priceStructure,
-    spreadCheck,
-    atrVolatility: Math.random() * 1.5,
-    marketRegimeFit: Math.random() * 2,
+    atrVolatility,
+    marketRegimeFit,
     regimeMultiplier: Math.random() * 0.4 + 0.8,
     cot: Math.floor(Math.random() * 150 - 75),
     adx: Math.floor(adx),
-    spread,
     signal,
     positions: Math.floor(Math.random() * 6),
     trends: {
@@ -180,3 +179,14 @@ export const newsData: NewsEvent[] = [
     { id: '4', time: '18:00', currency: 'NZD', impact: 'High', event: 'RBNZ Interest Rate Decision', actual: null, forecast: '5.50%', previous: '5.50%' },
     { id: '5', time: '21:45', currency: 'CNY', impact: 'Medium', event: 'Caixin Services PMI', actual: null, forecast: '52.6', previous: '52.7' },
 ];
+
+
+export const marketRegimeData: MarketRegime[] = pairs.map(pair => ({
+    currencyPair: pair,
+    price: Math.random() * 1.5 + 0.5,
+    volatility: Math.random() * 2,
+    adx: Math.random() * 60 + 10,
+    atr: Math.random() * 0.01,
+    bollingerWidth: Math.random() * 0.05,
+    maSlopes: 'Up, Up, Down',
+}));

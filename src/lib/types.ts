@@ -4,18 +4,16 @@ export type DScore = {
   pair: string;
   dScore: number;
   grade: 'A' | 'B' | 'C';
-  cotBias: number; // 0-2
-  trendAlignment: number; // 0-3
-  adxStrength: number; // 0-1
-  srRetest: number; // 0-2
-  priceStructure: number; // 0-1
-  spreadCheck: number; // 0-1
-  atrVolatility: number;
-  marketRegimeFit: number;
+  cotBias: number; // 0-1.5
+  trendAlignment: number; // 0-2.0
+  adxStrength: number; // 0-1.0
+  srRetest: number; // 0-1.5
+  priceStructure: number; // 0-1.0
+  atrVolatility: number; // 0-1.0
+  marketRegimeFit: number; // 0-2.0
   regimeMultiplier: number;
   cot: number;
   adx: number;
-  spread: number;
   signal: 'Buy' | 'Sell' | 'Block';
   positions?: number;
   trends: {
@@ -107,4 +105,14 @@ export type NewsEvent = {
   actual: string | null;
   forecast: string | null;
   previous: string | null;
+};
+
+export type MarketRegime = {
+  currencyPair: string;
+  price: number;
+  volatility: number;
+  adx: number;
+  atr: number;
+  bollingerWidth: number;
+  maSlopes: string;
 };

@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -20,7 +21,6 @@ const DScoreExplanationInputSchema = z.object({
   atrVolatility: z.number().describe('The ATR/Volatility component of the D-Score.'),
   srRetest: z.number().describe('The S/R Retest component of the D-Score.'),
   priceStructure: z.number().describe('The Price Structure component of the D-Score.'),
-  spread: z.number().describe('The Spread component of the D-Score.'),
   marketRegimeFit: z.number().describe('The Market Regime Fit component of the D-Score.'),
 });
 export type DScoreExplanationInput = z.infer<typeof DScoreExplanationInputSchema>;
@@ -48,7 +48,6 @@ ADX: {{{adx}}}
 ATR/Volatility: {{{atrVolatility}}}
 S/R Retest: {{{srRetest}}}
 Price Structure: {{{priceStructure}}}
-Spread: {{{spread}}}
 Market Regime Fit: {{{marketRegimeFit}}}
 
 Focus on the most influential factors and their contribution to the overall score. Keep the explanation brief and easy to understand.

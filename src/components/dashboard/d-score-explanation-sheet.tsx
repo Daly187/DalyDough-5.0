@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from 'react';
@@ -37,11 +38,10 @@ export default function DScoreExplanationSheet({ isOpen, onOpenChange, pairData 
             dScore: pairData.dScore,
             cotBias: pairData.cotBias,
             trendAlignment: pairData.trendAlignment,
-            adx: pairData.adx,
+            adx: pairData.adxStrength,
             atrVolatility: pairData.atrVolatility,
             srRetest: pairData.srRetest,
             priceStructure: pairData.priceStructure,
-            spread: pairData.spread,
             marketRegimeFit: pairData.marketRegimeFit,
         };
         
@@ -61,12 +61,11 @@ export default function DScoreExplanationSheet({ isOpen, onOpenChange, pairData 
 
   const scoreFactors = [
     { label: "COT Bias", value: pairData?.cotBias, max: 1.5 },
-    { label: "Trend Alignment", value: pairData?.trendAlignment, max: 1.5 },
-    { label: "ADX", value: pairData?.adx, max: 1.0 },
+    { label: "Trend Alignment", value: pairData?.trendAlignment, max: 2.0 },
+    { label: "ADX", value: pairData?.adxStrength, max: 1.0 },
     { label: "ATR/Volatility", value: pairData?.atrVolatility, max: 1.0 },
     { label: "S/R Retest", value: pairData?.srRetest, max: 1.5 },
     { label: "Price Structure", value: pairData?.priceStructure, max: 1.0 },
-    { label: "Spread", value: pairData?.spread, max: 0.5 },
     { label: "Market Regime Fit", value: pairData?.marketRegimeFit, max: 2.0 },
   ];
 
@@ -83,7 +82,7 @@ export default function DScoreExplanationSheet({ isOpen, onOpenChange, pairData 
             <div className="text-center bg-muted/50 p-4 rounded-lg">
                 <p className="text-sm text-muted-foreground">Final Score</p>
                 <p className="text-4xl font-bold text-primary">{(pairData?.dScore ?? 0 * (pairData?.regimeMultiplier ?? 1)).toFixed(2)}</p>
-                <p className="text-xs text-muted-foreground">({pairData?.dScore.toFixed(1)} Base x {pairData?.regimeMultiplier} Multiplier)</p>
+                <p className="text-xs text-muted-foreground">({pairData?.dScore.toFixed(1)} Base x {pairData?.regimeMultiplier.toFixed(2)} Multiplier)</p>
             </div>
 
             <Separator />
