@@ -89,7 +89,7 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
               <TableRow>
                 <SortableHeader tkey="pair" label="Pair" />
                 <SortableHeader tkey="dScore" label="D-Score" />
-                <TableHead>Trend (4h/1d/1w)</TableHead>
+                <TableHead>Trend (1d/1w)</TableHead>
                 <SortableHeader tkey="trendAlignment" label="Trend Score" />
                 <SortableHeader tkey="adxStrength" label="ADX" />
                 <TableHead className="text-right">Entry Signal</TableHead>
@@ -113,7 +113,6 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
                             <TableCell className="font-semibold text-lg text-primary">{item.dScore.toFixed(1)}</TableCell>
                             <TableCell>
                                 <div className="flex items-center gap-2">
-                                  <TrendIndicator trend={item.trends.h4} />
                                   <TrendIndicator trend={item.trends.d1} />
                                   <TrendIndicator trend={item.trends.w1} />
                                 </div>
@@ -171,3 +170,5 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
     </Card>
   );
 }
+
+    

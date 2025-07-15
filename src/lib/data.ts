@@ -26,7 +26,6 @@ export const calculateDScore = (data: ForexData, index: number): DScore => {
 
   // Trends based on Price vs. MAs
   const trends = {
-      h4: (price && sma50 && price > sma50) ? 'buy' : 'sell', // H4 trend as a proxy of D1
       d1: (price && sma50 && price > sma50) ? 'buy' : 'sell',
       w1: (price && sma200 && price > sma200) ? 'buy' : 'sell',
   };
@@ -36,11 +35,12 @@ export const calculateDScore = (data: ForexData, index: number): DScore => {
   const sells = trendValues.filter(t => t === 'sell').length;
   
   let trendAlignment = 0;
-  if (buys === 3 || sells === 3) {
-    trendAlignment = 2.0; // Max points
-  } else if (buys === 2 || sells === 2) {
-    trendAlignment = 1.0; // Half points
+  if (buys === 2 || sells === 2) {
+    trendAlignment = 2.0; // Max points for full alignment
+  } else {
+    trendAlignment = 0.5; // Minimal points for mixed alignment
   }
+
 
   // MA Convergence calculation
   let maConvergence = 0;
@@ -250,3 +250,6 @@ export const exposureData: ExposureData[] = [
 
 
 
+
+
+    

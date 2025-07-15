@@ -17,6 +17,7 @@ export type DScore = {
   change: number;
   changesPercentage: number;
   dScore: number;
+  grade: 'A' | 'B' | 'C';
   trendAlignment: number; // 0-2.0
   adxStrength: number; // 0-1.0
   maConvergence: number; // 0-1.5
@@ -27,7 +28,6 @@ export type DScore = {
   signal: 'Buy' | 'Sell' | 'Block';
   positions?: number;
   trends: {
-    h4: 'buy' | 'sell';
     d1: 'buy' | 'sell';
     w1: 'buy' | 'sell';
   };
@@ -196,3 +196,5 @@ export type ForexData = {
     sma100: FMPSMA[] | null;
     sma200: FMPSMA[] | null;
 };
+
+    
