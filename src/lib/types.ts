@@ -4,11 +4,14 @@ export type DScore = {
   dScore: number;
   grade: 'A' | 'B' | 'C';
   cotBias: number; // 0-2
-  trendConfirmation: number; // 0-3
+  trendAlignment: number; // 0-3
   adxStrength: number; // 0-1
   srRetest: number; // 0-2
   priceStructure: number; // 0-1
   spreadCheck: number; // 0-1
+  atrVolatility: number;
+  marketRegimeFit: number;
+  regimeMultiplier: number;
   cot: number;
   adx: number;
   spread: number;
@@ -23,6 +26,7 @@ export type Bot = {
   profit_loss: number;
   entry_time: string;
   d_score_entry: number;
+  d_score_exit?: number;
 };
 
 export type EquityData = {

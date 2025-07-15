@@ -9,38 +9,46 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { PauseCircle, PlayCircle, Settings2, Trash2, ChevronsRight } from 'lucide-react';
+import { ChevronsRight } from 'lucide-react';
 import type { Bot } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 interface ActiveBotsTableProps {
   data: Bot[];
+  title: string;
+  description: string;
+  isClosed?: boolean;
 }
 
 const statusConfig = {
     active: {
         label: "Active",
         color: "bg-green-500/20 text-green-400 border-green-500/30",
-        icon: <PauseCircle className="h-4 w-4" />
     },
     paused: {
         label: "Paused",
         color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-        icon: <PlayCircle className="h-4 w-4" />
     },
     error: {
         label: "Error",
         color: "bg-red-500/20 text-red-400 border-red-500/30",
-        icon: <Settings2 className="h-4 w-4" />
     },
+    closed: {
+        label: "Closed",
+        color: "bg-gray-500/20 text-gray-400 border-gray-500/30",
+    }
 }
 
-export default function ActiveBotsTable({ data }: ActiveBotsTableProps) {
+export default function ActiveBotsTable({ data, title, description, isClosed = false }: ActiveBotsTableProps) {
   return (
     <Card>
+        <CardHeader>
+            <CardTitle className="font-headline">{title}</CardTitle>
+            <CardDescription>{description}</CardDescription>
+        </CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
@@ -49,13 +57,14 @@ export default function ActiveBotsTable({ data }: ActiveBotsTableProps) {
                 <TableHead>Strategy</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>P/L</TableHead>
-                <TableHead>Entry D-Score</TableHead>
+                <TableHead>{isClosed ? 'Exit D-Score' : 'Entry D-Score'}</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {data.map((bot) => {
-                const config = statusConfig[bot.status];
+                const currentStatus = isClosed ? 'closed' : bot.status;
+                const config = statusConfig[currentStatus];
                 return (
                   <TableRow key={bot.id}>
                     <TableCell className="font-medium">{bot.pair}</TableCell>
@@ -66,12 +75,12 @@ export default function ActiveBotsTable({ data }: ActiveBotsTableProps) {
                         </Badge>
                     </TableCell>
                     <TableCell className={cn(bot.profit_loss >= 0 ? 'text-green-400' : 'text-red-400')}>
-                        ${bot.profit_loss.toFixed(2)}
+                        {bot.profit_loss >= 0 ? '+' : ''}${bot.profit_loss.toFixed(2)}
                     </TableCell>
-                    <TableCell>{bot.d_score_entry}</TableCell>
+                    <TableCell>{isClosed ? bot.d_score_exit?.toFixed(1) : bot.d_score_entry.toFixed(1)}</TableCell>
                     <TableCell className="text-right">
                        <Button variant="ghost" size="sm">
-                          Manage <ChevronsRight className="h-4 w-4 ml-2" />
+                          {isClosed ? 'Analyze' : 'Manage'} <ChevronsRight className="h-4 w-4 ml-2" />
                        </Button>
                     </TableCell>
                   </TableRow>

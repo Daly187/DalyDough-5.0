@@ -10,13 +10,10 @@ import { Badge } from '@/components/ui/badge';
 import { Bot, Zap, Play, Scan } from 'lucide-react';
 import type { BotScannerData } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { botScannerData as initialData } from '@/lib/data';
 
-interface AutoBotScannerProps {
-  data: BotScannerData;
-}
-
-export default function AutoBotScanner({ data }: AutoBotScannerProps) {
-    const [scannerData, setScannerData] = React.useState(data);
+export default function AutoBotScanner() {
+    const [scannerData, setScannerData] = React.useState<BotScannerData>(initialData);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { id, value } = e.target;
@@ -66,7 +63,7 @@ export default function AutoBotScanner({ data }: AutoBotScannerProps) {
         </div>
         <div className="space-y-2">
             <Label>Monitored Pairs</Label>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto">
                 {scannerData.pairs.map(pair => (
                     <Badge key={pair} variant="secondary">{pair}</Badge>
                 ))}

@@ -6,52 +6,84 @@ const getGrade = (score: number): 'A' | 'B' | 'C' => {
   return 'C';
 };
 
-const dScoresRaw = [
-  { pair: 'EUR/USD', dScore: 8.2, cotBias: 1.5, trendConfirmation: 2.5, adxStrength: 0.8, srRetest: 1.5, priceStructure: 0.9, spreadCheck: 1.0, cot: 68, adx: 32, spread: 0.5, signal: 'Buy' as const },
-  { pair: 'GBP/USD', dScore: 7.5, cotBias: 1.2, trendConfirmation: 2.8, adxStrength: 0.7, srRetest: 1.2, priceStructure: 0.8, spreadCheck: 0.8, cot: 55, adx: 28, spread: 0.8, signal: 'Buy' as const },
-  { pair: 'USD/JPY', dScore: 5.8, cotBias: 0.8, trendConfirmation: 1.5, adxStrength: 0.5, srRetest: 1.0, priceStructure: 1.0, spreadCheck: 1.0, cot: -45, adx: 18, spread: 0.7, signal: 'Block' as const },
-  { pair: 'AUD/USD', dScore: 9.1, cotBias: 1.8, trendConfirmation: 3.0, adxStrength: 0.9, srRetest: 1.8, priceStructure: 0.8, spreadCheck: 0.8, cot: 75, adx: 45, spread: 0.6, signal: 'Buy' as const },
-  { pair: 'USD/CAD', dScore: 4.4, cotBias: 0.5, trendConfirmation: 1.0, adxStrength: 0.4, srRetest: 1.0, priceStructure: 0.5, spreadCheck: 1.0, cot: -60, adx: 15, spread: 0.9, signal: 'Block' as const },
-  { pair: 'USD/CHF', dScore: 6.9, cotBias: 1.0, trendConfirmation: 2.2, adxStrength: 0.8, srRetest: 1.1, priceStructure: 0.8, spreadCheck: 1.0, cot: -70, adx: 25, spread: 1.1, signal: 'Sell' as const },
-  { pair: 'XAU/USD', dScore: 8.8, cotBias: 1.7, trendConfirmation: 2.9, adxStrength: 0.9, srRetest: 1.5, priceStructure: 0.9, spreadCheck: 0.9, cot: 85, adx: 38, spread: 2.0, signal: 'Buy' as const },
-];
+const pairs = ['AUD/CAD', 'AUD/CHF', 'AUD/JPY', 'AUD/NZD', 'AUD/USD', 'CAD/JPY', 'CHF/JPY', 'EUR/CAD', 'EUR/CHF', 'EUR/GBP', 'EUR/JPY', 'EUR/NZD', 'EUR/TRY', 'EUR/USD', 'GBP/AUD', 'GBP/CAD', 'GBP/CHF', 'GBP/JPY', 'GBP/USD', 'NZD/CAD', 'NZD/CHF', 'NZD/JPY', 'NZD/USD', 'USD/CAD', 'USD/CHF', 'USD/JPY', 'USD/TRY', 'USD/ZAR', 'XAU/USD'];
 
-export const dScoreData: DScore[] = dScoresRaw.map((item, index) => ({
-  id: `${index + 1}`,
-  ...item,
-  grade: getGrade(item.dScore),
-}));
+const generateRandomDScore = (pair: string, index: number): DScore => {
+  const dScore = Math.random() * 6 + 4; // 4.0 - 10.0
+  const cotBias = Math.random() * 1.5 + 0.5; // 0.5 - 2.0
+  const trendAlignment = Math.random() * 2 + 1; // 1.0 - 3.0
+  const adx = Math.random() * 50 + 10; // 10 - 60
+  const adxStrength = adx / 60;
+  const srRetest = Math.random() * 1.5 + 0.5; // 0.5 - 2.0
+  const priceStructure = Math.random() * 0.5 + 0.5; // 0.5 - 1.0
+  const spread = Math.random() * 1.5 + 0.3; // 0.3 - 1.8
+  const spreadCheck = 1 - Math.min(spread / 2, 1);
+  const totalScore = dScore;
+  let signal: 'Buy' | 'Sell' | 'Block' = 'Block';
+  if (totalScore >= 7.0) {
+    signal = Math.random() > 0.5 ? 'Buy' : 'Sell';
+  }
 
+  return {
+    id: `${index + 1}`,
+    pair,
+    dScore: totalScore,
+    grade: getGrade(totalScore),
+    cotBias,
+    trendAlignment,
+    adxStrength,
+    srRetest,
+    priceStructure,
+    spreadCheck,
+    atrVolatility: Math.random() * 1.5,
+    marketRegimeFit: Math.random() * 2,
+    regimeMultiplier: Math.random() * 0.4 + 0.8, // 0.8-1.2
+    cot: Math.floor(Math.random() * 150 - 75),
+    adx: Math.floor(adx),
+    spread,
+    signal,
+  };
+};
+
+
+export const dScoreData: DScore[] = pairs.map(generateRandomDScore);
 
 export const activeBotsData: Bot[] = [
   { id: 'bot1', pair: 'EUR/USD', strategy: 'DCA Grid', status: 'active', profit_loss: 152.3, entry_time: '2024-05-20T10:30:00Z', d_score_entry: 8.2 },
   { id: 'bot2', pair: 'GBP/USD', strategy: 'Trend Rider', status: 'active', profit_loss: -45.1, entry_time: '2024-05-20T11:05:00Z', d_score_entry: 7.5 },
-  { id: 'bot3', pair: 'USD/JPY', strategy: 'Mean Reversion', status: 'paused', profit_loss: 89.7, entry_time: '2024-05-19T22:15:00Z', d_score_entry: 6.8 },
-  { id: 'bot4', pair: 'AUD/USD', strategy: 'Breakout', status: 'active', profit_loss: 210.55, entry_time: '2024-05-20T14:00:00Z', d_score_entry: 9.1 },
-  { id: 'bot5', pair: 'XAU/USD', strategy: 'DCA Grid', status: 'error', profit_loss: -112.0, entry_time: '2024-05-18T08:45:00Z', d_score_entry: 8.8 },
+  { id: 'bot3', pair: 'AUD/USD', strategy: 'Breakout', status: 'active', profit_loss: 210.55, entry_time: '2024-05-20T14:00:00Z', d_score_entry: 9.1 },
+  { id: 'bot4', pair: 'USD/JPY', strategy: 'Mean Reversion', status: 'paused', profit_loss: 89.7, entry_time: '2024-05-19T22:15:00Z', d_score_entry: 6.8 },
+  { id: 'bot5', pair: 'XAU/USD', strategy: 'DCA Grid', status: 'error', profit_loss: -112.0, entry_time: '2024-05-18T08:45:00Z', d_score_entry: 8.8, d_score_exit: 5.4 },
 ];
 
+export const closedBotsData: Bot[] = [
+    { id: 'bot6', pair: 'EUR/CAD', strategy: 'Trend Rider', status: 'active', profit_loss: 345.12, entry_time: '2024-05-18T10:00:00Z', d_score_entry: 8.5, d_score_exit: 7.0 },
+    { id: 'bot7', pair: 'NZD/USD', strategy: 'Breakout', status: 'active', profit_loss: -88.40, entry_time: '2024-05-17T15:30:00Z', d_score_entry: 7.8, d_score_exit: 6.1 },
+    { id: 'bot8', pair: 'GBP/JPY', strategy: 'DCA Grid', status: 'active', profit_loss: 512.60, entry_time: '2024-05-19T09:00:00Z', d_score_entry: 9.2, d_score_exit: 7.5 },
+];
+
+
 export const equityData: EquityData[] = [
-  { date: '2024-05-01', equity: 10000 },
-  { date: '2024-05-02', equity: 10050 },
-  { date: '2024-05-03', equity: 10120 },
-  { date: '2024-05-04', equity: 10080 },
-  { date: '2024-05-05', equity: 10150 },
-  { date: '2024-05-06', equity: 10250 },
-  { date: '2024-05-07', equity: 10300 },
-  { date: '2024-05-08', equity: 10380 },
-  { date: '2024-05-09', equity: 10450 },
-  { date: '2024-05-10', equity: 10420 },
-  { date: '2024-05-11', equity: 10500 },
-  { date: '2024-05-12', equity: 10580 },
-  { date: '2024-05-13', equity: 10650 },
-  { date: '2024-05-14', equity: 10700 },
-  { date: '2024-05-15', equity: 10780 },
-  { date: '2024-05-16', equity: 10850 },
-  { date: '2024-05-17', equity: 10900 },
-  { date: '2024-05-18', equity: 10870 },
-  { date: '2024-05-19', equity: 10950 },
-  { date: '2024-05-20', equity: 11050 },
+  { date: '2024-05-01', equity: 540000 },
+  { date: '2024-05-02', equity: 540500 },
+  { date: '2024-05-03', equity: 541200 },
+  { date: '2024-05-04', equity: 540800 },
+  { date: '2024-05-05', equity: 541500 },
+  { date: '2024-05-06', equity: 542500 },
+  { date: '2024-05-07', equity: 543000 },
+  { date: '2024-05-08', equity: 543800 },
+  { date: '2024-05-09', equity: 544500 },
+  { date: '2024-05-10', equity: 544200 },
+  { date: '2024-05-11', equity: 545000 },
+  { date: '2024-05-12', equity: 545800 },
+  { date: '2024-05-13', equity: 546500 },
+  { date: '2024-05-14', equity: 547000 },
+  { date: '2024-05-15', equity: 547800 },
+  { date: '2024-05-16', equity: 548500 },
+  { date: '2024-05-17', equity: 549000 },
+  { date: '2024-05-18', equity: 548700 },
+  { date: '2024-05-19', equity: 549500 },
+  { date: '2024-05-20', equity: 543025 },
 ];
 
 export const riskMetricsData: RiskMetric[] = [
@@ -78,44 +110,39 @@ export const botScannerData: BotScannerData = {
     maxBotsPerPair: 2,
     scanInterval: 5,
     autoLaunch: true,
-    pairs: ['EUR/USD', 'GBP/USD', 'AUD/USD', 'XAU/USD'],
+    pairs,
 };
 
-export const cotData: CotData[] = [
-    {
-        currency: 'EUR',
-        data: [
-            { date: '2024-04-09', long: 120000, short: 80000 },
-            { date: '2024-04-16', long: 125000, short: 75000 },
-            { date: '2024-04-23', long: 130000, short: 70000 },
-            { date: '2024-04-30', long: 140000, short: 60000 },
-            { date: '2024-05-07', long: 135000, short: 65000 },
-            { date: '2024-05-14', long: 150000, short: 50000 },
-        ]
-    },
-    {
-        currency: 'GBP',
-        data: [
-            { date: '2024-04-09', long: 60000, short: 40000 },
-            { date: '2024-04-16', long: 62000, short: 38000 },
-            { date: '2024-04-23', long: 65000, short: 35000 },
-            { date: '2024-04-30', long: 70000, short: 30000 },
-            { date: '2024-05-07', long: 68000, short: 32000 },
-            { date: '2024-05-14', long: 75000, short: 25000 },
-        ]
-    },
-    {
-        currency: 'JPY',
-        data: [
-            { date: '2024-04-09', long: 30000, short: 150000 },
-            { date: '2024-04-16', long: 28000, short: 155000 },
-            { date: '2024-04-23', long: 25000, short: 160000 },
-            { date: '2024-04-30', long: 20000, short: 170000 },
-            { date: '2024-05-07', long: 22000, short: 165000 },
-            { date: '2024-05-14', long: 18000, short: 175000 },
-        ]
+const generateCotData = (currency: string) => {
+    const data = [];
+    let long = Math.random() * 100000 + 50000;
+    let short = Math.random() * 100000 + 50000;
+    for (let i = 5; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - (i * 7));
+        long += (Math.random() - 0.5) * 20000;
+        short += (Math.random() - 0.5) * 20000;
+        data.push({
+            date: date.toISOString().split('T')[0],
+            long: Math.max(0, Math.floor(long)),
+            short: Math.max(0, Math.floor(short)),
+        });
     }
+    return { currency, data };
+};
+
+
+export const cotData: CotData[] = [
+    generateCotData('EUR'),
+    generateCotData('GBP'),
+    generateCotData('JPY'),
+    generateCotData('USD'),
+    generateCotData('CAD'),
+    generateCotData('AUD'),
+    generateCotData('NZD'),
+    generateCotData('CHF'),
 ];
+
 
 export const newsData: NewsEvent[] = [
     { id: '1', time: '08:30', currency: 'USD', impact: 'High', event: 'Consumer Price Index (MoM)', actual: '0.4%', forecast: '0.3%', previous: '0.2%' },
