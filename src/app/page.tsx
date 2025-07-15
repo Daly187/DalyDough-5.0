@@ -9,7 +9,7 @@ export default function DashboardPage() {
       <SystemStatus />
       <div className="space-y-8">
           <MeatMarketTable data={dScoreData} />
-          <ActiveBotsTable data={activeBotsData} title="Active Bots" description="A real-time overview of all currently running trade bots." />
+          <ActiveBotsTable data={activeBotsData.slice(0, 4)} title="Active Bots" description="A real-time overview of all currently running trade bots." />
       </div>
     </main>
   );

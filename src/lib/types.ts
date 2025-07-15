@@ -16,6 +16,7 @@ export type DScore = {
   adx: number;
   spread: number;
   signal: 'Buy' | 'Sell' | 'Block';
+  positions?: number;
 };
 
 export type Bot = {
@@ -76,4 +77,28 @@ export type NewsEvent = {
   actual: string | null;
   forecast: string | null;
   previous: string | null;
+}
+
+export type BotConfigurationData = {
+  botType: string;
+  initialInvestment: number;
+  lotSize: number;
+  maxPositions: number;
+  stopLoss: number;
+  takeProfit: number;
+  maxDrawdown: number;
+  dailyLossLimit: number;
+  enableTrailingStop: boolean;
+  dSizeExitThreshold: number;
+  reentryDelay: number;
+  newsFilter: boolean;
+  weekendTrading: boolean;
+  aiOptimization: boolean;
+}
+
+export type AIReentry = {
+  level: number;
+  priceOffset: string;
+  lotSize: number;
+  condition: string;
 }

@@ -1,4 +1,4 @@
-import type { DScore, Bot, EquityData, RiskMetric, ApiKey, BotScannerData, CotData, NewsEvent } from './types';
+import type { DScore, Bot, EquityData, RiskMetric, ApiKey, BotScannerData, CotData, NewsEvent, BotConfigurationData, AIReentry } from './types';
 
 const getGrade = (score: number): 'A' | 'B' | 'C' => {
   if (score >= 8.0) return 'A';
@@ -9,14 +9,14 @@ const getGrade = (score: number): 'A' | 'B' | 'C' => {
 const pairs = ['AUD/CAD', 'AUD/CHF', 'AUD/JPY', 'AUD/NZD', 'AUD/USD', 'CAD/JPY', 'CHF/JPY', 'EUR/CAD', 'EUR/CHF', 'EUR/GBP', 'EUR/JPY', 'EUR/NZD', 'EUR/TRY', 'EUR/USD', 'GBP/AUD', 'GBP/CAD', 'GBP/CHF', 'GBP/JPY', 'GBP/USD', 'NZD/CAD', 'NZD/CHF', 'NZD/JPY', 'NZD/USD', 'USD/CAD', 'USD/CHF', 'USD/JPY', 'USD/TRY', 'USD/ZAR', 'XAU/USD'];
 
 const generateRandomDScore = (pair: string, index: number): DScore => {
-  const dScore = Math.random() * 6 + 4; // 4.0 - 10.0
-  const cotBias = Math.random() * 1.5 + 0.5; // 0.5 - 2.0
-  const trendAlignment = Math.random() * 2 + 1; // 1.0 - 3.0
-  const adx = Math.random() * 50 + 10; // 10 - 60
+  const dScore = Math.random() * 4 + 6; // 6.0 - 10.0
+  const cotBias = Math.random() * 1.5 + 0.5;
+  const trendAlignment = Math.random() * 2 + 1;
+  const adx = Math.random() * 50 + 10;
   const adxStrength = adx / 60;
-  const srRetest = Math.random() * 1.5 + 0.5; // 0.5 - 2.0
-  const priceStructure = Math.random() * 0.5 + 0.5; // 0.5 - 1.0
-  const spread = Math.random() * 1.5 + 0.3; // 0.3 - 1.8
+  const srRetest = Math.random() * 1.5 + 0.5;
+  const priceStructure = Math.random() * 0.5 + 0.5;
+  const spread = Math.random() * 1.5 + 0.3;
   const spreadCheck = 1 - Math.min(spread / 2, 1);
   const totalScore = dScore;
   let signal: 'Buy' | 'Sell' | 'Block' = 'Block';
@@ -37,11 +37,12 @@ const generateRandomDScore = (pair: string, index: number): DScore => {
     spreadCheck,
     atrVolatility: Math.random() * 1.5,
     marketRegimeFit: Math.random() * 2,
-    regimeMultiplier: Math.random() * 0.4 + 0.8, // 0.8-1.2
+    regimeMultiplier: Math.random() * 0.4 + 0.8,
     cot: Math.floor(Math.random() * 150 - 75),
     adx: Math.floor(adx),
     spread,
     signal,
+    positions: Math.floor(Math.random() * 6),
   };
 };
 
@@ -112,6 +113,31 @@ export const botScannerData: BotScannerData = {
     autoLaunch: true,
     pairs,
 };
+
+export const botConfigurationData: BotConfigurationData = {
+    botType: 'Dynamic DCA',
+    initialInvestment: 1000,
+    lotSize: 0.01,
+    maxPositions: 5,
+    stopLoss: 50,
+    takeProfit: 100,
+    maxDrawdown: 20,
+    dailyLossLimit: 200,
+    enableTrailingStop: false,
+    dSizeExitThreshold: 6.0,
+    reentryDelay: 15,
+    newsFilter: true,
+    weekendTrading: false,
+    aiOptimization: true,
+};
+
+export const aiReentriesData: AIReentry[] = [
+    { level: 1, priceOffset: 'R/S Level -20', lotSize: 0.02, condition: 'Support Retest' },
+    { level: 2, priceOffset: 'R/S Level -40', lotSize: 0.03, condition: 'Fib 61.8%' },
+    { level: 3, priceOffset: 'R/S Level -60', lotSize: 0.05, condition: 'Volume Spike' },
+    { level: 4, priceOffset: 'R/S Level -80', lotSize: 0.07, condition: 'Oversold RSI' },
+];
+
 
 const generateCotData = (currency: string) => {
     const data = [];
