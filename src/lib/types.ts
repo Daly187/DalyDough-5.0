@@ -3,6 +3,9 @@
 export type DScore = {
   id: string;
   pair: string;
+  price: number;
+  change: number;
+  changesPercentage: number;
   dScore: number;
   grade: 'A' | 'B' | 'C';
   trendAlignment: number; // 0-2.0

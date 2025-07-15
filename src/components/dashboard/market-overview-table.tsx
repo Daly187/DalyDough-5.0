@@ -92,6 +92,7 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
             <TableHeader>
               <TableRow>
                 <SortableHeader tkey="pair" label="Pair" />
+                <TableHead>Price</TableHead>
                 <SortableHeader tkey="dScore" label="D-Score" />
                 <SortableHeader tkey="grade" label="Grade" />
                 <TableHead>Trend (4h/1d/1w)</TableHead>
@@ -106,6 +107,12 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
                 return (
                   <TableRow key={item.id}>
                     <TableCell className="font-medium">{item.pair}</TableCell>
+                    <TableCell>
+                      <div className={cn("font-semibold", item.change >= 0 ? 'text-green-400' : 'text-red-400')}>
+                        {item.price.toFixed(item.pair.includes('JPY') ? 3 : 5)}
+                        <span className="text-xs ml-1">({item.changesPercentage.toFixed(2)}%)</span>
+                      </div>
+                    </TableCell>
                     <TableCell className="font-semibold text-lg text-primary">{item.dScore.toFixed(1)}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className={cn("font-bold", gradeColors[item.grade])}>

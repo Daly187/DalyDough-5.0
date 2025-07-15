@@ -14,12 +14,14 @@ export const calculateDScore = (data: ForexData, index: number): DScore => {
   const priceStructure = Math.random() * 1.0;
   const marketRegimeFit = Math.random() * 2.0;
 
+  const quote = data.quote?.[0];
+
   // Calculated components
   const adx = data.adx?.[0]?.adx ?? 0;
   const adxStrength = Math.min(adx / 50, 1.0); // Capped at 1.0 for scores > 50
   
   const atr = data.atr?.[0]?.atr ?? 0;
-  const price = data.quote?.[0]?.price ?? 1;
+  const price = quote?.price ?? 1;
   const atrVolatility = Math.min( (atr / price) * 100, 1.0); // ATR as percentage of price, capped at 1
 
   const trends = {
@@ -50,6 +52,9 @@ export const calculateDScore = (data: ForexData, index: number): DScore => {
   return {
     id: `${index + 1}`,
     pair: data.pair,
+    price: quote?.price ?? 0,
+    change: quote?.change ?? 0,
+    changesPercentage: quote?.changesPercentage ?? 0,
     dScore: totalScore,
     grade: getGrade(totalScore),
     trendAlignment,
