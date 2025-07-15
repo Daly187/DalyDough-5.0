@@ -1,6 +1,6 @@
 
 
-import type { DScore, Bot, EquityData, RiskMetric, ApiKey, NewsEvent, BotConfigurationData, AIReentry, MarketRegime, ExposureData, ForexData, StrengthData, CurrencyStrength, DScoreWeights } from './types';
+import type { DScore, Bot, EquityData, RiskMetric, ApiKey, NewsEvent, BotConfigurationData, AIReentry, MarketRegime, ExposureData, ForexData, StrengthData, DScoreWeights } from './types';
 
 const getGrade = (score: number): 'A' | 'B' | 'C' => {
   if (score >= 8.5) return 'A';
@@ -71,13 +71,14 @@ export const aiRecommendedWeights: DScoreWeights = {
 };
 
 export const calculateDScore = (data: ForexData, index: number, liveStrengthData: CurrencyStrength[], customWeights: DScoreWeights | null): DScore | null => {
-  const quote = data.quote?.[0];
-  const sma50 = data.sma50?.[0]?.sma;
-  const sma100 = data.sma100?.[0]?.sma;
-  const sma200 = data.sma200?.[0]?.sma;
-  const adxData = data.adx?.[0];
-  const atrData = data.atr?.[0];
-  
+  // Robust check for valid data from FMP API
+  const quote = Array.isArray(data.quote) && data.quote.length > 0 ? data.quote[0] : null;
+  const sma50 = Array.isArray(data.sma50) && data.sma50.length > 0 ? data.sma50[0]?.sma : null;
+  const sma100 = Array.isArray(data.sma100) && data.sma100.length > 0 ? data.sma100[0]?.sma : null;
+  const sma200 = Array.isArray(data.sma200) && data.sma200.length > 0 ? data.sma200[0]?.sma : null;
+  const adxData = Array.isArray(data.adx) && data.adx.length > 0 ? data.adx[0] : null;
+  const atrData = Array.isArray(data.atr) && data.atr.length > 0 ? data.atr[0] : null;
+
   if (!quote || !sma50 || !sma100 || !sma200 || !adxData || !atrData) {
     return null; // Return null if essential data is missing
   }
