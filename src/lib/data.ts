@@ -88,7 +88,7 @@ export const calculateDScore = (data: ForexData, index: number, liveStrengthData
   }
 
   // 4. ATR/Volatility (Live)
-  const atrVolatility = price > 0 ? Math.min((atr / price) * 100, 1.0) : 0;
+  const atrVolatility = price > 0 ? Math.min((atr / price) * 50, 1.0) : 0;
 
   // 5. S/R Retest (Live Proxy)
   let srRetest = 0;
@@ -108,7 +108,7 @@ export const calculateDScore = (data: ForexData, index: number, liveStrengthData
       const diDiff = Math.abs(pdi - mdi);
       // Score based on how dominant one DI is over the other.
       // A large difference indicates a clearer trend structure.
-      priceStructure = Math.min(diDiff / totalDi * 2.0, 1.0); // Max score of 1.0
+      priceStructure = Math.min(diDiff / totalDi, 1.0); // Max score of 1.0
   }
 
   // 7. Market Regime Fit (Live Proxy)
@@ -170,10 +170,10 @@ export const calculateDScore = (data: ForexData, index: number, liveStrengthData
     adxStrength,
     maConvergence,
     srRetest,
-    priceStructure: parseFloat(priceStructure.toFixed(1)),
+    priceStructure: priceStructure,
     atrVolatility,
     marketRegimeFit,
-    currencyStrength: parseFloat(currencyStrength.toFixed(1)),
+    currencyStrength: currencyStrength,
     signal,
     positions: activePositions,
     trends,

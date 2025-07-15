@@ -72,7 +72,7 @@ const getBreakdownText = (key: keyof DScore, score: number, trendDirection: 'Buy
             if (score > 0.4) return 'Moderate Confirmation';
             return 'No Confirmation';
         default:
-            return '';
+            return 'Neutral';
     }
 }
 
@@ -165,7 +165,7 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
                         </TableCell>
                       </TableRow>
                       {openRow === item.id && (
-                        <tr className="bg-muted/50 hover:bg-muted/50">
+                        <TableRow className="bg-muted/50 hover:bg-muted/50">
                             <TableCell colSpan={6} className="p-0">
                                 <div className="p-4 grid grid-cols-2 gap-x-8 gap-y-2">
                                     <div>
@@ -196,7 +196,7 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
                                     </div>
                                 </div>
                             </TableCell>
-                        </tr>
+                        </TableRow>
                       )}
                    </React.Fragment>
                 );
