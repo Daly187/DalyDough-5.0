@@ -12,17 +12,18 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { ArrowUp, ArrowDown, ArrowUpDown, ChevronsUpDown } from 'lucide-react';
 import type { DScore } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 
 interface MarketOverviewTableProps {
   data: DScore[];
 }
 
-type SortKey = keyof DScore;
+type SortKey = keyof DScore | 'pair' | 'dScore';
 
 const signalConfig = {
     Buy: { color: "text-green-400", icon: <ArrowUp className="h-4 w-4" />, label: "Allow Buy" },
@@ -39,37 +40,38 @@ const TrendIndicator = ({ trend }: { trend: 'buy' | 'sell' }) => (
 const getBreakdownText = (key: keyof DScore, score: number, trendDirection: 'Buy' | 'Sell' | 'Block') => {
     if (trendDirection === 'Block') return 'Neutral';
     const trendText = trendDirection === 'Buy' ? 'Buy' : 'Sell';
+    
     switch (key) {
         case 'trendAlignment':
-            if (score > 1.5) return `Confirms ${trendText} Trend`;
-            if (score > 0.5) return `Weak ${trendText} Agreement`;
+            if (score >= 1.5) return `Confirms ${trendText} Trend`;
+            if (score > 0) return `Weak ${trendText} Agreement`;
             return 'No Trend Agreement';
         case 'adxStrength':
-            if (score > 0.7) return 'Strong Trend Momentum';
-            if (score > 0.4) return 'Developing Momentum';
+            if (score >= 0.7) return 'Strong Trend Momentum';
+            if (score > 0) return 'Developing Momentum';
             return 'Weak Momentum';
         case 'maConvergence':
-            if (score > 1.0) return `Confirms ${trendText} Momentum`;
-            if (score > 0.5) return 'Partial Agreement';
+            if (score >= 1.0) return `Confirms ${trendText} Momentum`;
+            if (score > 0) return 'Partial Agreement';
             return 'Divergent MAs';
         case 'srRetest':
-            if (score > 1.0) return `Confirms ${trendText} at Key Level`;
+            if (score > 0) return `Confirms ${trendText} at Key Level`;
             return 'Not at a Key Level';
         case 'priceStructure':
-            if (score > 0.7) return `Clear ${trendText} Structure`;
-            if (score > 0.4) return 'Developing Structure';
+            if (score >= 0.7) return `Clear ${trendText} Structure`;
+            if (score > 0) return 'Developing Structure';
             return 'Unclear Structure';
         case 'atrVolatility':
-             if (score > 0.7) return 'High Volatility';
-            if (score > 0.4) return 'Moderate Volatility';
+             if (score >= 0.7) return 'Ideal Volatility';
+            if (score > 0) return 'Moderate Volatility';
             return 'Low Volatility';
         case 'marketRegimeFit':
-            if (score > 1.5) return `Ideal for ${trendText}ing`;
-            if (score > 0.5) return 'Moderate Fit';
+            if (score >= 1.0) return `Ideal for ${trendText}ing`;
+            if (score > 0) return 'Moderate Fit';
             return 'Poor Fit for Trending';
         case 'currencyStrength':
-            if (score > 0.7) return `Strong ${trendText} Confirmation`;
-            if (score > 0.4) return 'Moderate Confirmation';
+            if (score >= 0.7) return `Strong ${trendText} Confirmation`;
+            if (score > 0) return 'Moderate Confirmation';
             return 'No Confirmation';
         default:
             return 'Neutral';
@@ -85,13 +87,20 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
 
   const sortedData = React.useMemo(() => {
     return [...data].sort((a, b) => {
-      const aValue = a[sortKey];
-      const bValue = b[sortKey];
+      const aValue = a[sortKey as keyof DScore];
+      const bValue = b[sortKey as keyof DScore];
 
-      if (aValue < bValue) {
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
+      }
+      
+      const aStr = String(aValue);
+      const bStr = String(bValue);
+
+      if (aStr < bStr) {
         return sortOrder === 'asc' ? -1 : 1;
       }
-      if (aValue > bValue) {
+      if (aStr > bStr) {
         return sortOrder === 'asc' ? 1 : -1;
       }
       return 0;
@@ -115,6 +124,17 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
       </Button>
     </TableHead>
   );
+  
+  const scoreKeys: (keyof DScore)[] = [
+    'trendAlignment', 'adxStrength', 'maConvergence', 'srRetest', 
+    'priceStructure', 'atrVolatility', 'marketRegimeFit', 'currencyStrength'
+  ];
+  
+  const maxScores: Record<keyof DScore, number> = {
+      trendAlignment: 2.0, adxStrength: 1.0, maConvergence: 1.5, srRetest: 0.5,
+      priceStructure: 1.0, atrVolatility: 0.5, marketRegimeFit: 2.0, currencyStrength: 1.5,
+      id: 0, pair: 0, price: 0, change: 0, changesPercentage: 0, dScore: 10, grade: 0, signal: 0, positions: 0, trends: 0
+  };
 
   return (
     <Card>
@@ -137,11 +157,16 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
             </TableHeader>
             <TableBody>
               {sortedData.map((item) => {
+                if (!item) return null; // Add a guard clause for null items
                 const signal = signalConfig[item.signal];
                 const isRowOpen = openRow === item.id;
                 return (
                    <React.Fragment key={item.id}>
-                      <TableRow onClick={() => setOpenRow(isRowOpen ? null : item.id)} className="cursor-pointer" data-state={isRowOpen ? 'open' : 'closed'}>
+                      <TableRow 
+                        onClick={() => setOpenRow(isRowOpen ? null : item.id)} 
+                        className="cursor-pointer"
+                        data-state={isRowOpen ? 'open' : 'closed'}
+                      >
                         <TableCell>
                           <div className="font-medium">{item.pair}</div>
                           <div className={cn("text-xs", item.change >= 0 ? 'text-green-400' : 'text-red-400')}>
@@ -172,27 +197,23 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
                                     <div>
                                         <h4 className="font-semibold text-sm mb-2 text-foreground">D-Score Breakdown</h4>
                                         <div className="space-y-1 text-xs">
-                                            <div className="flex justify-between"><span className="text-muted-foreground">Trend Alignment:</span> <span className="font-semibold text-foreground">{getBreakdownText('trendAlignment', item.trendAlignment, item.signal)}</span></div>
-                                            <div className="flex justify-between"><span className="text-muted-foreground">ADX Strength:</span> <span className="font-semibold text-foreground">{getBreakdownText('adxStrength', item.adxStrength, item.signal)}</span></div>
-                                            <div className="flex justify-between"><span className="text-muted-foreground">MA Convergence:</span> <span className="font-semibold text-foreground">{getBreakdownText('maConvergence', item.maConvergence, item.signal)}</span></div>
-                                            <div className="flex justify-between"><span className="text-muted-foreground">S/R Retest:</span> <span className="font-semibold text-foreground">{getBreakdownText('srRetest', item.srRetest, item.signal)}</span></div>
-                                            <div className="flex justify-between"><span className="text-muted-foreground">Price Structure:</span> <span className="font-semibold text-foreground">{getBreakdownText('priceStructure', item.priceStructure, item.signal)}</span></div>
-                                            <div className="flex justify-between"><span className="text-muted-foreground">ATR/Volatility:</span> <span className="font-semibold text-foreground">{getBreakdownText('atrVolatility', item.atrVolatility, item.signal)}</span></div>
-                                            <div className="flex justify-between"><span className="text-muted-foreground">Market Regime Fit:</span> <span className="font-semibold text-foreground">{getBreakdownText('marketRegimeFit', item.marketRegimeFit, item.signal)}</span></div>
-                                            <div className="flex justify-between"><span className="text-muted-foreground">Currency Strength:</span> <span className="font-semibold text-foreground">{getBreakdownText('currencyStrength', item.currencyStrength, item.signal)}</span></div>
+                                          {scoreKeys.map(key => (
+                                            <div key={key} className="flex justify-between">
+                                                <span className="text-muted-foreground">{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:</span> 
+                                                <span className="font-semibold text-foreground">{getBreakdownText(key, item[key] as number, item.signal)}</span>
+                                            </div>
+                                          ))}
                                         </div>
                                     </div>
                                     <div>
                                         <h4 className="font-semibold text-sm mb-2 text-foreground">Point Allocation</h4>
                                         <div className="space-y-1 text-xs">
-                                            <div className="flex justify-between"><span className="text-muted-foreground">Trend Alignment:</span> <span className="font-semibold text-foreground">{item.trendAlignment.toFixed(2)} / 2.00</span></div>
-                                            <div className="flex justify-between"><span className="text-muted-foreground">ADX Strength:</span> <span className="font-semibold text-foreground">{item.adxStrength.toFixed(2)} / 1.00</span></div>
-                                            <div className="flex justify-between"><span className="text-muted-foreground">MA Convergence:</span> <span className="font-semibold text-foreground">{item.maConvergence.toFixed(2)} / 1.50</span></div>
-                                            <div className="flex justify-between"><span className="text-muted-foreground">S/R Retest:</span> <span className="font-semibold text-foreground">{item.srRetest.toFixed(2)} / 0.50</span></div>
-                                            <div className="flex justify-between"><span className="text-muted-foreground">Price Structure:</span> <span className="font-semibold text-foreground">{item.priceStructure.toFixed(2)} / 1.00</span></div>
-                                            <div className="flex justify-between"><span className="text-muted-foreground">ATR/Volatility:</span> <span className="font-semibold text-foreground">{item.atrVolatility.toFixed(2)} / 0.50</span></div>
-                                            <div className="flex justify-between"><span className="text-muted-foreground">Market Regime Fit:</span> <span className="font-semibold text-foreground">{item.marketRegimeFit.toFixed(2)} / 2.00</span></div>
-                                             <div className="flex justify-between"><span className="text-muted-foreground">Currency Strength:</span> <span className="font-semibold text-foreground">{item.currencyStrength.toFixed(2)} / 1.50</span></div>
+                                          {scoreKeys.map(key => (
+                                              <div key={key} className="flex justify-between">
+                                                <span className="text-muted-foreground">{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:</span> 
+                                                <span className="font-semibold text-foreground">{(item[key] as number).toFixed(2)} / {maxScores[key].toFixed(2)}</span>
+                                              </div>
+                                          ))}
                                         </div>
                                     </div>
                                 </div>
@@ -209,4 +230,3 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
     </Card>
   );
 }
-
