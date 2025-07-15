@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { activeBotsData, closedBotsData, dScoreData } from '@/lib/data';
-import { Pause, Power, ShieldAlert, Trash2 } from 'lucide-react';
+import { Pause, ShieldAlert, Trash2 } from 'lucide-react';
 
 export default function BotsPage() {
   return (
