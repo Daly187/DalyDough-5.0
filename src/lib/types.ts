@@ -5,16 +5,12 @@ export type DScore = {
   pair: string;
   dScore: number;
   grade: 'A' | 'B' | 'C';
-  cotBias: number; // 0-1.5
   trendAlignment: number; // 0-2.0
   adxStrength: number; // 0-1.0
   srRetest: number; // 0-1.5
   priceStructure: number; // 0-1.0
   atrVolatility: number; // 0-1.0
   marketRegimeFit: number; // 0-2.0
-  regimeMultiplier: number;
-  cot: number;
-  adx: number;
   signal: 'Buy' | 'Sell' | 'Block';
   positions?: number;
   trends: {
@@ -84,12 +80,11 @@ export type AIReentry = {
   condition: string;
 }
 
-export type CotData = {
+export type StrengthData = {
   currency: string;
   data: {
     date: string;
-    long: number;
-    short: number;
+    strength: number;
   }[];
 };
 

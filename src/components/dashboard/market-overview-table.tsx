@@ -95,8 +95,8 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
                 <SortableHeader tkey="dScore" label="D-Score" />
                 <SortableHeader tkey="grade" label="Grade" />
                 <TableHead>Trend (4h/1d/1w)</TableHead>
-                <SortableHeader tkey="cot" label="COT" />
-                <SortableHeader tkey="adx" label="ADX" />
+                <SortableHeader tkey="trendAlignment" label="Trend Score" />
+                <SortableHeader tkey="adxStrength" label="ADX" />
                 <TableHead className="text-right">Entry Signal</TableHead>
               </TableRow>
             </TableHeader>
@@ -119,8 +119,8 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
                            <TrendIndicator trend={item.trends.w1} />
                         </div>
                     </TableCell>
-                    <TableCell>{item.cot}</TableCell>
-                    <TableCell>{item.adx}</TableCell>
+                    <TableCell className="font-semibold">{item.trendAlignment.toFixed(1)}</TableCell>
+                    <TableCell>{item.adxStrength.toFixed(1)}</TableCell>
                     <TableCell className="text-right">
                       <div className={cn("flex items-center justify-end gap-2 font-medium", signal.color)}>
                           {signal.icon}

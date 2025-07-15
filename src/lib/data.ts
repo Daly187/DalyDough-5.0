@@ -1,4 +1,4 @@
-import type { DScore, Bot, EquityData, RiskMetric, ApiKey, CotData, NewsEvent, BotConfigurationData, AIReentry, MarketRegime, ExposureData, ForexData } from './types';
+import type { DScore, Bot, EquityData, RiskMetric, ApiKey, NewsEvent, BotConfigurationData, AIReentry, MarketRegime, ExposureData, ForexData, StrengthData } from './types';
 
 const getGrade = (score: number): 'A' | 'B' | 'C' => {
   if (score >= 8.0) return 'A';
@@ -9,8 +9,7 @@ const getGrade = (score: number): 'A' | 'B' | 'C' => {
 export const pairs = ['AUD/CAD', 'AUD/CHF', 'AUD/JPY', 'AUD/NZD', 'AUD/USD', 'CAD/JPY', 'CHF/JPY', 'EUR/CAD', 'EUR/CHF', 'EUR/GBP', 'EUR/JPY', 'EUR/NZD', 'EUR/TRY', 'EUR/USD', 'GBP/AUD', 'GBP/CAD', 'GBP/CHF', 'GBP/JPY', 'GBP/USD', 'NZD/CAD', 'NZD/CHF', 'NZD/JPY', 'NZD/USD', 'USD/CAD', 'USD/CHF', 'USD/JPY', 'USD/TRY', 'USD/ZAR', 'XAU/USD'];
 
 export const calculateDScore = (data: ForexData, index: number): DScore => {
-  // Mocked components for now
-  const cotBias = Math.random() * 1.5;
+  // Mocked components
   const srRetest = Math.random() * 1.5;
   const priceStructure = Math.random() * 1.0;
   const marketRegimeFit = Math.random() * 2.0;
@@ -23,13 +22,29 @@ export const calculateDScore = (data: ForexData, index: number): DScore => {
   const price = data.quote?.[0]?.price ?? 1;
   const atrVolatility = Math.min( (atr / price) * 100, 1.0); // ATR as percentage of price, capped at 1
 
-  const trendAlignment = Math.random() * 2.0; // Keep this mocked for now
+  const trends = {
+      h4: Math.random() > 0.5 ? 'buy' : 'sell',
+      d1: Math.random() > 0.5 ? 'buy' : 'sell',
+      w1: Math.random() > 0.5 ? 'buy' : 'sell',
+  };
 
-  const totalScore = cotBias + trendAlignment + adxStrength + atrVolatility + srRetest + priceStructure + marketRegimeFit;
+  const trendValues = Object.values(trends);
+  const buys = trendValues.filter(t => t === 'buy').length;
+  const sells = trendValues.filter(t => t === 'sell').length;
+  
+  let trendAlignment = 0;
+  if (buys === 3 || sells === 3) {
+    trendAlignment = 2.0; // Max points
+  } else if (buys === 2 || sells === 2) {
+    trendAlignment = 1.0; // Half points
+  }
+
+  const totalScore = trendAlignment + adxStrength + atrVolatility + srRetest + priceStructure + marketRegimeFit;
   
   let signal: 'Buy' | 'Sell' | 'Block' = 'Block';
   if (totalScore >= 7.0) {
-    signal = Math.random() > 0.5 ? 'Buy' : 'Sell';
+    if (buys > sells) signal = 'Buy';
+    if (sells > buys) signal = 'Sell';
   }
 
   return {
@@ -37,23 +52,15 @@ export const calculateDScore = (data: ForexData, index: number): DScore => {
     pair: data.pair,
     dScore: totalScore,
     grade: getGrade(totalScore),
-    cotBias,
     trendAlignment,
     adxStrength,
     srRetest,
     priceStructure,
     atrVolatility,
     marketRegimeFit,
-    regimeMultiplier: Math.random() * 0.4 + 0.8, // Mocked
-    cot: Math.floor(Math.random() * 150 - 75), // Mocked
-    adx: Math.floor(adx),
     signal,
     positions: Math.floor(Math.random() * 6), // Mocked
-    trends: { // Mocked
-      h4: Math.random() > 0.5 ? 'buy' : 'sell',
-      d1: Math.random() > 0.5 ? 'buy' : 'sell',
-      w1: Math.random() > 0.5 ? 'buy' : 'sell',
-    },
+    trends,
   };
 };
 
@@ -140,34 +147,29 @@ export const aiReentriesData: AIReentry[] = [
 ];
 
 
-const generateCotData = (currency: string) => {
+const generateStrengthData = (currency: string) => {
     const data = [];
-    let long = Math.random() * 100000 + 50000;
-    let short = Math.random() * 100000 + 50000;
     for (let i = 5; i >= 0; i--) {
         const date = new Date();
         date.setDate(date.getDate() - (i * 7));
-        long += (Math.random() - 0.5) * 20000;
-        short += (Math.random() - 0.5) * 20000;
         data.push({
             date: date.toISOString().split('T')[0],
-            long: Math.max(0, Math.floor(long)),
-            short: Math.max(0, Math.floor(short)),
+            strength: Math.floor(Math.random() * 8 + 1)
         });
     }
     return { currency, data };
 };
 
 
-export const cotData: CotData[] = [
-    generateCotData('EUR'),
-    generateCotData('GBP'),
-    generateCotData('JPY'),
-    generateCotData('USD'),
-    generateCotData('CAD'),
-    generateCotData('AUD'),
-    generateCotData('NZD'),
-    generateCotData('CHF'),
+export const strengthData: StrengthData[] = [
+    generateStrengthData('EUR'),
+    generateStrengthData('GBP'),
+    generateStrengthData('JPY'),
+    generateStrengthData('USD'),
+    generateStrengthData('CAD'),
+    generateStrengthData('AUD'),
+    generateStrengthData('NZD'),
+    generateStrengthData('CHF'),
 ];
 
 

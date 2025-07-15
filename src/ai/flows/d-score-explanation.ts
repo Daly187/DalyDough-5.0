@@ -15,12 +15,11 @@ import {z} from 'genkit';
 const DScoreExplanationInputSchema = z.object({
   currencyPair: z.string().describe('The currency pair to explain the D-Score for (e.g., EURUSD).'),
   dScore: z.number().describe('The D-Score for the currency pair.'),
-  cotBias: z.number().describe('The COT Bias component of the D-Score.'),
   trendAlignment: z.number().describe('The Trend Alignment component of the D-Score.'),
   adx: z.number().describe('The ADX component of the D-Score.'),
   atrVolatility: z.number().describe('The ATR/Volatility component of the D-Score.'),
   srRetest: z.number().describe('The S/R Retest component of the D-Score.'),
-  priceStructure: z.number().describe('The Price Structure component of the D-Score.'),
+  priceStructure: z.string().describe('The Price Structure component of the D-Score.'),
   marketRegimeFit: z.number().describe('The Market Regime Fit component of the D-Score.'),
 });
 export type DScoreExplanationInput = z.infer<typeof DScoreExplanationInputSchema>;
@@ -42,7 +41,6 @@ const prompt = ai.definePrompt({
 
 Currency Pair: {{{currencyPair}}}
 D-Score: {{{dScore}}}
-COT Bias: {{{cotBias}}}
 Trend Alignment: {{{trendAlignment}}}
 ADX: {{{adx}}}
 ATR/Volatility: {{{atrVolatility}}}
