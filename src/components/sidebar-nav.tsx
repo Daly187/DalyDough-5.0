@@ -7,13 +7,15 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, Bot, BarChart2, Settings } from 'lucide-react';
+import { LayoutDashboard, Bot, CandlestickChart, BarChart2, Settings, Newspaper, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/bots', label: 'Active Bots', icon: Bot },
-  { href: '/analytics', label: 'Analytics', icon: BarChart2 },
+  { href: '/cot', label: 'COT Report', icon: FileText },
+  { href: '/news', label: 'News', icon: Newspaper },
+  { href: '/analytics', label: 'Statistics', icon: BarChart2 },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 

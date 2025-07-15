@@ -1,101 +1,27 @@
-import type { DScore, MarketRegime, Bot, EquityData, RiskMetric, ApiKey } from './types';
+import type { DScore, Bot, EquityData, RiskMetric, ApiKey, BotScannerData, CotData, NewsEvent } from './types';
 
-export const dScoreData: DScore[] = [
-  {
-    id: '1',
-    pair: 'EUR/USD',
-    dScore: 8.2,
-    cotBias: 1.0,
-    trendAlignment: 1.0,
-    adx: 0.8,
-    atrVolatility: 0.7,
-    srRetest: 1.2,
-    priceStructure: 1.0,
-    spread: 0.5,
-    marketRegimeFit: 2.0,
-    regimeMultiplier: 1.2,
-  },
-  {
-    id: '2',
-    pair: 'GBP/USD',
-    dScore: 7.5,
-    cotBias: 0.8,
-    trendAlignment: 1.2,
-    adx: 0.9,
-    atrVolatility: 0.6,
-    srRetest: 1.0,
-    priceStructure: 0.8,
-    spread: 0.4,
-    marketRegimeFit: 1.8,
-    regimeMultiplier: 1.1,
-  },
-  {
-    id: '3',
-    pair: 'USD/JPY',
-    dScore: 6.8,
-    cotBias: 1.2,
-    trendAlignment: 0.8,
-    adx: 0.7,
-    atrVolatility: 0.9,
-    srRetest: 0.9,
-    priceStructure: 0.7,
-    spread: 0.5,
-    marketRegimeFit: 1.1,
-    regimeMultiplier: 1.0,
-  },
-  {
-    id: '4',
-    pair: 'AUD/USD',
-    dScore: 9.1,
-    cotBias: 1.4,
-    trendAlignment: 1.3,
-    adx: 1.0,
-    atrVolatility: 0.8,
-    srRetest: 1.4,
-    priceStructure: 1.0,
-    spread: 0.5,
-    marketRegimeFit: 1.7,
-    regimeMultiplier: 1.2,
-  },
-  {
-    id: '5',
-    pair: 'USD/CAD',
-    dScore: 5.4,
-    cotBias: 0.5,
-    trendAlignment: 0.7,
-    adx: 0.5,
-    atrVolatility: 0.7,
-    srRetest: 0.8,
-    priceStructure: 0.6,
-    spread: 0.4,
-    marketRegimeFit: 1.2,
-    regimeMultiplier: 0.9,
-  },
-    {
-    id: '6',
-    pair: 'XAU/USD',
-    dScore: 8.8,
-    cotBias: 1.3,
-    trendAlignment: 1.4,
-    adx: 0.9,
-    atrVolatility: 1.0,
-    srRetest: 1.2,
-    priceStructure: 1.0,
-    spread: 0.2,
-    marketRegimeFit: 1.8,
-    regimeMultiplier: 1.15,
-  },
+const getGrade = (score: number): 'A' | 'B' | 'C' => {
+  if (score >= 8.0) return 'A';
+  if (score >= 6.0) return 'B';
+  return 'C';
+};
+
+const dScoresRaw = [
+  { pair: 'EUR/USD', dScore: 8.2, cotBias: 1.5, trendConfirmation: 2.5, adxStrength: 0.8, srRetest: 1.5, priceStructure: 0.9, spreadCheck: 1.0, cot: 68, adx: 32, spread: 0.5, signal: 'Buy' as const },
+  { pair: 'GBP/USD', dScore: 7.5, cotBias: 1.2, trendConfirmation: 2.8, adxStrength: 0.7, srRetest: 1.2, priceStructure: 0.8, spreadCheck: 0.8, cot: 55, adx: 28, spread: 0.8, signal: 'Buy' as const },
+  { pair: 'USD/JPY', dScore: 5.8, cotBias: 0.8, trendConfirmation: 1.5, adxStrength: 0.5, srRetest: 1.0, priceStructure: 1.0, spreadCheck: 1.0, cot: -45, adx: 18, spread: 0.7, signal: 'Block' as const },
+  { pair: 'AUD/USD', dScore: 9.1, cotBias: 1.8, trendConfirmation: 3.0, adxStrength: 0.9, srRetest: 1.8, priceStructure: 0.8, spreadCheck: 0.8, cot: 75, adx: 45, spread: 0.6, signal: 'Buy' as const },
+  { pair: 'USD/CAD', dScore: 4.4, cotBias: 0.5, trendConfirmation: 1.0, adxStrength: 0.4, srRetest: 1.0, priceStructure: 0.5, spreadCheck: 1.0, cot: -60, adx: 15, spread: 0.9, signal: 'Block' as const },
+  { pair: 'USD/CHF', dScore: 6.9, cotBias: 1.0, trendConfirmation: 2.2, adxStrength: 0.8, srRetest: 1.1, priceStructure: 0.8, spreadCheck: 1.0, cot: -70, adx: 25, spread: 1.1, signal: 'Sell' as const },
+  { pair: 'XAU/USD', dScore: 8.8, cotBias: 1.7, trendConfirmation: 2.9, adxStrength: 0.9, srRetest: 1.5, priceStructure: 0.9, spreadCheck: 0.9, cot: 85, adx: 38, spread: 2.0, signal: 'Buy' as const },
 ];
 
-export const marketRegimeData: MarketRegime = {
-  currencyPair: 'EUR/USD',
-  price: 1.085,
-  volatility: 0.005,
-  adx: 28,
-  atr: 0.006,
-  bollingerWidth: 0.012,
-  maSlopes: 'H1: Up, H4: Up, D1: Up',
-};
+export const dScoreData: DScore[] = dScoresRaw.map((item, index) => ({
+  id: `${index + 1}`,
+  ...item,
+  grade: getGrade(item.dScore),
+}));
+
 
 export const activeBotsData: Bot[] = [
   { id: 'bot1', pair: 'EUR/USD', strategy: 'DCA Grid', status: 'active', profit_loss: 152.3, entry_time: '2024-05-20T10:30:00Z', d_score_entry: 8.2 },
@@ -141,4 +67,60 @@ export const apiKeysData: ApiKey[] = [
     { id: 'google', name: 'Google API Key', key: 'AIzaSyDjnRhuk8OkL12nwepY_YgeoVRS6VFVGGc' },
     { id: 'supabase_prod_url', name: 'Supabase URL (Prod)', key: 'https://rptysuvzufliibffzqgk.supabase.co' },
     { id: 'supabase_prod_anon', name: 'Supabase Anon Key (Prod)', key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' },
+];
+
+export const botScannerData: BotScannerData = {
+    minDSize: 7.5,
+    maxDSize: 10.0,
+    stopScore: 6.0,
+    stopLoss: 20,
+    takeProfit: 40,
+    maxBotsPerPair: 2,
+    scanInterval: 5,
+    autoLaunch: true,
+    pairs: ['EUR/USD', 'GBP/USD', 'AUD/USD', 'XAU/USD'],
+};
+
+export const cotData: CotData[] = [
+    {
+        currency: 'EUR',
+        data: [
+            { date: '2024-04-09', long: 120000, short: 80000 },
+            { date: '2024-04-16', long: 125000, short: 75000 },
+            { date: '2024-04-23', long: 130000, short: 70000 },
+            { date: '2024-04-30', long: 140000, short: 60000 },
+            { date: '2024-05-07', long: 135000, short: 65000 },
+            { date: '2024-05-14', long: 150000, short: 50000 },
+        ]
+    },
+    {
+        currency: 'GBP',
+        data: [
+            { date: '2024-04-09', long: 60000, short: 40000 },
+            { date: '2024-04-16', long: 62000, short: 38000 },
+            { date: '2024-04-23', long: 65000, short: 35000 },
+            { date: '2024-04-30', long: 70000, short: 30000 },
+            { date: '2024-05-07', long: 68000, short: 32000 },
+            { date: '2024-05-14', long: 75000, short: 25000 },
+        ]
+    },
+    {
+        currency: 'JPY',
+        data: [
+            { date: '2024-04-09', long: 30000, short: 150000 },
+            { date: '2024-04-16', long: 28000, short: 155000 },
+            { date: '2024-04-23', long: 25000, short: 160000 },
+            { date: '2024-04-30', long: 20000, short: 170000 },
+            { date: '2024-05-07', long: 22000, short: 165000 },
+            { date: '2024-05-14', long: 18000, short: 175000 },
+        ]
+    }
+];
+
+export const newsData: NewsEvent[] = [
+    { id: '1', time: '08:30', currency: 'USD', impact: 'High', event: 'Consumer Price Index (MoM)', actual: '0.4%', forecast: '0.3%', previous: '0.2%' },
+    { id: '2', time: '10:00', currency: 'EUR', impact: 'Medium', event: 'German ZEW Economic Sentiment', actual: '47.1', forecast: '46.5', previous: '42.9' },
+    { id: '3', time: '14:30', currency: 'CAD', impact: 'Low', event: 'Manufacturing Sales (MoM)', actual: '-0.2%', forecast: '0.1%', previous: '0.5%' },
+    { id: '4', time: '18:00', currency: 'NZD', impact: 'High', event: 'RBNZ Interest Rate Decision', actual: null, forecast: '5.50%', previous: '5.50%' },
+    { id: '5', time: '21:45', currency: 'CNY', impact: 'Medium', event: 'Caixin Services PMI', actual: null, forecast: '52.6', previous: '52.7' },
 ];

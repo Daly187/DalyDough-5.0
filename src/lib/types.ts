@@ -2,25 +2,17 @@ export type DScore = {
   id: string;
   pair: string;
   dScore: number;
-  cotBias: number;
-  trendAlignment: number;
+  grade: 'A' | 'B' | 'C';
+  cotBias: number; // 0-2
+  trendConfirmation: number; // 0-3
+  adxStrength: number; // 0-1
+  srRetest: number; // 0-2
+  priceStructure: number; // 0-1
+  spreadCheck: number; // 0-1
+  cot: number;
   adx: number;
-  atrVolatility: number;
-  srRetest: number;
-  priceStructure: number;
   spread: number;
-  marketRegimeFit: number;
-  regimeMultiplier: number;
-};
-
-export type MarketRegime = {
-  currencyPair: string;
-  price: number;
-  volatility: number;
-  adx: number;
-  atr: number;
-  bollingerWidth: number;
-  maSlopes: string;
+  signal: 'Buy' | 'Sell' | 'Block';
 };
 
 export type Bot = {
@@ -49,3 +41,35 @@ export type ApiKey = {
   name: string;
   key: string;
 };
+
+export type BotScannerData = {
+    minDSize: number;
+    maxDSize: number;
+    stopScore: number;
+    stopLoss: number;
+    takeProfit: number;
+    maxBotsPerPair: number;
+    scanInterval: number;
+    autoLaunch: boolean;
+    pairs: string[];
+}
+
+export type CotData = {
+  currency: string;
+  data: {
+    date: string;
+    long: number;
+    short: number;
+  }[];
+}
+
+export type NewsEvent = {
+  id: string;
+  time: string;
+  currency: string;
+  impact: 'High' | 'Medium' | 'Low';
+  event: string;
+  actual: string | null;
+  forecast: string | null;
+  previous: string | null;
+}
