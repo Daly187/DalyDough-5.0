@@ -1,3 +1,4 @@
+
 export type DScore = {
   id: string;
   pair: string;
@@ -23,7 +24,7 @@ export type Bot = {
   id: string;
   pair: string;
   strategy: string;
-  status: 'active' | 'paused' | 'error';
+  status: 'active' | 'paused' | 'error' | 'close_at_tp' | 'closed';
   profit_loss: number;
   entry_time: string;
   d_score_entry: number;
@@ -59,26 +60,6 @@ export type BotScannerData = {
     scanInterval: number;
     autoLaunch: boolean;
     pairs: string[];
-}
-
-export type CotData = {
-  currency: string;
-  data: {
-    date: string;
-    long: number;
-    short: number;
-  }[];
-}
-
-export type NewsEvent = {
-  id: string;
-  time: string;
-  currency: string;
-  impact: 'High' | 'Medium' | 'Low';
-  event: string;
-  actual: string | null;
-  forecast: string | null;
-  previous: string | null;
 }
 
 export type BotConfigurationData = {

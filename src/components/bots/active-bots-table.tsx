@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from 'react';
@@ -43,6 +44,10 @@ const statusConfig = {
     closed: {
         label: "Closed",
         color: "bg-gray-500/20 text-gray-400 border-gray-500/30",
+    },
+    close_at_tp: {
+        label: "Close at TP",
+        color: "bg-blue-500/20 text-blue-400 border-blue-500/30",
     }
 }
 
@@ -53,7 +58,7 @@ export default function ActiveBotsTable({ data, allPairs, title, description, is
     setSelectedBot(bot);
   };
   
-  const currentDScore = (pair: string) => {
+  const getCurrentDScore = (pair: string) => {
     return allPairs.find(p => p.pair === pair)?.dScore;
   }
 
@@ -73,7 +78,8 @@ export default function ActiveBotsTable({ data, allPairs, title, description, is
                     <TableHead>Strategy</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>P/L</TableHead>
-                    <TableHead>{isClosed ? 'Exit D-Score' : 'Entry D-Score'}</TableHead>
+                    <TableHead>Entry D-Score</TableHead>
+                    <TableHead>{isClosed ? 'Exit D-Score' : 'Current D-Score'}</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -93,7 +99,8 @@ export default function ActiveBotsTable({ data, allPairs, title, description, is
                         <TableCell className={cn(bot.profit_loss >= 0 ? 'text-green-400' : 'text-red-400')}>
                             {bot.profit_loss >= 0 ? '+' : ''}${bot.profit_loss.toFixed(2)}
                         </TableCell>
-                        <TableCell>{isClosed ? bot.d_score_exit?.toFixed(1) : bot.d_score_entry.toFixed(1)}</TableCell>
+                        <TableCell>{bot.d_score_entry.toFixed(1)}</TableCell>
+                        <TableCell>{isClosed ? bot.d_score_exit?.toFixed(1) : getCurrentDScore(bot.pair)?.toFixed(1) ?? 'N/A'}</TableCell>
                         <TableCell className="text-right">
                            <Button variant="ghost" size="sm" onClick={() => !isClosed && handleManageClick(bot)}>
                               {isClosed ? 'Analyze' : 'Manage'} <ChevronsRight className="h-4 w-4 ml-2" />
@@ -112,7 +119,7 @@ export default function ActiveBotsTable({ data, allPairs, title, description, is
           onOpenChange={(open) => !open && setSelectedBot(null)}
           botData={selectedBot}
           reentries={aiReentriesData}
-          currentDScore={currentDScore(selectedBot?.pair || '')}
+          currentDScore={getCurrentDScore(selectedBot?.pair || '')}
         />
     </>
   );
