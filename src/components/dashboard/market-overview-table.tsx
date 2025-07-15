@@ -36,6 +36,45 @@ const TrendIndicator = ({ trend }: { trend: 'buy' | 'sell' }) => (
         : <ArrowDown className="h-4 w-4 text-red-400" />
 );
 
+const getBreakdownText = (key: keyof DScore, score: number, trendDirection: 'Buy' | 'Sell' | 'Block') => {
+    const trendText = trendDirection === 'Buy' ? 'Buy' : 'Sell';
+    switch (key) {
+        case 'trendAlignment':
+            if (score > 1.5) return `Confirms ${trendText} Trend`;
+            if (score > 0.5) return `Weak ${trendText} Agreement`;
+            return 'No Trend Agreement';
+        case 'adxStrength':
+            if (score > 0.7) return 'Strong Trend Momentum';
+            if (score > 0.4) return 'Developing Momentum';
+            return 'Weak Momentum';
+        case 'maConvergence':
+            if (score > 1.0) return `Confirms ${trendText} Momentum`;
+            if (score > 0.5) return 'Partial Agreement';
+            return 'Divergent MAs';
+        case 'srRetest':
+            if (score > 1.0) return 'Retesting Key Level';
+            return 'Not at a Key Level';
+        case 'priceStructure':
+            if (score > 0.7) return `Clear ${trendText} Structure`;
+            if (score > 0.4) return 'Developing Structure';
+            return 'Unclear Structure';
+        case 'atrVolatility':
+            if (score > 0.7) return 'High Volatility';
+            if (score > 0.4) return 'Moderate Volatility';
+            return 'Low Volatility';
+        case 'marketRegimeFit':
+            if (score > 1.5) return `Ideal for ${trendText}ing`;
+            if (score > 0.5) return 'Moderate Fit';
+            return 'Poor Fit for Trending';
+        case 'currencyStrength':
+            if (score > 0.7) return `Strong ${trendText} Confirmation`;
+            if (score > 0.4) return 'Moderate Confirmation';
+            return 'No Confirmation';
+        default:
+            return '';
+    }
+}
+
 
 export default function MarketOverviewTable({ data }: MarketOverviewTableProps) {
   const [sortKey, setSortKey] = React.useState<SortKey>('dScore');
@@ -134,14 +173,14 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
                                   <div>
                                       <h4 className="font-semibold text-sm mb-2 text-foreground">D-Score Breakdown</h4>
                                       <div className="space-y-1 text-xs">
-                                          <div className="flex justify-between"><span className="text-muted-foreground">Trend Alignment:</span> <span className="font-semibold text-foreground">{item.trendAlignment > 1.5 ? 'Strong' : (item.trendAlignment > 0.5 ? 'Moderate' : 'Weak')}</span></div>
-                                          <div className="flex justify-between"><span className="text-muted-foreground">ADX Strength:</span> <span className="font-semibold text-foreground">{item.adxStrength > 0.7 ? 'Strong' : (item.adxStrength > 0.4 ? 'Moderate' : 'Weak')}</span></div>
-                                          <div className="flex justify-between"><span className="text-muted-foreground">MA Convergence:</span> <span className="font-semibold text-foreground">{item.maConvergence > 1.0 ? 'Converged' : (item.maConvergence > 0.5 ? 'Partially' : 'Diverged')}</span></div>
-                                          <div className="flex justify-between"><span className="text-muted-foreground">S/R Retest:</span> <span className="font-semibold text-foreground">{(item.srRetest*100/1.5).toFixed(0)}%</span></div>
-                                          <div className="flex justify-between"><span className="text-muted-foreground">Price Structure:</span> <span className="font-semibold text-foreground">{item.priceStructure > 0.7 ? 'Clear' : (item.priceStructure > 0.4 ? 'Developing' : 'Unclear')}</span></div>
-                                          <div className="flex justify-between"><span className="text-muted-foreground">ATR/Volatility:</span> <span className="font-semibold text-foreground">{(item.atrVolatility*100).toFixed(0)}%</span></div>
-                                          <div className="flex justify-between"><span className="text-muted-foreground">Market Regime Fit:</span> <span className="font-semibold text-foreground">{(item.marketRegimeFit*100/2.0).toFixed(0)}%</span></div>
-                                          <div className="flex justify-between"><span className="text-muted-foreground">Currency Strength:</span> <span className="font-semibold text-foreground">{item.currencyStrength > 0.7 ? 'High Mismatch' : (item.currencyStrength > 0.4 ? 'Mismatch' : 'Low Mismatch')}</span></div>
+                                          <div className="flex justify-between"><span className="text-muted-foreground">Trend Alignment:</span> <span className="font-semibold text-foreground">{getBreakdownText('trendAlignment', item.trendAlignment, item.signal)}</span></div>
+                                          <div className="flex justify-between"><span className="text-muted-foreground">ADX Strength:</span> <span className="font-semibold text-foreground">{getBreakdownText('adxStrength', item.adxStrength, item.signal)}</span></div>
+                                          <div className="flex justify-between"><span className="text-muted-foreground">MA Convergence:</span> <span className="font-semibold text-foreground">{getBreakdownText('maConvergence', item.maConvergence, item.signal)}</span></div>
+                                          <div className="flex justify-between"><span className="text-muted-foreground">S/R Retest:</span> <span className="font-semibold text-foreground">{getBreakdownText('srRetest', item.srRetest, item.signal)}</span></div>
+                                          <div className="flex justify-between"><span className="text-muted-foreground">Price Structure:</span> <span className="font-semibold text-foreground">{getBreakdownText('priceStructure', item.priceStructure, item.signal)}</span></div>
+                                          <div className="flex justify-between"><span className="text-muted-foreground">ATR/Volatility:</span> <span className="font-semibold text-foreground">{getBreakdownText('atrVolatility', item.atrVolatility, item.signal)}</span></div>
+                                          <div className="flex justify-between"><span className="text-muted-foreground">Market Regime Fit:</span> <span className="font-semibold text-foreground">{getBreakdownText('marketRegimeFit', item.marketRegimeFit, item.signal)}</span></div>
+                                          <div className="flex justify-between"><span className="text-muted-foreground">Currency Strength:</span> <span className="font-semibold text-foreground">{getBreakdownText('currencyStrength', item.currencyStrength, item.signal)}</span></div>
                                       </div>
                                   </div>
                                   <div>
