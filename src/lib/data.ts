@@ -1,3 +1,4 @@
+
 import type { DScore, Bot, EquityData, RiskMetric, ApiKey, NewsEvent, BotConfigurationData, AIReentry, MarketRegime, ExposureData, ForexData, StrengthData } from './types';
 
 const getGrade = (score: number): 'A' | 'B' | 'C' => {
@@ -137,9 +138,9 @@ export const riskMetricsData: RiskMetric[] = [
 ];
 
 export const apiKeysData: ApiKey[] = [
-    { id: 'fmp', name: 'Financial Modeling Prep', key: process.env.FMP_API_KEY || 'RUTyEslPzCs5tHMBZUUxCr2no36EV45Q' },
+    { id: 'fmp', name: 'Financial Modeling Prep', key: process.env.FMP_API_KEY || 'YOUR_FMP_API_KEY' },
     { id: 'cftc', name: 'CFTC API URL', key: 'https://www.cftc.gov/files/dea/newcot/' },
-    { id: 'google', name: 'Google API Key', key: 'AIzaSyDjnRhuk8OkL12nwepY_YgeoVRS6VFVGGc' },
+    { id: 'google', name: 'Google API Key', key: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'YOUR_FIREBASE_API_KEY' },
     { id: 'supabase_prod_url', name: 'Supabase URL (Prod)', key: 'https://rptysuvzufliibffzqgk.supabase.co' },
     { id: 'supabase_prod_anon', name: 'Supabase Anon Key (Prod)', key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' },
 ];
