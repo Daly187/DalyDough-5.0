@@ -8,8 +8,10 @@ import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { DScoreWeights } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
-import { HelpCircle } from 'lucide-react';
+import { HelpCircle, Sparkles } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Switch } from '../ui/switch';
+import { Checkbox } from '../ui/checkbox';
 
 interface DScoreWeightsProps {
   initialWeights: DScoreWeights;
@@ -48,48 +50,35 @@ const tooltipTexts: Record<keyof DScoreWeights, string> = {
     currencyStrength: 'Scores the strength difference between the base and quote currency.'
 };
 
+const aiRecommendedWeights: DScoreWeights = {
+    trendAlignment: 2.0,
+    adxStrength: 1.0,
+    maConvergence: 1.5,
+    srRetest: 0.5,
+    priceStructure: 1.0,
+    atrVolatility: 0.5,
+    marketRegimeFit: 2.0,
+    currencyStrength: 1.5,
+};
+
 export default function DScoreWeights({ initialWeights }: DScoreWeightsProps) {
   const [weights, setWeights] = React.useState<DScoreWeights>(initialWeights);
+  const [useAiPicks, setUseAiPicks] = React.useState(false);
+
   const totalWeight = React.useMemo(() => Object.values(weights).reduce((sum, w) => sum + w, 0), [weights]);
 
   const handleSliderChange = (key: keyof DScoreWeights, value: number[]) => {
-    const newValue = value[0];
-    const oldValue = weights[key];
-    const diff = newValue - oldValue;
-    let newWeights = { ...weights, [key]: newValue };
-
-    let remainingDiff = diff;
-    const distributableKeys = weightKeys.filter(k => k !== key);
-    let totalDistributable = distributableKeys.reduce((sum, k) => sum + newWeights[k], 0);
-
-    if (totalDistributable > 0) {
-        for (const k of distributableKeys) {
-            const proportion = newWeights[k] / totalDistributable;
-            const change = remainingDiff * proportion;
-            newWeights[k] = Math.max(0, newWeights[k] - change);
-        }
-    }
-    
-    // Normalize to ensure total is exactly 10
-    const currentTotal = Object.values(newWeights).reduce((sum, w) => sum + w, 0);
-    const factor = 10 / currentTotal;
-    
-    for (const k of weightKeys) {
-        newWeights[k] = parseFloat((newWeights[k] * factor).toFixed(2));
-    }
-
-    // Final check to fix any floating point inaccuracies
-    const finalTotal = Object.values(newWeights).reduce((sum, w) => sum + w, 0);
-    const roundingError = 10 - finalTotal;
-    if (Math.abs(roundingError) > 0.001) {
-       const keyToAdjust = weightKeys.find(k => newWeights[k] > 0) || 'trendAlignment';
-       newWeights[keyToAdjust] += roundingError;
-       newWeights[keyToAdjust] = parseFloat(newWeights[keyToAdjust].toFixed(2));
-    }
-
-
-    setWeights(newWeights);
+    setWeights(prev => ({...prev, [key]: value[0]}));
   };
+  
+  const handleAiPicksChange = (checked: boolean) => {
+    setUseAiPicks(checked);
+    if (checked) {
+        setWeights(aiRecommendedWeights);
+    } else {
+        setWeights(initialWeights); // Revert to initial weights when unchecked
+    }
+  }
 
   const TooltipLabel = ({ htmlFor, label, tooltipText }: { htmlFor: string, label: string, tooltipText: string }) => (
     <div className="flex items-center gap-2">
@@ -117,10 +106,18 @@ export default function DScoreWeights({ initialWeights }: DScoreWeightsProps) {
                     Adjust the point allocation for each D-Score component.
                 </CardDescription>
             </div>
-            <Badge className="text-lg" variant={totalWeight.toFixed(2) === '10.00' ? 'default' : 'destructive'}>Total: {totalWeight.toFixed(2)} / 10</Badge>
+            <Badge className="text-lg" variant={totalWeight.toFixed(2) === '10.00' ? 'default' : 'destructive'}>Total: {totalWeight.toFixed(2)} / 10.00</Badge>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
+        <div className="flex items-center space-x-2 p-3 bg-muted/50 rounded-lg">
+            <Checkbox id="ai-picks" checked={useAiPicks} onCheckedChange={handleAiPicksChange} />
+            <Label htmlFor="ai-picks" className="text-base font-semibold text-primary flex items-center gap-2">
+                <Sparkles className="h-4 w-4" />
+                Let AI Decide
+            </Label>
+        </div>
+
         {weightKeys.map((key) => (
           <div key={key} className="space-y-2">
             <div className="flex justify-between items-center">
@@ -134,6 +131,7 @@ export default function DScoreWeights({ initialWeights }: DScoreWeightsProps) {
               step={0.1}
               value={[weights[key]]}
               onValueChange={(value) => handleSliderChange(key, value)}
+              disabled={useAiPicks}
             />
           </div>
         ))}

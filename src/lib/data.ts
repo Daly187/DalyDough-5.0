@@ -90,25 +90,27 @@ export const calculateDScore = (data: ForexData, index: number, liveStrengthData
   // 4. ATR/Volatility (Live)
   const atrVolatility = price > 0 ? Math.min((atr / price) * 50, 1.0) : 0;
 
-  // 5. S/R Retest (Live Proxy)
+  // 5. S/R Retest (Live Proxy) - FIXED
   let srRetest = 0;
   if (price && atr > 0) {
-      const retestThreshold = atr * 0.5; // Price must be within 50% of ATR to be a retest
-      if ((sma50 && Math.abs(price - sma50) < retestThreshold) ||
-          (sma100 && Math.abs(price - sma100) < retestThreshold) ||
-          (sma200 && Math.abs(price - sma200) < retestThreshold)) {
-          srRetest = 1.5; // Full points if retesting a major MA
-      }
+    const retestThreshold = atr * 0.5; // Price must be within 50% of ATR to be a retest
+    const mas = [sma50, sma100, sma200].filter(Boolean) as number[];
+    for (const ma of mas) {
+        if (Math.abs(price - ma) < retestThreshold) {
+            srRetest = 1.5; // Full points if retesting any major MA
+            break;
+        }
+    }
   }
 
-  // 6. Price Structure (Live Proxy)
+  // 6. Price Structure (Live Proxy) - FIXED
   let priceStructure = 0;
   if (pdi > 0 && mdi > 0) {
       const totalDi = pdi + mdi;
       const diDiff = Math.abs(pdi - mdi);
       // Score based on how dominant one DI is over the other.
       // A large difference indicates a clearer trend structure.
-      priceStructure = Math.min(diDiff / totalDi, 1.0); // Max score of 1.0
+      priceStructure = Math.min(diDiff / totalDi, 1.0);
   }
 
   // 7. Market Regime Fit (Live Proxy)
