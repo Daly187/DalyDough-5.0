@@ -87,6 +87,13 @@ export async function getForexData(pairs: string[]): Promise<ForexData[]> {
     });
 
     const results = await Promise.all(promises);
+    
+    // --- DEBUG LOGGING ---
+    console.log("--- RAW FMP API RESPONSE ---");
+    console.log(JSON.stringify(results, null, 2));
+    console.log("--- END RAW FMP API RESPONSE ---");
+
+
     // Filter out any pairs that had a complete failure to fetch essential data.
     return results.filter(result => result.quote);
 }
