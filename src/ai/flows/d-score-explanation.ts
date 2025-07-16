@@ -17,6 +17,7 @@ const DScoreExplanationInputSchema = z.object({
   dScore: z.number().describe('The D-Score for the currency pair.'),
   adxStrength: z.number().describe('The ADX Strength component of the D-Score.'),
   atrVolatility: z.number().describe('The ATR/Volatility component of the D-Score.'),
+  trendAlignment: z.number().describe('The Trend Alignment component of the D-Score (1d/1w).'),
   srRetest: z.number().describe('The Support/Resistance Retest component of the D-Score.'),
   priceStructure: z.string().describe('The Price Structure component of the D-Score.'),
   marketRegimeFit: z.number().describe('The Market Regime Fit component of the D-Score.'),
@@ -43,6 +44,7 @@ Currency Pair: {{{currencyPair}}}
 D-Score: {{{dScore}}}
 ADX Strength: {{{adxStrength}}}
 ATR/Volatility: {{{atrVolatility}}}
+Trend Alignment (1d/1w): {{{trendAlignment}}}
 Support/Resistance Retest: {{{srRetest}}}
 Price Structure: {{{priceStructure}}}
 Market Regime Fit: {{{marketRegimeFit}}}

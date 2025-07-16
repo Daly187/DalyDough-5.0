@@ -9,40 +9,47 @@ const getGrade = (score: number): 'A' | 'B' | 'C' => {
 export const pairs = ['AUD/CAD', 'AUD/CHF', 'AUD/JPY', 'AUD/NZD', 'AUD/USD', 'CAD/JPY', 'CHF/JPY', 'EUR/CAD', 'EUR/CHF', 'EUR/GBP', 'EUR/JPY', 'EUR/NZD', 'EUR/TRY', 'EUR/USD', 'GBP/AUD', 'GBP/CAD', 'GBP/CHF', 'GBP/JPY', 'GBP/USD', 'NZD/CAD', 'NZD/CHF', 'NZD/JPY', 'NZD/USD', 'USD/CAD', 'USD/CHF', 'USD/JPY', 'USD/TRY', 'USD/ZAR', 'XAU/USD'];
 
 export const calculateDScore = (data: ForexData, index: number): DScore => {
-  // Mocked components based on the new logic
-  const srRetest = Math.random() * 2.0; // Max 2.0
-  const priceStructure = Math.random() * 1.5; // Max 1.5
-  const marketRegimeFit = Math.random() * 2.0; // Max 2.0
-  const currencyStrengthIndex = Math.random() * 1.0; // Max 1.0
-
   const quote = data.quote?.[0];
   const price = quote?.price ?? 1;
 
-  // Calculated components from live data
+  // 1. ADX Strength (Live) - Max 2.0
   const adx = data.adx?.[0]?.adx ?? 0;
-  // ADX > 20 is a strong trend. Scale score up to the max weight of 2.0.
-  // We'll consider an ADX of 50 to be max strength for scoring purposes.
   const adxStrength = Math.min((adx / 50) * 2.0, 2.0);
   
+  // 2. ATR/Volatility (Live) - Max 1.5
   const atr = data.atr?.[0]?.atr ?? 0;
-  // ATR as a percentage of price, normalized to the max weight of 1.5.
-  // A lower ATR % might be better. Let's assume 1% ATR/price is a sweet spot.
-  // (This logic can be refined later)
   const atrPercentage = (atr / price);
   const atrVolatility = Math.max(0, 1.5 - Math.abs(atrPercentage - 0.01) * 100);
 
-
-  // Mocked for now
+  // 3. Trend Alignment (Mocked) - Max 2.0
   const trends = {
-      h4: Math.random() > 0.5 ? 'buy' : 'sell',
-      d1: Math.random() > 0.5 ? 'buy' : 'sell',
-      w1: Math.random() > 0.5 ? 'buy' : 'sell',
+      d1: ['buy', 'sell', 'neutral'][Math.floor(Math.random() * 3)] as 'buy' | 'sell' | 'neutral',
+      w1: ['buy', 'sell', 'neutral'][Math.floor(Math.random() * 3)] as 'buy' | 'sell' | 'neutral',
   };
-  const d1Trend = trends.d1;
+  let trendAlignment = 0;
+  if (trends.d1 !== 'neutral' && trends.d1 === trends.w1) {
+      trendAlignment = 2.0;
+  } else if ((trends.d1 !== 'neutral' && trends.w1 === 'neutral') || (trends.w1 !== 'neutral' && trends.d1 === 'neutral')) {
+      trendAlignment = 1.0;
+  }
+
+  // 4. S/R Retest (Mocked) - Max 1.5
+  const srRetest = Math.random() * 1.5;
+
+  // 5. Price Structure (Mocked) - Max 1.5
+  const priceStructure = Math.random() * 1.5;
+
+  // 6. Market Regime Fit (Mocked) - Max 1.5
+  const marketRegimeFit = Math.random() * 1.5;
+
+  // 7. Currency Strength Index (Mocked) - Max 1.0
+  const currencyStrengthIndex = Math.random() * 1.0;
+
 
   const totalScore = 
     adxStrength + 
     atrVolatility + 
+    trendAlignment +
     srRetest + 
     priceStructure + 
     marketRegimeFit + 
@@ -50,8 +57,8 @@ export const calculateDScore = (data: ForexData, index: number): DScore => {
   
   let signal: 'Buy' | 'Sell' | 'Block' = 'Block';
   if (totalScore >= 7.0) {
-    if (d1Trend === 'buy') signal = 'Buy';
-    if (d1Trend === 'sell') signal = 'Sell';
+    if (trends.d1 === 'buy') signal = 'Buy';
+    if (trends.d1 === 'sell') signal = 'Sell';
   }
 
   return {
@@ -60,16 +67,17 @@ export const calculateDScore = (data: ForexData, index: number): DScore => {
     price: quote?.price ?? 0,
     change: quote?.change ?? 0,
     changesPercentage: quote?.changesPercentage ?? 0,
-    dScore: Math.min(totalScore, 10), // Ensure score doesn't exceed 10
+    dScore: Math.min(totalScore, 10),
     grade: getGrade(totalScore),
     adxStrength,
     atrVolatility,
+    trendAlignment,
     srRetest,
     priceStructure,
     marketRegimeFit,
     currencyStrengthIndex,
     signal,
-    positions: Math.floor(Math.random() * 6), // Mocked
+    positions: Math.floor(Math.random() * 6),
     trends,
   };
 };

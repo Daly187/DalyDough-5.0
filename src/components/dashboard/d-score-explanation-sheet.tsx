@@ -38,8 +38,9 @@ export default function DScoreExplanationSheet({ isOpen, onOpenChange, pairData 
             dScore: pairData.dScore,
             adxStrength: pairData.adxStrength,
             atrVolatility: pairData.atrVolatility,
+            trendAlignment: pairData.trendAlignment,
             srRetest: pairData.srRetest,
-            priceStructure: pairData.priceStructure,
+            priceStructure: pairData.priceStructure.toString(),
             marketRegimeFit: pairData.marketRegimeFit,
             currencyStrengthIndex: pairData.currencyStrengthIndex,
         };
@@ -61,9 +62,10 @@ export default function DScoreExplanationSheet({ isOpen, onOpenChange, pairData 
   const scoreFactors = [
     { label: "ADX Strength", value: pairData?.adxStrength, max: 2.0 },
     { label: "ATR/Volatility", value: pairData?.atrVolatility, max: 1.5 },
-    { label: "S/R Retest", value: pairData?.srRetest, max: 2.0 },
+    { label: "Trend Alignment", value: pairData?.trendAlignment, max: 2.0 },
+    { label: "S/R Retest", value: pairData?.srRetest, max: 1.5 },
     { label: "Price Structure", value: pairData?.priceStructure, max: 1.5 },
-    { label: "Market Regime Fit", value: pairData?.marketRegimeFit, max: 2.0 },
+    { label: "Market Regime Fit", value: pairData?.marketRegimeFit, max: 1.5 },
     { label: "Currency Strength", value: pairData?.currencyStrengthIndex, max: 1.0 },
   ];
 
@@ -102,7 +104,7 @@ export default function DScoreExplanationSheet({ isOpen, onOpenChange, pairData 
                 {scoreFactors.map(factor => (
                     <li key={factor.label} className="flex justify-between items-center text-sm">
                         <span className="text-muted-foreground">{factor.label}</span>
-                        <span className="font-mono font-medium text-foreground">{factor.value?.toFixed(1)} / {factor.max.toFixed(1)}</span>
+                        <span className="font-mono font-medium text-foreground">{typeof factor.value === 'number' ? factor.value.toFixed(1) : factor.value} / {factor.max.toFixed(1)}</span>
                     </li>
                 ))}
             </ul>

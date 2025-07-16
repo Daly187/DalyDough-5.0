@@ -10,16 +10,16 @@ export type DScore = {
   grade: 'A' | 'B' | 'C';
   adxStrength: number; // 0-2.0
   atrVolatility: number; // 0-1.5
-  srRetest: number; // 0-2.0
+  trendAlignment: number; // 0-2.0
+  srRetest: number; // 0-1.5
   priceStructure: number; // 0-1.5
-  marketRegimeFit: number; // 0-2.0
+  marketRegimeFit: number; // 0-1.5
   currencyStrengthIndex: number; // 0-1.0
   signal: 'Buy' | 'Sell' | 'Block';
   positions?: number;
   trends: {
-    h4: 'buy' | 'sell';
-    d1: 'buy' | 'sell';
-    w1: 'buy' | 'sell';
+    d1: 'buy' | 'sell' | 'neutral';
+    w1: 'buy' | 'sell' | 'neutral';
   };
 };
 
