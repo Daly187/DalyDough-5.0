@@ -36,13 +36,12 @@ export default function DScoreExplanationSheet({ isOpen, onOpenChange, pairData 
         const input: DScoreExplanationInput = {
             currencyPair: pairData.pair,
             dScore: pairData.dScore,
-            trendAlignment: pairData.trendAlignment,
-            adx: pairData.adxStrength,
+            adxStrength: pairData.adxStrength,
             atrVolatility: pairData.atrVolatility,
             srRetest: pairData.srRetest,
             priceStructure: pairData.priceStructure,
             marketRegimeFit: pairData.marketRegimeFit,
-            maConvergence: pairData.maConvergence,
+            currencyStrengthIndex: pairData.currencyStrengthIndex,
         };
         
         const result = await getDScoreExplanation(input);
@@ -60,13 +59,12 @@ export default function DScoreExplanationSheet({ isOpen, onOpenChange, pairData 
   }, [pairData, isOpen]);
 
   const scoreFactors = [
-    { label: "Trend Alignment", value: pairData?.trendAlignment, max: 2.0 },
-    { label: "ADX Strength", value: pairData?.adxStrength, max: 1.0 },
-    { label: "MA Convergence", value: pairData?.maConvergence, max: 1.5 },
-    { label: "S/R Retest", value: pairData?.srRetest, max: 1.5 },
-    { label: "Price Structure", value: pairData?.priceStructure, max: 1.0 },
-    { label: "ATR/Volatility", value: pairData?.atrVolatility, max: 1.0 },
+    { label: "ADX Strength", value: pairData?.adxStrength, max: 2.0 },
+    { label: "ATR/Volatility", value: pairData?.atrVolatility, max: 1.5 },
+    { label: "S/R Retest", value: pairData?.srRetest, max: 2.0 },
+    { label: "Price Structure", value: pairData?.priceStructure, max: 1.5 },
     { label: "Market Regime Fit", value: pairData?.marketRegimeFit, max: 2.0 },
+    { label: "Currency Strength", value: pairData?.currencyStrengthIndex, max: 1.0 },
   ];
 
   return (

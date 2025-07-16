@@ -15,13 +15,12 @@ import {z} from 'genkit';
 const DScoreExplanationInputSchema = z.object({
   currencyPair: z.string().describe('The currency pair to explain the D-Score for (e.g., EURUSD).'),
   dScore: z.number().describe('The D-Score for the currency pair.'),
-  trendAlignment: z.number().describe('The Trend Alignment component of the D-Score.'),
-  adx: z.number().describe('The ADX component of the D-Score.'),
+  adxStrength: z.number().describe('The ADX Strength component of the D-Score.'),
   atrVolatility: z.number().describe('The ATR/Volatility component of the D-Score.'),
-  srRetest: z.number().describe('The S/R Retest component of the D-Score.'),
+  srRetest: z.number().describe('The Support/Resistance Retest component of the D-Score.'),
   priceStructure: z.string().describe('The Price Structure component of the D-Score.'),
   marketRegimeFit: z.number().describe('The Market Regime Fit component of the D-Score.'),
-  maConvergence: z.number().describe('The Moving Average Convergence component of the D-Score.'),
+  currencyStrengthIndex: z.number().describe('The Currency Strength Index component of the D-Score.'),
 });
 export type DScoreExplanationInput = z.infer<typeof DScoreExplanationInputSchema>;
 
@@ -42,13 +41,12 @@ const prompt = ai.definePrompt({
 
 Currency Pair: {{{currencyPair}}}
 D-Score: {{{dScore}}}
-Trend Alignment: {{{trendAlignment}}}
-ADX: {{{adx}}}
+ADX Strength: {{{adxStrength}}}
 ATR/Volatility: {{{atrVolatility}}}
-S/R Retest: {{{srRetest}}}
+Support/Resistance Retest: {{{srRetest}}}
 Price Structure: {{{priceStructure}}}
 Market Regime Fit: {{{marketRegimeFit}}}
-MA Convergence: {{{maConvergence}}}
+Currency Strength Index: {{{currencyStrengthIndex}}}
 
 Focus on the most influential factors and their contribution to the overall score. Keep the explanation brief and easy to understand.
 `,

@@ -8,13 +8,12 @@ export type DScore = {
   changesPercentage: number;
   dScore: number;
   grade: 'A' | 'B' | 'C';
-  trendAlignment: number; // 0-2.0
-  adxStrength: number; // 0-1.0
-  maConvergence: number; // 0-1.5
-  srRetest: number; // 0-1.5
-  priceStructure: number; // 0-1.0
-  atrVolatility: number; // 0-1.0
+  adxStrength: number; // 0-2.0
+  atrVolatility: number; // 0-1.5
+  srRetest: number; // 0-2.0
+  priceStructure: number; // 0-1.5
   marketRegimeFit: number; // 0-2.0
+  currencyStrengthIndex: number; // 0-1.0
   signal: 'Buy' | 'Sell' | 'Block';
   positions?: number;
   trends: {

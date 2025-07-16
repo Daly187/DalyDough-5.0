@@ -9,65 +9,49 @@ const getGrade = (score: number): 'A' | 'B' | 'C' => {
 export const pairs = ['AUD/CAD', 'AUD/CHF', 'AUD/JPY', 'AUD/NZD', 'AUD/USD', 'CAD/JPY', 'CHF/JPY', 'EUR/CAD', 'EUR/CHF', 'EUR/GBP', 'EUR/JPY', 'EUR/NZD', 'EUR/TRY', 'EUR/USD', 'GBP/AUD', 'GBP/CAD', 'GBP/CHF', 'GBP/JPY', 'GBP/USD', 'NZD/CAD', 'NZD/CHF', 'NZD/JPY', 'NZD/USD', 'USD/CAD', 'USD/CHF', 'USD/JPY', 'USD/TRY', 'USD/ZAR', 'XAU/USD'];
 
 export const calculateDScore = (data: ForexData, index: number): DScore => {
-  // Mocked components
-  const srRetest = Math.random() * 1.5;
-  const priceStructure = Math.random() * 1.0;
-  const marketRegimeFit = Math.random() * 2.0;
+  // Mocked components based on the new logic
+  const srRetest = Math.random() * 2.0; // Max 2.0
+  const priceStructure = Math.random() * 1.5; // Max 1.5
+  const marketRegimeFit = Math.random() * 2.0; // Max 2.0
+  const currencyStrengthIndex = Math.random() * 1.0; // Max 1.0
 
   const quote = data.quote?.[0];
   const price = quote?.price ?? 1;
 
-  // Calculated components
+  // Calculated components from live data
   const adx = data.adx?.[0]?.adx ?? 0;
-  const adxStrength = Math.min(adx / 50, 1.0); // Capped at 1.0 for scores > 50
+  // ADX > 20 is a strong trend. Scale score up to the max weight of 2.0.
+  // We'll consider an ADX of 50 to be max strength for scoring purposes.
+  const adxStrength = Math.min((adx / 50) * 2.0, 2.0);
   
   const atr = data.atr?.[0]?.atr ?? 0;
-  const atrVolatility = Math.min( (atr / price) * 100, 1.0); // ATR as percentage of price, capped at 1
+  // ATR as a percentage of price, normalized to the max weight of 1.5.
+  // A lower ATR % might be better. Let's assume 1% ATR/price is a sweet spot.
+  // (This logic can be refined later)
+  const atrPercentage = (atr / price);
+  const atrVolatility = Math.max(0, 1.5 - Math.abs(atrPercentage - 0.01) * 100);
 
+
+  // Mocked for now
   const trends = {
       h4: Math.random() > 0.5 ? 'buy' : 'sell',
       d1: Math.random() > 0.5 ? 'buy' : 'sell',
       w1: Math.random() > 0.5 ? 'buy' : 'sell',
   };
+  const d1Trend = trends.d1;
 
-  const trendValues = Object.values(trends);
-  const buys = trendValues.filter(t => t === 'buy').length;
-  const sells = trendValues.filter(t => t === 'sell').length;
-  
-  let trendAlignment = 0;
-  if (buys === 3 || sells === 3) {
-    trendAlignment = 2.0; // Max points
-  } else if (buys === 2 || sells === 2) {
-    trendAlignment = 1.0; // Half points
-  }
-
-  // MA Convergence calculation
-  let maConvergence = 0;
-  const sma50 = data.sma50?.[0]?.sma;
-  const sma100 = data.sma100?.[0]?.sma;
-  const sma200 = data.sma200?.[0]?.sma;
-
-  if (sma50 && sma100 && sma200) {
-      const isUptrend = price > sma50 && sma50 > sma100 && sma100 > sma200;
-      const isDowntrend = price < sma50 && sma50 < sma100 && sma100 < sma200;
-
-      if (isUptrend || isDowntrend) {
-          maConvergence = 1.5; // Full points for perfect alignment
-      } else {
-          const uptrendPartial = (price > sma50 && sma50 > sma100) || (sma50 > sma100 && sma100 > sma200);
-          const downtrendPartial = (price < sma50 && sma50 < sma100) || (sma50 < sma100 && sma100 < sma200);
-          if (uptrendPartial || downtrendPartial) {
-              maConvergence = 0.75; // Half points for partial alignment
-          }
-      }
-  }
-
-  const totalScore = trendAlignment + adxStrength + atrVolatility + srRetest + priceStructure + marketRegimeFit + maConvergence;
+  const totalScore = 
+    adxStrength + 
+    atrVolatility + 
+    srRetest + 
+    priceStructure + 
+    marketRegimeFit + 
+    currencyStrengthIndex;
   
   let signal: 'Buy' | 'Sell' | 'Block' = 'Block';
   if (totalScore >= 7.0) {
-    if (buys > sells) signal = 'Buy';
-    if (sells > buys) signal = 'Sell';
+    if (d1Trend === 'buy') signal = 'Buy';
+    if (d1Trend === 'sell') signal = 'Sell';
   }
 
   return {
@@ -76,15 +60,14 @@ export const calculateDScore = (data: ForexData, index: number): DScore => {
     price: quote?.price ?? 0,
     change: quote?.change ?? 0,
     changesPercentage: quote?.changesPercentage ?? 0,
-    dScore: totalScore,
+    dScore: Math.min(totalScore, 10), // Ensure score doesn't exceed 10
     grade: getGrade(totalScore),
-    trendAlignment,
     adxStrength,
-    maConvergence,
+    atrVolatility,
     srRetest,
     priceStructure,
-    atrVolatility,
     marketRegimeFit,
+    currencyStrengthIndex,
     signal,
     positions: Math.floor(Math.random() * 6), // Mocked
     trends,
