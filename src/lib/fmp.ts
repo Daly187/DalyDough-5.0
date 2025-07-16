@@ -10,8 +10,17 @@ const BASE_URL = IS_SERVER
     : '/api/fmp';
 
 async function fetchWithCache<T>(url: string, ttl: number = 300): Promise<T | null> {
-    // Append API key for direct server-side calls if not using proxy
-    const finalUrl = IS_SERVER ? `${url}?apikey=${FMP_API_KEY}` : url;
+    // Append API key for direct server-side calls if not using proxy.
+    // Correctly use '&' if query parameters already exist.
+    let finalUrl = url;
+    if (IS_SERVER) {
+        if (url.includes('?')) {
+            finalUrl = `${url}&apikey=${FMP_API_KEY}`;
+        } else {
+            finalUrl = `${url}?apikey=${FMP_API_KEY}`;
+        }
+    }
+
 
     try {
         const res = await fetch(finalUrl, { 
