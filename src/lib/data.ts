@@ -12,6 +12,21 @@ export const pairs = ['AUD/CAD', 'AUD/CHF', 'AUD/JPY', 'AUD/NZD', 'AUD/USD', 'CA
 
 const majorCurrencies = ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'NZD', 'CHF'];
 
+// --- MOCK D-SCORE DATA ---
+export const dScoreData: DScore[] = [
+    { id: '1', pair: 'EUR/USD', price: 1.0712, change: 0.0012, changesPercentage: 0.11, dScore: 8.8, grade: 'A', trendAlignment: 1.8, adxStrength: 0.8, maConvergence: 1.4, srRetest: 1.2, priceStructure: 0.9, atrVolatility: 0.8, marketRegimeFit: 1.5, currencyStrength: 0.4, signal: 'Buy', positions: 1, trends: { d1: 'buy', w1: 'buy' } },
+    { id: '2', pair: 'GBP/JPY', price: 200.54, change: -0.25, changesPercentage: -0.12, dScore: 9.2, grade: 'A', trendAlignment: 2.0, adxStrength: 0.9, maConvergence: 1.5, srRetest: 1.0, priceStructure: 1.0, atrVolatility: 0.9, marketRegimeFit: 1.6, currencyStrength: 0.3, signal: 'Buy', positions: 0, trends: { d1: 'buy', w1: 'buy' } },
+    { id: '3', pair: 'AUD/USD', price: 0.6605, change: 0.0005, changesPercentage: 0.08, dScore: 7.5, grade: 'B', trendAlignment: 1.5, adxStrength: 0.6, maConvergence: 1.0, srRetest: 1.1, priceStructure: 0.8, atrVolatility: 0.7, marketRegimeFit: 1.2, currencyStrength: 0.6, signal: 'Buy', positions: 2, trends: { d1: 'buy', w1: 'buy' } },
+    { id: '4', pair: 'USD/CAD', price: 1.3721, change: -0.0015, changesPercentage: -0.11, dScore: 4.2, grade: 'C', trendAlignment: 0.5, adxStrength: 0.3, maConvergence: 0.4, srRetest: 0.8, priceStructure: 0.5, atrVolatility: 0.6, marketRegimeFit: 0.8, currencyStrength: 0.3, signal: 'Block', positions: 0, trends: { d1: 'sell', w1: 'buy' } },
+    { id: '5', pair: 'XAU/USD', price: 2345.67, change: 12.45, changesPercentage: 0.53, dScore: 8.1, grade: 'B', trendAlignment: 1.7, adxStrength: 0.7, maConvergence: 1.3, srRetest: 1.0, priceStructure: 0.9, atrVolatility: 0.8, marketRegimeFit: 1.3, currencyStrength: 0.4, signal: 'Buy', positions: 1, trends: { d1: 'buy', w1: 'buy' } },
+    { id: '6', pair: 'EUR/GBP', price: 0.8448, change: -0.0002, changesPercentage: -0.02, dScore: 6.5, grade: 'C', trendAlignment: 1.0, adxStrength: 0.5, maConvergence: 0.8, srRetest: 0.9, priceStructure: 0.7, atrVolatility: 0.6, marketRegimeFit: 1.0, currencyStrength: 1.0, signal: 'Sell', positions: 0, trends: { d1: 'sell', w1: 'sell' } },
+    { id: '7', pair: 'NZD/USD', price: 0.6123, change: 0.0008, changesPercentage: 0.13, dScore: 7.1, grade: 'B', trendAlignment: 1.4, adxStrength: 0.6, maConvergence: 1.0, srRetest: 1.0, priceStructure: 0.8, atrVolatility: 0.7, marketRegimeFit: 1.1, currencyStrength: 0.5, signal: 'Buy', positions: 0, trends: { d1: 'buy', w1: 'buy' } },
+    { id: '8', pair: 'USD/CHF', price: 0.9150, change: -0.0010, changesPercentage: -0.11, dScore: 3.8, grade: 'C', trendAlignment: 0.4, adxStrength: 0.2, maConvergence: 0.3, srRetest: 0.7, priceStructure: 0.4, atrVolatility: 0.5, marketRegimeFit: 0.7, currencyStrength: 0.6, signal: 'Block', positions: 0, trends: { d1: 'sell', w1: 'buy' } },
+    { id: '9', pair: 'AUD/JPY', price: 105.50, change: 0.15, changesPercentage: 0.14, dScore: 8.9, grade: 'A', trendAlignment: 1.9, adxStrength: 0.8, maConvergence: 1.5, srRetest: 1.1, priceStructure: 0.9, atrVolatility: 0.8, marketRegimeFit: 1.5, currencyStrength: 0.4, signal: 'Buy', positions: 0, trends: { d1: 'buy', w1: 'buy' } },
+    { id: '10', pair: 'GBP/USD', price: 1.2680, change: 0.0020, changesPercentage: 0.16, dScore: 7.8, grade: 'B', trendAlignment: 1.6, adxStrength: 0.7, maConvergence: 1.2, srRetest: 1.1, priceStructure: 0.8, atrVolatility: 0.7, marketRegimeFit: 1.2, currencyStrength: 0.5, signal: 'Buy', positions: 1, trends: { d1: 'buy', w1: 'buy' } },
+];
+
+
 // --- LIVE CURRENCY STRENGTH CALCULATION ---
 export const calculateLiveCurrencyStrength = (allForexData: ForexData[]): CurrencyStrength[] => {
     const strengthScores: Record<string, { wins: number; total: number }> = {};

@@ -2,45 +2,17 @@
 import * as React from 'react';
 import MarketOverviewTable from '@/components/dashboard/market-overview-table';
 import SystemStatus from '@/components/dashboard/system-status';
-import { activeBotsData, botConfigurationData, aiReentriesData, calculateDScore, pairs as defaultPairs, calculateLiveCurrencyStrength } from '@/lib/data';
+import { activeBotsData, botConfigurationData, aiReentriesData, dScoreData as mockDScoreData } from '@/lib/data';
 import ActiveBotsTable from '@/components/bots/active-bots-table';
 import BotConfiguration from '@/components/autobot/bot-configuration';
 import AiOptimizedReentries from '@/components/autobot/ai-optimized-reentries';
 import { Rocket } from 'lucide-react';
-import { getForexData } from '@/lib/fmp';
-import type { DScore, DScoreWeights } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import type { DScore } from '@/lib/types';
 
-// Note: We are making this a server component for more reliable data fetching.
-// The 'use client' components will still work inside it.
 
-export default async function DashboardPage() {
-  
-  // This logic now runs on the server before the page is sent to the client.
-  const forexData = await getForexData(defaultPairs);
-
-  if (!forexData || forexData.length === 0) {
-      return (
-        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Error</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-destructive">Failed to load market data. The API might be temporarily unavailable or the API key is invalid. Please check the console for more details.</p>
-                </CardContent>
-            </Card>
-        </main>
-      )
-  }
-
-  const liveStrengthData = calculateLiveCurrencyStrength(forexData);
-  
-  // We pass null for weights, so it uses the defaults. The settings page handles custom weights via localStorage on the client.
-  const dScoreData: DScore[] = forexData
-    .map((data, index) => calculateDScore(data, index, liveStrengthData, null))
-    .filter((d): d is DScore => d !== null);
-
+export default function DashboardPage() {
+  // Using mock dScoreData directly from data.ts
+  const dScoreData: DScore[] = mockDScoreData;
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
