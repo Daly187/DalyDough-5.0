@@ -21,7 +21,7 @@ if (firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith('YOUR_')) {
   app = getApps().length ? getApp() : initializeApp(firebaseConfig);
   auth = getAuth(app);
 } else {
-  console.error('Firebase config is missing or uses placeholder values. Check your .env file and ensure NEXT_PUBLIC_FIREBASE_ variables are set. Authentication will be disabled.');
+  console.warn('Firebase config is missing or uses placeholder values. Check your .env file and ensure NEXT_PUBLIC_FIREBASE_ variables are set. Authentication will be disabled.');
 }
 
 
