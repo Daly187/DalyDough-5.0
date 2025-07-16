@@ -24,9 +24,8 @@ async function fetchWithCache<T>(url: string, ttl: number = 300): Promise<T | nu
 
     try {
         const res = await fetch(finalUrl, { 
-            // Disable cache in development to see changes, use revalidation in production.
-            cache: process.env.NODE_ENV === 'development' ? 'no-store' : undefined,
-            next: { revalidate: ttl } 
+            // Disable cache to ensure fresh data is fetched every time.
+            cache: 'no-store',
         });
 
         if (!res.ok) {
