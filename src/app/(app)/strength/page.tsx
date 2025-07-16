@@ -1,13 +1,22 @@
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import StrengthIndexTable from "@/components/strength/strength-index-table";
-import { calculateLiveCurrencyStrength, pairs } from "@/lib/data";
-import { getForexData } from "@/lib/fmp";
+import { dScoreData } from "@/lib/data";
 import type { CurrencyStrength } from "@/lib/types";
 
+// Mock strength data for demonstration
+const latestStrengthData: CurrencyStrength[] = [
+    { currency: 'JPY', strength: 9.1 },
+    { currency: 'GBP', strength: 8.5 },
+    { currency: 'EUR', strength: 7.2 },
+    { currency: 'AUD', strength: 6.8 },
+    { currency: 'USD', strength: 5.5 },
+    { currency: 'CAD', strength: 4.1 },
+    { currency: 'NZD', strength: 3.2 },
+    { currency: 'CHF', strength: 2.4 },
+];
+
 export default async function StrengthPage() {
-  const forexData = await getForexData(pairs);
-  const latestStrengthData: CurrencyStrength[] = calculateLiveCurrencyStrength(forexData);
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">

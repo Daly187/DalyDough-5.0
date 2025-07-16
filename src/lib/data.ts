@@ -2,16 +2,6 @@
 
 import type { DScore, Bot, EquityData, RiskMetric, ApiKey, NewsEvent, BotConfigurationData, AIReentry, MarketRegime, ExposureData, ForexData, CurrencyStrength, StrengthData, DScoreWeights, FMPQuote } from './types';
 
-const getGrade = (score: number): 'A' | 'B' | 'C' => {
-  if (score >= 8.5) return 'A';
-  if (score >= 7.0) return 'B';
-  return 'C';
-};
-
-export const pairs = ['AUD/CAD', 'AUD/CHF', 'AUD/JPY', 'AUD/NZD', 'AUD/USD', 'CAD/JPY', 'CHF/JPY', 'EUR/CAD', 'EUR/CHF', 'EUR/GBP', 'EUR/JPY', 'EUR/NZD', 'EUR/TRY', 'EUR/USD', 'GBP/AUD', 'GBP/CAD', 'GBP/CHF', 'GBP/JPY', 'GBP/USD', 'NZD/CAD', 'NZD/CHF', 'NZD/JPY', 'NZD/USD', 'USD/CAD', 'USD/CHF', 'USD/JPY', 'USD/TRY', 'USD/ZAR', 'XAU/USD'];
-
-const majorCurrencies = ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'NZD', 'CHF'];
-
 // --- MOCK D-SCORE DATA ---
 export const dScoreData: DScore[] = [
     { id: '1', pair: 'EUR/USD', price: 1.0712, change: 0.0012, changesPercentage: 0.11, dScore: 8.8, grade: 'A', trendAlignment: 1.8, adxStrength: 0.8, maConvergence: 1.4, srRetest: 1.2, priceStructure: 0.9, atrVolatility: 0.8, marketRegimeFit: 1.5, currencyStrength: 0.4, signal: 'Buy', positions: 1, trends: { d1: 'buy', w1: 'buy' } },
@@ -26,41 +16,8 @@ export const dScoreData: DScore[] = [
     { id: '10', pair: 'GBP/USD', price: 1.2680, change: 0.0020, changesPercentage: 0.16, dScore: 7.8, grade: 'B', trendAlignment: 1.6, adxStrength: 0.7, maConvergence: 1.2, srRetest: 1.1, priceStructure: 0.8, atrVolatility: 0.7, marketRegimeFit: 1.2, currencyStrength: 0.5, signal: 'Buy', positions: 1, trends: { d1: 'buy', w1: 'buy' } },
 ];
 
-
-// --- LIVE CURRENCY STRENGTH CALCULATION ---
-export const calculateLiveCurrencyStrength = (allForexData: ForexData[]): CurrencyStrength[] => {
-    const strengthScores: Record<string, { wins: number; total: number }> = {};
-    majorCurrencies.forEach(c => strengthScores[c] = { wins: 0, total: 0 });
-
-    for (const data of allForexData) {
-        if (!data.quote || data.quote.length === 0) continue;
-
-        const base = data.pair.substring(0, 3);
-        const quote = data.pair.substring(4, 7);
-
-        if (majorCurrencies.includes(base) && majorCurrencies.includes(quote)) {
-            const change = data.quote[0].change ?? 0;
-            
-            strengthScores[base].total++;
-            strengthScores[quote].total++;
-
-            if (change > 0) {
-                // Base currency went up
-                strengthScores[base].wins++;
-            } else if (change < 0) {
-                // Quote currency went up (base went down)
-                strengthScores[quote].wins++;
-            }
-        }
-    }
-
-    return majorCurrencies.map(currency => {
-        const { wins, total } = strengthScores[currency];
-        // Score from 0 to 10, where 5 is neutral.
-        const score = total > 0 ? (wins / total) * 10 : 5; 
-        return { currency, strength: parseFloat(score.toFixed(1)) };
-    });
-};
+export const pairs = dScoreData.map(d => d.pair);
+const majorCurrencies = ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'NZD', 'CHF'];
 
 // Define the default and AI-recommended weights to be used in the calculation
 export const defaultWeights: DScoreWeights = {
@@ -83,154 +40,6 @@ export const aiRecommendedWeights: DScoreWeights = {
     atrVolatility: 0.5,
     marketRegimeFit: 1.5,
     currencyStrength: 1.5,
-};
-
-export const calculateDScore = (data: ForexData, index: number, liveStrengthData: CurrencyStrength[], customWeights: DScoreWeights | null): DScore | null => {
-  // Robust check for valid data from FMP API
-  const quote = data.quote?.[0];
-  const sma50 = data.sma50?.[0]?.sma;
-  const sma100 = data.sma100?.[0]?.sma;
-  const sma200 = data.sma200?.[0]?.sma;
-  const adxData = data.adx?.[0];
-  const atrData = data.atr?.[0];
-
-  if (!quote || !sma50 || !sma100 || !sma200 || !adxData || !atrData) {
-    // console.warn(`Missing essential data for ${data.pair}. Skipping D-Score calculation.`);
-    return null; // Return null if essential data is missing
-  }
-
-  const price = quote.price;
-  const adx = adxData.adx;
-  const pdi = adxData.pdi;
-  const mdi = adxData.mdi;
-  const atr = atrData.atr;
-  const weights = customWeights || defaultWeights;
-
-  // --- RAW COMPONENT SCORES (0-1) ---
-  const trends = {
-      d1: (price > sma50) ? 'buy' : 'sell',
-      w1: (price > sma200) ? 'buy' : 'sell',
-  };
-  const trendValues = Object.values(trends);
-  const buys = trendValues.filter(t => t === 'buy').length;
-  const sells = trendValues.filter(t => t === 'sell').length;
-  const trendDirection = buys > sells ? 'buy' : 'sell';
-
-  // 1. Trend Alignment
-  let rawTrendAlignment = (buys === 2 || sells === 2) ? 1.0 : (buys === 1 || sells === 1) ? 0.25 : 0;
-  
-  // 2. ADX Strength
-  let rawAdxStrength = Math.min(Math.max(adx - 20, 0) / 30, 1.0); // Score from ADX 20 to 50
-
-  // 3. MA Convergence
-  let rawMaConvergence = 0;
-  const isUptrend = price > sma50 && sma50 > sma100 && sma100 > sma200;
-  const isDowntrend = price < sma50 && sma50 < sma100 && sma100 < sma200;
-  if ((isUptrend && trendDirection === 'buy') || (isDowntrend && trendDirection === 'sell')) {
-      rawMaConvergence = 1.0;
-  } else {
-      const isPartialUp = price > sma50 && sma50 > sma100;
-      const isPartialDown = price < sma50 && sma50 < sma100;
-      if ((isPartialUp && trendDirection === 'buy') || (isPartialDown && trendDirection === 'sell')) {
-          rawMaConvergence = 0.5;
-      }
-  }
-
-  // 4. S/R Retest
-  let rawSrRetest = 0;
-  const mas = [sma50, sma100, sma200];
-  for (const ma of mas) {
-      if (Math.abs(price - ma) < atr * 1.5) { // Check if price is within 1.5 ATR of an MA
-          rawSrRetest = 1.0; // Price is near a key level
-          break; 
-      }
-  }
-
-  // 5. Price Structure
-  let rawPriceStructure = 0;
-  const diDiff = pdi - mdi;
-  const correctDirection = (trendDirection === 'buy' && diDiff > 0) || (trendDirection === 'sell' && diDiff < 0);
-  if (correctDirection) {
-      // Scale score based on how dominant the correct DI line is.
-      // A difference of 10 is decent, 25+ is strong.
-      rawPriceStructure = Math.min(Math.abs(diDiff) / 25, 1.0);
-  }
-  
-  // 6. ATR/Volatility
-  let rawAtrVolatility = 0;
-  const volatilityPercentage = (atr / price); // e.g., 0.005 for 0.5%
-  // Target moderate volatility (0.3% - 1.0%) as ideal. Clamp values to get a score between 0 and 1.
-  rawAtrVolatility = Math.max(0, 1 - Math.abs(volatilityPercentage - 0.006) / 0.006);
-
-
-  // 7. Market Regime Fit
-  let rawMarketRegimeFit = 0;
-  if (adx > 25) { // Trending regime
-      if (rawTrendAlignment === 1.0 && rawMaConvergence > 0) {
-          rawMarketRegimeFit = 1.0; // Good fit
-      } else {
-          rawMarketRegimeFit = 0.5; // Okay fit
-      }
-  } else { // Ranging/Dead regime
-      rawMarketRegimeFit = 0.0; // Poor fit for a trending strategy
-  }
-
-  // 8. Currency Strength
-  const baseCurrency = data.pair.substring(0, 3);
-  const quoteCurrency = data.pair.substring(4, 7);
-  const baseStrengthData = liveStrengthData.find(s => s.currency === baseCurrency);
-  const quoteStrengthData = liveStrengthData.find(s => s.currency === quoteCurrency);
-  let rawCurrencyStrength = 0;
-  if (baseStrengthData && quoteStrengthData) {
-    const strengthDiff = baseStrengthData.strength - quoteStrengthData.strength; // positive if base is stronger
-    const strengthDiffAbs = Math.abs(strengthDiff);
-    
-    // Check if strength direction matches trend direction
-    if ((trendDirection === 'buy' && strengthDiff > 0) || (trendDirection === 'sell' && strengthDiff < 0)) {
-        // Score from a difference of 2 up to 7
-        rawCurrencyStrength = Math.min(Math.max(strengthDiffAbs - 2, 0) / 5.0, 1.0);
-    }
-  }
-
-  // --- WEIGHTED SCORES ---
-  const trendAlignment = rawTrendAlignment * weights.trendAlignment;
-  const adxStrength = rawAdxStrength * weights.adxStrength;
-  const maConvergence = rawMaConvergence * weights.maConvergence;
-  const srRetest = rawSrRetest * weights.srRetest;
-  const priceStructure = rawPriceStructure * weights.priceStructure;
-  const atrVolatility = rawAtrVolatility * weights.atrVolatility;
-  const marketRegimeFit = rawMarketRegimeFit * weights.marketRegimeFit;
-  const currencyStrength = rawCurrencyStrength * weights.currencyStrength;
-
-  const totalScore = trendAlignment + adxStrength + maConvergence + srRetest + priceStructure + atrVolatility + marketRegimeFit + currencyStrength;
-  
-  let signal: 'Buy' | 'Sell' | 'Block' = 'Block';
-  if (totalScore >= 7.0) {
-    signal = trendDirection === 'buy' ? 'Buy' : 'Sell';
-  }
-
-  const activePositions = activeBotsData.filter(bot => bot.pair === data.pair && bot.status === 'active').length;
-
-  return {
-    id: `${index + 1}`,
-    pair: data.pair,
-    price: price,
-    change: quote.change,
-    changesPercentage: quote.changesPercentage,
-    dScore: totalScore,
-    grade: getGrade(totalScore),
-    trendAlignment,
-    adxStrength,
-    maConvergence,
-    srRetest,
-    priceStructure,
-    atrVolatility,
-    marketRegimeFit,
-    currencyStrength,
-    signal,
-    positions: activePositions,
-    trends,
-  };
 };
 
 export const activeBotsData: Bot[] = [
