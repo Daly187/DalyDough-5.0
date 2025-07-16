@@ -137,7 +137,7 @@ export type ExposureData = {
 }
 
 // FMP Types
-type FMPQuote = {
+export type FMPQuote = {
     symbol: string;
     name: string;
     price: number;

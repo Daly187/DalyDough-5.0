@@ -23,11 +23,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!auth) {
-      // If firebase auth is not initialized, we are not loading and have no user.
-      setLoading(false);
-      return;
-    }
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);

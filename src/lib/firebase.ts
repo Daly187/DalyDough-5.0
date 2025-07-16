@@ -11,18 +11,22 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-let app: FirebaseApp | null = null;
-let auth: Auth | null = null;
+function initializeFirebase() {
+    if (getApps().length > 0) {
+        return getApp();
+    }
 
-// Robust check to ensure all required environment variables are present and not placeholders.
-if (firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith('YOUR_')) {
-  // Initialize Firebase only if the config is valid.
-  // The getApps().length check prevents re-initializing the app on hot reloads.
-  app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-  auth = getAuth(app);
-} else {
-  console.warn('Firebase config is missing or uses placeholder values. Check your .env file and ensure NEXT_PUBLIC_FIREBASE_ variables are set. Authentication will be disabled.');
+    const allVarsExist = Object.values(firebaseConfig).every(v => !!v && !v.startsWith("YOUR_"));
+    
+    if(!allVarsExist) {
+        console.warn('Firebase config is missing or uses placeholder values. Check your .env file and ensure NEXT_PUBLIC_FIREBASE_ variables are set. Authentication will be disabled.');
+        return null;
+    }
+
+    return initializeApp(firebaseConfig);
 }
 
+const app: FirebaseApp | null = initializeFirebase();
+const auth: Auth = app ? getAuth(app) : ({} as Auth);
 
 export { app, auth };

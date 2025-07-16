@@ -92,6 +92,7 @@ export default function ActiveBotsTable({ data, allPairs, title, description, is
                   {data.map((bot) => {
                     const currentStatus = isClosed ? 'closed' : bot.status;
                     const config = statusConfig[currentStatus] || statusConfig.unknown;
+                    const currentDScore = getCurrentDScore(bot.pair);
                     return (
                       <TableRow key={bot.id}>
                         <TableCell className="font-medium">{bot.pair}</TableCell>
@@ -108,7 +109,7 @@ export default function ActiveBotsTable({ data, allPairs, title, description, is
                             ${bot.drawdown.toFixed(2)}
                         </TableCell>
                         <TableCell>{bot.d_score_entry.toFixed(1)}</TableCell>
-                        <TableCell>{isClosed ? bot.d_score_exit?.toFixed(1) : (getCurrentDScore(bot.pair)?.toFixed(1) ?? 'N/A')}</TableCell>
+                        <TableCell>{isClosed ? bot.d_score_exit?.toFixed(1) : (currentDScore !== undefined ? currentDScore.toFixed(1) : '0.0')}</TableCell>
                         <TableCell className="text-right">
                            <Button variant="ghost" size="sm" onClick={() => !isClosed && handleManageClick(bot)}>
                               {isClosed ? 'Analyze' : 'Manage'} <ChevronsRight className="h-4 w-4 ml-2" />

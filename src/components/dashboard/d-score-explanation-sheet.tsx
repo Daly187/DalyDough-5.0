@@ -40,7 +40,7 @@ export default function DScoreExplanationSheet({ isOpen, onOpenChange, pairData 
             adx: pairData.adxStrength,
             atrVolatility: pairData.atrVolatility,
             srRetest: pairData.srRetest,
-            priceStructure: pairData.priceStructure,
+            priceStructure: String(pairData.priceStructure), // Ensure string type
             marketRegimeFit: pairData.marketRegimeFit,
             maConvergence: pairData.maConvergence,
         };
@@ -67,6 +67,7 @@ export default function DScoreExplanationSheet({ isOpen, onOpenChange, pairData 
     { label: "Price Structure", value: pairData?.priceStructure, max: 1.0 },
     { label: "ATR/Volatility", value: pairData?.atrVolatility, max: 1.0 },
     { label: "Market Regime Fit", value: pairData?.marketRegimeFit, max: 2.0 },
+    { label: "Currency Strength", value: pairData?.currencyStrength, max: 1.0 },
   ];
 
   return (
@@ -81,7 +82,7 @@ export default function DScoreExplanationSheet({ isOpen, onOpenChange, pairData 
         <div className="py-4 space-y-4">
             <div className="text-center bg-muted/50 p-4 rounded-lg">
                 <p className="text-sm text-muted-foreground">Final Score</p>
-                <p className="text-4xl font-bold text-primary">{pairData?.dScore.toFixed(1) ?? 'N/A'}</p>
+                <p className="text-4xl font-bold text-primary">{pairData?.dScore.toFixed(1) ?? '0.0'}</p>
             </div>
 
             <Separator />
@@ -104,7 +105,7 @@ export default function DScoreExplanationSheet({ isOpen, onOpenChange, pairData 
                 {scoreFactors.map(factor => (
                     <li key={factor.label} className="flex justify-between items-center text-sm">
                         <span className="text-muted-foreground">{factor.label}</span>
-                        <span className="font-mono font-medium text-foreground">{factor.value?.toFixed(1)} / {factor.max.toFixed(1)}</span>
+                        <span className="font-mono font-medium text-foreground">{(factor.value ?? 0.0).toFixed(1)} / {factor.max.toFixed(1)}</span>
                     </li>
                 ))}
             </ul>
