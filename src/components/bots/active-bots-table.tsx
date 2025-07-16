@@ -108,7 +108,7 @@ export default function ActiveBotsTable({ data, allPairs, title, description, is
                             ${bot.drawdown.toFixed(2)}
                         </TableCell>
                         <TableCell>{bot.d_score_entry.toFixed(1)}</TableCell>
-                        <TableCell>{isClosed ? bot.d_score_exit?.toFixed(1) : getCurrentDScore(bot.pair)?.toFixed(1) ?? 'N/A'}</TableCell>
+                        <TableCell>{isClosed ? bot.d_score_exit?.toFixed(1) : (getCurrentDScore(bot.pair)?.toFixed(1) ?? '0.0')}</TableCell>
                         <TableCell className="text-right">
                            <Button variant="ghost" size="sm" onClick={() => !isClosed && handleManageClick(bot)}>
                               {isClosed ? 'Analyze' : 'Manage'} <ChevronsRight className="h-4 w-4 ml-2" />

@@ -81,7 +81,7 @@ export default function DScoreExplanationSheet({ isOpen, onOpenChange, pairData 
         <div className="py-4 space-y-4">
             <div className="text-center bg-muted/50 p-4 rounded-lg">
                 <p className="text-sm text-muted-foreground">Final Score</p>
-                <p className="text-4xl font-bold text-primary">{pairData?.dScore.toFixed(1)}</p>
+                <p className="text-4xl font-bold text-primary">{pairData?.dScore.toFixed(1) ?? '0.0'}</p>
             </div>
 
             <Separator />
@@ -104,7 +104,7 @@ export default function DScoreExplanationSheet({ isOpen, onOpenChange, pairData 
                 {scoreFactors.map(factor => (
                     <li key={factor.label} className="flex justify-between items-center text-sm">
                         <span className="text-muted-foreground">{factor.label}</span>
-                        <span className="font-mono font-medium text-foreground">{factor.value?.toFixed(1)} / {factor.max.toFixed(1)}</span>
+                        <span className="font-mono font-medium text-foreground">{(factor.value ?? 0).toFixed(1)} / {factor.max.toFixed(1)}</span>
                     </li>
                 ))}
             </ul>
