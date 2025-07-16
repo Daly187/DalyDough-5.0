@@ -8,7 +8,57 @@ const getGrade = (score: number): 'A' | 'B' | 'C' => {
 
 export const pairs = ['AUD/CAD', 'AUD/CHF', 'AUD/JPY', 'AUD/NZD', 'AUD/USD', 'CAD/JPY', 'CHF/JPY', 'EUR/CAD', 'EUR/CHF', 'EUR/GBP', 'EUR/JPY', 'EUR/NZD', 'EUR/TRY', 'EUR/USD', 'GBP/AUD', 'GBP/CAD', 'GBP/CHF', 'GBP/JPY', 'GBP/USD', 'NZD/CAD', 'NZD/CHF', 'NZD/JPY', 'NZD/USD', 'USD/CAD', 'USD/CHF', 'USD/JPY', 'USD/TRY', 'USD/ZAR', 'XAU/USD'];
 
-export const calculateDScore = (data: ForexData, index: number): DScore => {
+const generateStrengthData = (currency: string) => {
+    const data = [];
+    let lastStrength = Math.random() * 8 + 1;
+    for (let i = 10; i >= 0; i--) { // Generate more data to have history
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        lastStrength += (Math.random() - 0.5) * 2; // Fluctuate
+        lastStrength = Math.max(1, Math.min(10, lastStrength)); // Clamp between 1-10
+        data.push({
+            date: date.toISOString().split('T')[0],
+            strength: lastStrength
+        });
+    }
+    return { currency, data };
+};
+
+export const strengthData: StrengthData[] = [
+    generateStrengthData('EUR'),
+    generateStrengthData('GBP'),
+    generateStrengthData('JPY'),
+    generateStrengthData('USD'),
+    generateStrengthData('CAD'),
+    generateStrengthData('AUD'),
+    generateStrengthData('NZD'),
+    generateStrengthData('CHF'),
+];
+
+
+const getConsecutiveTrend = (currencySymbol: string): number => {
+    const currencyData = strengthData.find(c => c.currency === currencySymbol);
+    if (!currencyData || currencyData.data.length < 2) return 0;
+
+    const recentData = currencyData.data.slice(-5);
+    if (recentData.length < 2) return 0;
+
+    const lastDirectionUp = recentData[recentData.length - 1].strength >= recentData[recentData.length - 2].strength;
+    let consecutiveDays = 1;
+
+    for (let i = recentData.length - 2; i > 0; i--) {
+        const currentDirectionUp = recentData[i].strength >= recentData[i - 1].strength;
+        if (currentDirectionUp === lastDirectionUp) {
+            consecutiveDays++;
+        } else {
+            break;
+        }
+    }
+    return consecutiveDays;
+};
+
+
+export const calculateDScore = async (data: ForexData, index: number): Promise<DScore> => {
   const quote = data.quote?.[0];
   const price = quote?.price ?? 1;
 
@@ -42,8 +92,13 @@ export const calculateDScore = (data: ForexData, index: number): DScore => {
   // 6. Market Regime Fit (Mocked) - Max 1.5
   const marketRegimeFit = Math.random() * 1.5;
 
-  // 7. Currency Strength Index (Mocked) - Max 1.0
-  const currencyStrengthIndex = Math.random() * 1.0;
+  // 7. Currency Strength Index (Mocked based on new logic) - Max 1.0
+  const baseCurrency = data.pair.substring(0, 3);
+  const quoteCurrency = data.pair.substring(4, 7);
+  const baseTrendDays = getConsecutiveTrend(baseCurrency);
+  const quoteTrendDays = getConsecutiveTrend(quoteCurrency);
+  // Simple logic: reward longer trends. Normalize to max 1.0
+  const csiScore = Math.min(((baseTrendDays + quoteTrendDays) / 8), 1.0); 
 
 
   const totalScore = 
@@ -53,7 +108,7 @@ export const calculateDScore = (data: ForexData, index: number): DScore => {
     srRetest + 
     priceStructure + 
     marketRegimeFit + 
-    currencyStrengthIndex;
+    csiScore;
   
   let signal: 'Buy' | 'Sell' | 'Block' = 'Block';
   if (totalScore >= 7.0) {
@@ -75,7 +130,7 @@ export const calculateDScore = (data: ForexData, index: number): DScore => {
     srRetest,
     priceStructure,
     marketRegimeFit,
-    currencyStrengthIndex,
+    currencyStrengthIndex: csiScore,
     signal,
     positions: Math.floor(Math.random() * 6),
     trends,
@@ -162,32 +217,6 @@ export const aiReentriesData: AIReentry[] = [
     { level: 2, priceOffset: 'R/S Level -40', lotSize: 0.03, condition: 'Fib 61.8%' },
     { level: 3, priceOffset: 'R/S Level -60', lotSize: 0.05, condition: 'Volume Spike' },
     { level: 4, priceOffset: 'R/S Level -80', lotSize: 0.07, condition: 'Oversold RSI' },
-];
-
-
-const generateStrengthData = (currency: string) => {
-    const data = [];
-    for (let i = 5; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - (i * 7));
-        data.push({
-            date: date.toISOString().split('T')[0],
-            strength: Math.floor(Math.random() * 8 + 1)
-        });
-    }
-    return { currency, data };
-};
-
-
-export const strengthData: StrengthData[] = [
-    generateStrengthData('EUR'),
-    generateStrengthData('GBP'),
-    generateStrengthData('JPY'),
-    generateStrengthData('USD'),
-    generateStrengthData('CAD'),
-    generateStrengthData('AUD'),
-    generateStrengthData('NZD'),
-    generateStrengthData('CHF'),
 ];
 
 

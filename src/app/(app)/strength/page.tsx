@@ -1,5 +1,5 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import StrengthIndexChart from "@/components/strength/strength-index-chart";
+import StrengthTable from "@/components/strength/strength-table";
 import { strengthData } from "@/lib/data";
 
 export default function StrengthPage() {
@@ -10,13 +10,13 @@ export default function StrengthPage() {
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>Multi-Timeframe Strength Analysis</CardTitle>
+          <CardTitle>5-Day Trend Analysis</CardTitle>
           <CardDescription>
-            6 weeks of historical strength data for major currencies based on 4h, 1d, and 1w trend alignment.
+            Daily strength trend for major currencies. Consecutive trends influence the D-Score.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <StrengthIndexChart data={strengthData} />
+          <StrengthTable strengthData={strengthData} />
         </CardContent>
       </Card>
     </main>
