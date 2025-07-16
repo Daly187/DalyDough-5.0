@@ -5,22 +5,13 @@ import type { ForexData } from './types';
 // On the client, we use the proxy to avoid CORS and hide the key.
 const IS_SERVER = typeof window === 'undefined';
 const FMP_API_KEY = process.env.NEXT_PUBLIC_FMP_API_KEY;
-const BASE_URL = IS_SERVER 
-    ? `https://financialmodelingprep.com/api/v3`
-    : '/api/fmp';
+const BASE_URL = 'https://financialmodelingprep.com/api/v3';
+
+// The proxy defined in next.config.ts is no longer needed with this server-side approach.
 
 async function fetchWithCache<T>(url: string, ttl: number = 300): Promise<T | null> {
-    // Append API key for direct server-side calls if not using proxy.
-    // Correctly use '&' if query parameters already exist.
-    let finalUrl = url;
-    if (IS_SERVER) {
-        if (url.includes('?')) {
-            finalUrl = `${url}&apikey=${FMP_API_KEY}`;
-        } else {
-            finalUrl = `${url}?apikey=${FMP_API_KEY}`;
-        }
-    }
-
+    // Correctly append the API key. Use '?' if no query params exist, otherwise use '&'.
+    const finalUrl = `${url}${url.includes('?') ? '&' : '?'}apikey=${FMP_API_KEY}`;
 
     try {
         const res = await fetch(finalUrl, { 
@@ -58,7 +49,7 @@ export async function getForexData(pairs: string[]): Promise<ForexData[]> {
     const promises = pairs.map(async (pair) => {
         const apiSymbol = pair.replace('/', '');
         
-        // Construct URLs without the API key; it's added in fetchWithCache for server-side calls
+        // Construct URLs using the base FMP URL. The API key is added in fetchWithCache.
         const quotePromise = fetchWithCache(`${BASE_URL}/quote/${apiSymbol}`);
         const adxPromise = fetchWithCache(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=14&type=adx`);
         const atrPromise = fetchWithCache(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=14&type=atr`);
