@@ -1,5 +1,5 @@
 
-import type { DScore, Bot, EquityData, RiskMetric, ApiKey, NewsEvent, BotConfigurationData, AIReentry, MarketRegime, ExposureData, ForexData, StrengthData } from './types';
+import type { DScore, Bot, EquityData, RiskMetric, ApiKey, NewsEvent, BotConfigurationData, AIReentry, MarketRegime, ExposureData, ForexData, FMPHistoricalPrice } from './types';
 
 const getGrade = (score: number): 'A' | 'B' | 'C' => {
   if (score >= 8.5) return 'A';
@@ -56,6 +56,53 @@ const getCurrencyStrength = (currency: string): number => {
     return data?.data[data.data.length - 1]?.strength ?? 5; 
 }
 
+const calculateSRRetest = (historicalData: FMPHistoricalPrice[]): number => {
+    if (!historicalData || historicalData.length < 21) return 0;
+
+    const recentData = historicalData.slice(0, 21);
+    const lastClose = recentData[0].close;
+    const previous20 = recentData.slice(1);
+
+    const minClose = Math.min(...previous20.map(d => d.close));
+    const maxClose = Math.max(...previous20.map(d => d.close));
+
+    const proximity = 0.003; // 0.3%
+
+    if (Math.abs(lastClose - minClose) / minClose < proximity || Math.abs(lastClose - maxClose) / maxClose < proximity) {
+        return 1.5; // Score * weight (1 * 1.5)
+    }
+    return 0;
+};
+
+const calculatePriceStructure = (historicalData: FMPHistoricalPrice[]): number => {
+    if (!historicalData || historicalData.length < 5) return 0;
+
+    const last5 = historicalData.slice(0, 5);
+    const closes = last5.map(d => d.close);
+    const highs = last5.map(d => d.high);
+    const lows = last5.map(d => d.low);
+
+    const isHigherHighHigherLow = 
+        highs[0] > highs[1] && lows[0] > lows[1] &&
+        highs[1] > highs[2] && lows[1] > lows[2];
+
+    const isLowerHighLowerLow = 
+        highs[0] < highs[1] && lows[0] < lows[1] &&
+        highs[1] < highs[2] && lows[1] < lows[2];
+
+    if (isHigherHighHigherLow || isLowerHighLowerLow) {
+        return 1.5; // Score * weight (1 * 1.5)
+    }
+    return 0;
+};
+
+const calculateRegimeFit = (adx: number | undefined): number => {
+    if (adx && adx > 25) {
+        return 2.0; // Score * weight (1 * 2.0)
+    }
+    return 0;
+};
+
 export const calculateDScore = async (data: ForexData, index: number, allForexData: ForexData[]): Promise<DScore> => {
   // Update strength data once per calculation batch
   if (index === 0) {
@@ -64,6 +111,7 @@ export const calculateDScore = async (data: ForexData, index: number, allForexDa
 
   const quote = data.quote?.[0];
   const price = quote?.price;
+  const adxData = data.adx?.[0];
 
   const defaultScore: DScore = {
     id: `${index + 1}`, pair: data.pair, price: 0, change: 0, changesPercentage: 0, dScore: 0, grade: 'C',
@@ -77,29 +125,32 @@ export const calculateDScore = async (data: ForexData, index: number, allForexDa
   }
 
   // 1. ADX Strength - Max 2.0 (LIVE)
-  const adx = data.adx?.[0]?.adx;
-  let adxStrength = 0;
-  if (adx && adx > 25) adxStrength = 2.0;
-  else if (adx && adx > 20) adxStrength = 1.0;
+  const adxStrength = (adxData && adxData.adx > 25) ? 2.0 : (adxData && adxData.adx > 20 ? 1.0 : 0);
 
   // 2. Bollinger Band Volatility - Max 1.5 (LIVE)
   const bb = data.bb?.[0];
   let bollingerBandVolatility = 0;
   if (bb && bb.middleBand > 0) {
       const bbWidth = (bb.upperBand - bb.lowerBand) / bb.middleBand;
-      // Ideal width between 0.5% and 4%
+      // Ideal width between 0.5% and 4% for most pairs, this can be refined
       if (bbWidth > 0.005 && bbWidth < 0.04) {
           bollingerBandVolatility = 1.5;
       } else if (bbWidth > 0.002 && bbWidth < 0.06) {
-          bollingerBandVolatility = 0.75; // Less ideal but acceptable
+          bollingerBandVolatility = 0.75;
       }
   }
 
+  // 3. S/R Retest - Max 1.5 (LIVE - from formula)
+  const srRetest = calculateSRRetest(data.historical || []);
+
+  // 4. Price Structure - Max 1.5 (LIVE - from formula)
+  const priceStructure = calculatePriceStructure(data.historical || []);
+
+  // 5. Regime Fit - Max 2.0 (LIVE - from formula)
+  const marketRegimeFit = calculateRegimeFit(adxData?.adx);
+
   // Set unimplemented factors to 0
   const trendAlignment = 0;
-  const srRetest = 0;
-  const priceStructure = 0;
-  const marketRegimeFit = 0;
   const currencyStrengthIndex = 0;
 
   const totalScore = 
@@ -126,6 +177,11 @@ export const calculateDScore = async (data: ForexData, index: number, allForexDa
     grade: getGrade(totalScore),
     adxStrength,
     bollingerBandVolatility,
+    srRetest,
+    priceStructure,
+    marketRegimeFit,
+    trendAlignment,
+    currencyStrengthIndex,
     signal,
   };
 };

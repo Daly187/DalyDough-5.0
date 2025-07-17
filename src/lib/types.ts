@@ -189,6 +189,23 @@ type FMPSMA = {
     sma: number;
 };
 
+export type FMPHistoricalPrice = {
+    date: string;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    adjClose: number;
+    volume: number;
+    unadjustedVolume: number;
+    change: number;
+    changePercent: number;
+    vwap: number;
+    label: string;
+    changeOverTime: number;
+};
+
+
 export type ForexData = {
     pair: string;
     quote: FMPQuote[] | null;
@@ -199,4 +216,5 @@ export type ForexData = {
     sma100: FMPSMA[] | null;
     sma200: FMPSMA[] | null;
     sma50_weekly: FMPSMA[] | null;
+    historical: FMPHistoricalPrice[] | null;
 };
