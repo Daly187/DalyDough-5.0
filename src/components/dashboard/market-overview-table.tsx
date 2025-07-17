@@ -89,32 +89,37 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
                   <TableHead className="text-right">Entry Signal</TableHead>
                 </TableRow>
               </TableHeader>
+                <TableBody>
                 {sortedData.map((item) => {
                   const signal = signalConfig[item.signal];
+                  const isPriceValid = typeof item.price === 'number';
+                  const isChangeValid = typeof item.changesPercentage === 'number';
+
                   return (
-                    <TableBody key={item.id}>
-                        <TableRow className="cursor-pointer" onClick={() => setSelectedPair(item)}>
-                          <TableCell>
-                            <div className="font-medium">{item.pair}</div>
-                            <div className={cn("text-xs", item.change >= 0 ? 'text-green-400' : 'text-red-400')}>
-                              {item.price.toFixed(item.pair.includes('JPY') ? 3 : 5)}
-                              <span className="ml-1">({item.changesPercentage.toFixed(2)}%)</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="font-semibold text-lg text-primary">{item.dScore.toFixed(1)}</TableCell>
-                          <TableCell>{item.adxStrength.toFixed(1)}</TableCell>
-                           <TableCell>{item.atrVolatility.toFixed(1)}</TableCell>
-                          <TableCell>{item.marketRegimeFit.toFixed(1)}</TableCell>
-                          <TableCell className="text-right">
-                            <div className={cn("flex items-center justify-end gap-2 font-medium", signal.color)}>
-                                {signal.icon}
-                                {signal.label}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                    </TableBody>
+                    <TableRow key={item.id} className="cursor-pointer" onClick={() => setSelectedPair(item)}>
+                      <TableCell>
+                        <div className="font-medium">{item.pair}</div>
+                        <div className={cn("text-xs", item.change >= 0 ? 'text-green-400' : 'text-red-400')}>
+                          {isPriceValid ? item.price.toFixed(item.pair.includes('JPY') ? 3 : 5) : 'N/A'}
+                          {isChangeValid && (
+                            <span className="ml-1">({item.changesPercentage.toFixed(2)}%)</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-semibold text-lg text-primary">{item.dScore.toFixed(1)}</TableCell>
+                      <TableCell>{item.adxStrength.toFixed(1)}</TableCell>
+                       <TableCell>{item.atrVolatility.toFixed(1)}</TableCell>
+                      <TableCell>{item.marketRegimeFit.toFixed(1)}</TableCell>
+                      <TableCell className="text-right">
+                        <div className={cn("flex items-center justify-end gap-2 font-medium", signal.color)}>
+                            {signal.icon}
+                            {signal.label}
+                        </div>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
+              </TableBody>
             </Table>
           </ScrollArea>
         </CardContent>
