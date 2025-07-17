@@ -12,8 +12,8 @@ import { DScore } from '@/lib/types';
 export default async function DashboardPage() {
   const forexData = await getForexData(pairs);
 
-  const dScoreData: DScore[] = forexData.map((data, index) => 
-    calculateDScore(data, index)
+  const dScoreData: DScore[] = await Promise.all(
+    forexData.map((data, index) => calculateDScore(data, index))
   );
 
   return (

@@ -2,10 +2,18 @@ import MarketFilter from '@/components/autobot/market-filter';
 import MarketOpportunities from '@/components/autobot/market-opportunities';
 import BotConfiguration from '@/components/autobot/bot-configuration';
 import AiOptimizedReentries from '@/components/autobot/ai-optimized-reentries';
-import { dScoreData, botConfigurationData, aiReentriesData, activeBotsData } from '@/lib/data';
+import { dScoreData as mockDScoreData, botConfigurationData, aiReentriesData, activeBotsData, calculateDScore, pairs } from '@/lib/data';
 import { Rocket } from 'lucide-react';
+import { getForexData } from '@/lib/fmp';
+import type { DScore } from '@/lib/types';
 
-export default function AutoBotPage() {
+export default async function AutoBotPage() {
+  const forexData = await getForexData(pairs);
+
+  const dScoreData: DScore[] = await Promise.all(
+    forexData.map((data, index) => calculateDScore(data, index))
+  );
+
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
       <div className="flex items-center gap-4">
