@@ -17,7 +17,7 @@ export default async function MarketDetailPage() {
                 <CardHeader>
                     <CardTitle>FMP API Data</CardTitle>
                     <CardDescription>
-                        The raw technical indicator data fetched from the Financial Modeling Prep API for each pair.
+                        The raw technical indicator data fetched from the Financial Modeling Prep API for each pair. Data is refreshed automatically every 5 minutes.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>

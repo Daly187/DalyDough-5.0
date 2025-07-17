@@ -1,11 +1,21 @@
+
+"use client";
+
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Filter, RefreshCw, Search } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function MarketFilter() {
+    const router = useRouter();
+
+    const handleRefresh = () => {
+        router.refresh();
+    };
+
     return (
         <Card>
             <CardHeader>
@@ -14,7 +24,7 @@ export default function MarketFilter() {
                         <Filter className="h-5 w-5" />
                         Market Filter
                     </div>
-                    <Button variant="ghost" size="icon">
+                    <Button variant="ghost" size="icon" onClick={handleRefresh}>
                         <RefreshCw className="h-4 w-4" />
                     </Button>
                 </CardTitle>
