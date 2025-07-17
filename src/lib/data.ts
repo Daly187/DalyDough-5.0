@@ -1,3 +1,4 @@
+
 import type { DScore, Bot, EquityData, RiskMetric, ApiKey, NewsEvent, BotConfigurationData, AIReentry, MarketRegime, ExposureData, ForexData, StrengthData } from './types';
 
 const getGrade = (score: number): 'A' | 'B' | 'C' => {
@@ -8,98 +9,137 @@ const getGrade = (score: number): 'A' | 'B' | 'C' => {
 
 export const pairs = ['AUD/CAD', 'AUD/CHF', 'AUD/JPY', 'AUD/NZD', 'AUD/USD', 'CAD/JPY', 'CHF/JPY', 'EUR/CAD', 'EUR/CHF', 'EUR/GBP', 'EUR/JPY', 'EUR/NZD', 'EUR/TRY', 'EUR/USD', 'GBP/AUD', 'GBP/CAD', 'GBP/CHF', 'GBP/JPY', 'GBP/USD', 'NZD/CAD', 'NZD/CHF', 'NZD/JPY', 'NZD/USD', 'USD/CAD', 'USD/CHF', 'USD/JPY', 'USD/TRY', 'USD/ZAR', 'XAU/USD'];
 
-const generateStrengthData = (currency: string) => {
-    const data = [];
-    let lastStrength = Math.random() * 8 + 1;
-    for (let i = 10; i >= 0; i--) { // Generate more data to have history
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        lastStrength += (Math.random() - 0.5) * 2; // Fluctuate
-        lastStrength = Math.max(1, Math.min(10, lastStrength)); // Clamp between 1-10
-        data.push({
-            date: date.toISOString().split('T')[0],
-            strength: lastStrength
-        });
-    }
-    return { currency, data };
-};
-
-export const strengthData: StrengthData[] = [
-    generateStrengthData('EUR'),
-    generateStrengthData('GBP'),
-    generateStrengthData('JPY'),
-    generateStrengthData('USD'),
-    generateStrengthData('CAD'),
-    generateStrengthData('AUD'),
-    generateStrengthData('NZD'),
-    generateStrengthData('CHF'),
+// This strengthData is now used as a fallback and for CSI calculation structure
+export let strengthData: StrengthData[] = [
+    { currency: 'EUR', data: [] },
+    { currency: 'GBP', data: [] },
+    { currency: 'JPY', data: [] },
+    { currency: 'USD', data: [] },
+    { currency: 'CAD', data: [] },
+    { currency: 'AUD', data: [] },
+    { currency: 'NZD', data: [] },
+    { currency: 'CHF', data: [] },
 ];
 
+// Update strength data based on live price changes
+const updateStrengthData = (allForexData: ForexData[]) => {
+    const changes: Record<string, number[]> = {
+        'EUR': [], 'GBP': [], 'JPY': [], 'USD': [], 'CAD': [], 'AUD': [], 'NZD': [], 'CHF': []
+    };
 
-const getConsecutiveTrend = (currencySymbol: string): number => {
-    const currencyData = strengthData.find(c => c.currency === currencySymbol);
-    if (!currencyData || currencyData.data.length < 2) return 0;
+    allForexData.forEach(d => {
+        if (d.pair.length === 7 && d.quote?.[0]?.changesPercentage) {
+            const base = d.pair.substring(0, 3);
+            const quote = d.pair.substring(4, 7);
+            const change = d.quote[0].changesPercentage;
 
-    const recentData = currencyData.data.slice(-5);
-    if (recentData.length < 2) return 0;
-
-    const lastDirectionUp = recentData[recentData.length - 1].strength >= recentData[recentData.length - 2].strength;
-    let consecutiveDays = 1;
-
-    for (let i = recentData.length - 2; i > 0; i--) {
-        const currentDirectionUp = recentData[i].strength >= recentData[i - 1].strength;
-        if (currentDirectionUp === lastDirectionUp) {
-            consecutiveDays++;
-        } else {
-            break;
+            if (changes[base]) changes[base].push(change);
+            if (changes[quote]) changes[quote].push(-change);
         }
-    }
-    return consecutiveDays;
+    });
+
+    strengthData = strengthData.map(s => {
+        const avgChange = changes[s.currency].length > 0
+            ? changes[s.currency].reduce((a, b) => a + b, 0) / changes[s.currency].length
+            : 0;
+        
+        // This is a simplified CSI logic. A more robust one would use rolling averages.
+        // For now, we simulate a "strength" value based on average daily change.
+        // A simple mapping: 1% change = 1 point of strength. Scale as needed.
+        const strengthValue = 5 + (avgChange * 2); // Base of 5, +/- based on avg change
+        
+        return {
+            ...s,
+            data: [{ date: new Date().toISOString().split('T')[0], strength: Math.max(0, Math.min(10, strengthValue)) }]
+        };
+    });
 };
 
 
-export const calculateDScore = async (data: ForexData, index: number): Promise<DScore> => {
+const getCurrencyStrength = (currency: string): number => {
+    const data = strengthData.find(s => s.currency === currency);
+    return data?.data[0]?.strength ?? 5; // Default to neutral 5
+}
+
+export const calculateDScore = async (data: ForexData, index: number, allForexData: ForexData[]): Promise<DScore> => {
+  // Update strength data once per calculation batch
+  if (index === 0) {
+    updateStrengthData(allForexData);
+  }
+
   const quote = data.quote?.[0];
   const price = quote?.price ?? 1;
 
   // 1. ADX Strength (Live) - Max 2.0
   const adx = data.adx?.[0]?.adx ?? 0;
-  const adxStrength = Math.min((adx / 50) * 2.0, 2.0);
-  
+  let adxStrength = 0;
+  if (adx > 25) adxStrength = 2.0;
+  else if (adx > 20) adxStrength = 1.0;
+
   // 2. ATR/Volatility (Live) - Max 1.5
   const atr = data.atr?.[0]?.atr ?? 0;
   const atrPercentage = (atr / price);
-  const atrVolatility = Math.max(0, 1.5 - Math.abs(atrPercentage - 0.01) * 100);
+  // Give score if volatility is not too low (<0.3%) or too high (>2%)
+  const isNormalVolatility = atrPercentage > 0.003 && atrPercentage < 0.02;
+  const atrVolatility = isNormalVolatility ? 1.5 : 0;
 
-  // 3. Trend Alignment (Mocked) - Max 2.0
-  const trends = {
-      d1: ['buy', 'sell', 'neutral'][Math.floor(Math.random() * 3)] as 'buy' | 'sell' | 'neutral',
-      w1: ['buy', 'sell', 'neutral'][Math.floor(Math.random() * 3)] as 'buy' | 'sell' | 'neutral',
-  };
+  // 3. Trend Alignment (1d/1w) - Max 2.0
+  const dailySMA50 = data.sma50?.[0]?.sma;
+  const weeklySMA50 = data.sma50_weekly?.[0]?.sma;
   let trendAlignment = 0;
-  if (trends.d1 !== 'neutral' && trends.d1 === trends.w1) {
-      trendAlignment = 2.0;
-  } else if ((trends.d1 !== 'neutral' && trends.w1 === 'neutral') || (trends.w1 !== 'neutral' && trends.d1 === 'neutral')) {
-      trendAlignment = 1.0;
+  if (dailySMA50 && weeklySMA50 && price) {
+      const dailyTrend: 'buy' | 'sell' | 'neutral' = price > dailySMA50 ? 'buy' : 'sell';
+      const weeklyTrend: 'buy' | 'sell' | 'neutral' = price > weeklySMA50 ? 'buy' : 'sell';
+      if (dailyTrend === weeklyTrend) {
+          trendAlignment = 2.0;
+      } else {
+          // If one is neutral (very close to SMA), give partial credit
+          const dailyDiff = Math.abs(price - dailySMA50) / price;
+          const weeklyDiff = Math.abs(price - weeklySMA50) / price;
+          if (dailyDiff < 0.002 || weeklyDiff < 0.002) { // less than 0.2% diff = neutral
+              trendAlignment = 1.0;
+          }
+      }
+  }
+  
+  // 4. S/R Retest (Live) - Max 1.5
+  let srRetest = 0;
+  if (price && data.sma50?.[0]?.sma && data.sma100?.[0]?.sma && data.sma200?.[0]?.sma) {
+    const smas = [data.sma50[0].sma, data.sma100[0].sma, data.sma200[0].sma];
+    for (const sma of smas) {
+        if (Math.abs(price - sma) / price < 0.005) { // within 0.5% of a major SMA
+            srRetest = 1.5;
+            break;
+        }
+    }
   }
 
-  // 4. S/R Retest (Mocked) - Max 1.5
-  const srRetest = Math.random() * 1.5;
+  // 5. Price Structure (Live) - Max 1.5
+  let priceStructure = 0;
+  if (price && data.sma50?.[0]?.sma && data.sma200?.[0]?.sma) {
+      const isBullish = price > data.sma50[0].sma && data.sma50[0].sma > data.sma200[0].sma;
+      const isBearish = price < data.sma50[0].sma && data.sma50[0].sma < data.sma200[0].sma;
+      if (isBullish || isBearish) {
+          priceStructure = 1.5;
+      }
+  }
 
-  // 5. Price Structure (Mocked) - Max 1.5
-  const priceStructure = Math.random() * 1.5;
+  // 6. Market Regime Fit (Live) - Max 2.0
+  // Trending regime (ADX > 25) is a good fit.
+  const marketRegimeFit = (adx > 25) ? 2.0 : (adx > 20 ? 1.0 : 0);
 
-  // 6. Market Regime Fit (Mocked) - Max 1.5
-  const marketRegimeFit = Math.random() * 1.5;
-
-  // 7. Currency Strength Index (Mocked based on new logic) - Max 1.0
+  // 7. Currency Strength Index (Live) - Max 1.0
   const baseCurrency = data.pair.substring(0, 3);
   const quoteCurrency = data.pair.substring(4, 7);
-  const baseTrendDays = getConsecutiveTrend(baseCurrency);
-  const quoteTrendDays = getConsecutiveTrend(quoteCurrency);
-  // Simple logic: reward longer trends. Normalize to max 1.0
-  const csiScore = Math.min(((baseTrendDays + quoteTrendDays) / 8), 1.0); 
-
+  const baseStrength = getCurrencyStrength(baseCurrency);
+  const quoteStrength = getCurrencyStrength(quoteCurrency);
+  let currencyStrengthIndex = 0;
+  // Strong base vs weak quote OR weak base vs strong quote
+  if ((baseStrength > 6 && quoteStrength < 4) || (baseStrength < 4 && quoteStrength > 6)) {
+      currencyStrengthIndex = 1.0;
+  } else if ((baseStrength > 5.5 && quoteStrength < 4.5) || (baseStrength < 4.5 && quoteStrength > 5.5)) {
+      currencyStrengthIndex = 0.5;
+  }
 
   const totalScore = 
     adxStrength + 
@@ -108,12 +148,12 @@ export const calculateDScore = async (data: ForexData, index: number): Promise<D
     srRetest + 
     priceStructure + 
     marketRegimeFit + 
-    csiScore;
+    currencyStrengthIndex;
   
   let signal: 'Buy' | 'Sell' | 'Block' = 'Block';
   if (totalScore >= 7.0) {
-    if (trends.d1 === 'buy') signal = 'Buy';
-    if (trends.d1 === 'sell') signal = 'Sell';
+    if (price && dailySMA50 && price > dailySMA50) signal = 'Buy';
+    else if (price && dailySMA50 && price < dailySMA50) signal = 'Sell';
   }
 
   return {
@@ -130,10 +170,13 @@ export const calculateDScore = async (data: ForexData, index: number): Promise<D
     srRetest,
     priceStructure,
     marketRegimeFit,
-    currencyStrengthIndex: csiScore,
+    currencyStrengthIndex,
     signal,
-    positions: Math.floor(Math.random() * 6),
-    trends,
+    positions: Math.floor(Math.random() * 6), // Mocked for now
+    trends: { // This is now redundant but kept for type safety until fully removed
+      d1: 'neutral',
+      w1: 'neutral'
+    },
   };
 };
 
@@ -262,3 +305,5 @@ export const exposureData: ExposureData[] = [
     { currency: 'CHF', exposure: 1500.00, type: 'long' },
     { currency: 'NZD', exposure: -500.00, type: 'short' },
 ];
+
+    

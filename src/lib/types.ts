@@ -1,5 +1,6 @@
 
 
+
 export type DScore = {
   id: string;
   pair: string;
@@ -13,7 +14,7 @@ export type DScore = {
   trendAlignment: number; // 0-2.0
   srRetest: number; // 0-1.5
   priceStructure: number; // 0-1.5
-  marketRegimeFit: number; // 0-1.5
+  marketRegimeFit: number; // 0-2.0
   currencyStrengthIndex: number; // 0-1.0
   signal: 'Buy' | 'Sell' | 'Block';
   positions?: number;
@@ -185,4 +186,7 @@ export type ForexData = {
     sma50: FMPSMA[] | null;
     sma100: FMPSMA[] | null;
     sma200: FMPSMA[] | null;
+    sma50_weekly: FMPSMA[] | null;
 };
+
+    

@@ -10,31 +10,31 @@ import BotConfiguration from '@/components/autobot/bot-configuration';
 import AiOptimizedReentries from '@/components/autobot/ai-optimized-reentries';
 import { Rocket } from 'lucide-react';
 import { getForexData } from '@/lib/fmp';
-import type { DScore } from '@/lib/types';
+import type { DScore, ForexData } from '@/lib/types';
 import MarketControls from '@/components/dashboard/market-controls';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function DashboardPage() {
-  const [dScoreData, setDScoreData] = React.useState<DScore[]>([]);
+  const [allDScoreData, setAllDScoreData] = React.useState<DScore[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [dScoreThreshold, setDScoreThreshold] = React.useState(7.0);
 
   React.useEffect(() => {
     async function fetchData() {
       setIsLoading(true);
-      const forexData = await getForexData(pairs);
+      const forexData: ForexData[] = await getForexData(pairs);
       const calculatedScores: DScore[] = await Promise.all(
-        forexData.map((data, index) => calculateDScore(data, index))
+        forexData.map((data, index) => calculateDScore(data, index, forexData))
       );
-      setDScoreData(calculatedScores);
+      setAllDScoreData(calculatedScores);
       setIsLoading(false);
     }
     fetchData();
   }, []);
 
   const filteredDScoreData = React.useMemo(() => {
-    return dScoreData.filter(p => p.dScore >= dScoreThreshold);
-  }, [dScoreData, dScoreThreshold]);
+    return allDScoreData.filter(p => p.dScore >= dScoreThreshold);
+  }, [allDScoreData, dScoreThreshold]);
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
@@ -49,7 +49,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 flex flex-col gap-8">
           <MarketOverviewTable data={filteredDScoreData} isLoading={isLoading} />
-          <ActiveBotsTable data={activeBotsData.slice(0, 4)} allPairs={dScoreData} title="Active Bots" description="A real-time overview of all currently running trade bots." />
+          <ActiveBotsTable data={activeBotsData.slice(0, 4)} allPairs={allDScoreData} title="Active Bots" description="A real-time overview of all currently running trade bots." />
         </div>
         <div className="lg:col-span-1 flex flex-col gap-8">
             <div className="flex items-center gap-4">
@@ -66,3 +66,5 @@ export default function DashboardPage() {
     </main>
   );
 }
+
+    
