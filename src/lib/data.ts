@@ -58,7 +58,8 @@ const updateStrengthData = (allForexData: ForexData[]) => {
 
 const getCurrencyStrength = (currency: string): number => {
     const data = strengthData.find(s => s.currency === currency);
-    return data?.data[0]?.strength ?? 5; // Default to neutral 5
+    // Use the most recent strength data, default to neutral 5
+    return data?.data[data.data.length - 1]?.strength ?? 5; 
 }
 
 export const calculateDScore = async (data: ForexData, index: number, allForexData: ForexData[]): Promise<DScore> => {
@@ -68,18 +69,27 @@ export const calculateDScore = async (data: ForexData, index: number, allForexDa
   }
 
   const quote = data.quote?.[0];
-  const price = quote?.price ?? 1;
+  const price = quote?.price;
 
-  // 1. ADX Strength (Live) - Max 2.0
+  if (!price) {
+    // Cannot calculate score without a price, return a default object
+    return {
+        id: `${index + 1}`, pair: data.pair, price: 0, change: 0, changesPercentage: 0, dScore: 0, grade: 'C',
+        adxStrength: 0, atrVolatility: 0, trendAlignment: 0, srRetest: 0, priceStructure: 0,
+        marketRegimeFit: 0, currencyStrengthIndex: 0, signal: 'Block', positions: 0,
+        trends: { d1: 'neutral', w1: 'neutral' },
+    };
+  }
+
+  // 1. ADX Strength - Max 2.0
   const adx = data.adx?.[0]?.adx ?? 0;
   let adxStrength = 0;
   if (adx > 25) adxStrength = 2.0;
   else if (adx > 20) adxStrength = 1.0;
 
-  // 2. ATR/Volatility (Live) - Max 1.5
+  // 2. ATR/Volatility - Max 1.5
   const atr = data.atr?.[0]?.atr ?? 0;
   const atrPercentage = (atr / price);
-  // Give score if volatility is not too low (<0.3%) or too high (>2%)
   const isNormalVolatility = atrPercentage > 0.003 && atrPercentage < 0.02;
   const atrVolatility = isNormalVolatility ? 1.5 : 0;
 
@@ -87,16 +97,15 @@ export const calculateDScore = async (data: ForexData, index: number, allForexDa
   const dailySMA50 = data.sma50?.[0]?.sma;
   const weeklySMA50 = data.sma50_weekly?.[0]?.sma;
   let trendAlignment = 0;
-  if (dailySMA50 && weeklySMA50 && price) {
-      const dailyTrend: 'buy' | 'sell' | 'neutral' = price > dailySMA50 ? 'buy' : 'sell';
-      const weeklyTrend: 'buy' | 'sell' | 'neutral' = price > weeklySMA50 ? 'buy' : 'sell';
+  if (dailySMA50 && weeklySMA50) {
+      const dailyTrend: 'buy' | 'sell' = price > dailySMA50 ? 'buy' : 'sell';
+      const weeklyTrend: 'buy' | 'sell' = price > weeklySMA50 ? 'buy' : 'sell';
       if (dailyTrend === weeklyTrend) {
           trendAlignment = 2.0;
       } else {
-          // If one is neutral (very close to SMA), give partial credit
           const dailyDiff = Math.abs(price - dailySMA50) / price;
           const weeklyDiff = Math.abs(price - weeklySMA50) / price;
-          if (dailyDiff < 0.002 || weeklyDiff < 0.002) { // less than 0.2% diff = neutral
+          if (dailyDiff < 0.002 || weeklyDiff < 0.002) {
               trendAlignment = 1.0;
           }
       }
@@ -104,8 +113,11 @@ export const calculateDScore = async (data: ForexData, index: number, allForexDa
   
   // 4. S/R Retest (Live) - Max 1.5
   let srRetest = 0;
-  if (price && data.sma50?.[0]?.sma && data.sma100?.[0]?.sma && data.sma200?.[0]?.sma) {
-    const smas = [data.sma50[0].sma, data.sma100[0].sma, data.sma200[0].sma];
+  const sma50 = data.sma50?.[0]?.sma;
+  const sma100 = data.sma100?.[0]?.sma;
+  const sma200 = data.sma200?.[0]?.sma;
+  if (sma50 && sma100 && sma200) {
+    const smas = [sma50, sma100, sma200];
     for (const sma of smas) {
         if (Math.abs(price - sma) / price < 0.005) { // within 0.5% of a major SMA
             srRetest = 1.5;
@@ -116,17 +128,17 @@ export const calculateDScore = async (data: ForexData, index: number, allForexDa
 
   // 5. Price Structure (Live) - Max 1.5
   let priceStructure = 0;
-  if (price && data.sma50?.[0]?.sma && data.sma200?.[0]?.sma) {
-      const isBullish = price > data.sma50[0].sma && data.sma50[0].sma > data.sma200[0].sma;
-      const isBearish = price < data.sma50[0].sma && data.sma50[0].sma < data.sma200[0].sma;
+  if (sma50 && sma200) {
+      const isBullish = price > sma50 && sma50 > sma200;
+      const isBearish = price < sma50 && sma50 < sma200;
       if (isBullish || isBearish) {
           priceStructure = 1.5;
       }
   }
 
   // 6. Market Regime Fit (Live) - Max 2.0
-  // Trending regime (ADX > 25) is a good fit.
-  const marketRegimeFit = (adx > 25) ? 2.0 : (adx > 20 ? 1.0 : 0);
+  const marketRegimeFit = (adx > 25) ? 1.5 : (adx > 20 ? 0.75 : 0);
+
 
   // 7. Currency Strength Index (Live) - Max 1.0
   const baseCurrency = data.pair.substring(0, 3);
@@ -134,7 +146,6 @@ export const calculateDScore = async (data: ForexData, index: number, allForexDa
   const baseStrength = getCurrencyStrength(baseCurrency);
   const quoteStrength = getCurrencyStrength(quoteCurrency);
   let currencyStrengthIndex = 0;
-  // Strong base vs weak quote OR weak base vs strong quote
   if ((baseStrength > 6 && quoteStrength < 4) || (baseStrength < 4 && quoteStrength > 6)) {
       currencyStrengthIndex = 1.0;
   } else if ((baseStrength > 5.5 && quoteStrength < 4.5) || (baseStrength < 4.5 && quoteStrength > 5.5)) {
@@ -151,15 +162,15 @@ export const calculateDScore = async (data: ForexData, index: number, allForexDa
     currencyStrengthIndex;
   
   let signal: 'Buy' | 'Sell' | 'Block' = 'Block';
-  if (totalScore >= 7.0) {
-    if (price && dailySMA50 && price > dailySMA50) signal = 'Buy';
-    else if (price && dailySMA50 && price < dailySMA50) signal = 'Sell';
+  if (totalScore >= 7.0 && dailySMA50) {
+    if (price > dailySMA50) signal = 'Buy';
+    else signal = 'Sell';
   }
 
   return {
     id: `${index + 1}`,
     pair: data.pair,
-    price: quote?.price ?? 0,
+    price: price,
     change: quote?.change ?? 0,
     changesPercentage: quote?.changesPercentage ?? 0,
     dScore: Math.min(totalScore, 10),
@@ -172,10 +183,10 @@ export const calculateDScore = async (data: ForexData, index: number, allForexDa
     marketRegimeFit,
     currencyStrengthIndex,
     signal,
-    positions: Math.floor(Math.random() * 6), // Mocked for now
-    trends: { // This is now redundant but kept for type safety until fully removed
-      d1: 'neutral',
-      w1: 'neutral'
+    positions: Math.floor(Math.random() * 6),
+    trends: {
+      d1: price > (dailySMA50 ?? price) ? 'buy' : 'sell',
+      w1: price > (weeklySMA50 ?? price) ? 'buy' : 'sell'
     },
   };
 };

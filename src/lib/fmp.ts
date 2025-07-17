@@ -11,7 +11,12 @@ async function fetchWithCache<T>(url: string, ttl: number = 300): Promise<T | nu
             console.error(`Failed to fetch ${url}: ${res.statusText}`);
             return null;
         }
-        return await res.json() as T;
+        const data = await res.json();
+        // FMP returns an empty array for some symbols/indicators, which is valid but we treat as null
+        if (Array.isArray(data) && data.length === 0) {
+            return null;
+        }
+        return data as T;
     } catch (error) {
         console.error(`Error fetching ${url}:`, error);
         return null;
@@ -25,17 +30,17 @@ export async function getForexData(pairs: string[]): Promise<ForexData[]> {
         // FMP uses 'XAUUSD' for Gold
         const apiSymbol = symbol === 'XAUUSD' ? symbol : symbol;
         
-        const quotePromise = fetchWithCache(`${BASE_URL}/quote/${apiSymbol}?apikey=${API_KEY}`);
+        const quotePromise = fetchWithCache<any[]>(`${BASE_URL}/quote/${apiSymbol}?apikey=${API_KEY}`);
         
         // Daily indicators
-        const adxPromise = fetchWithCache(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=14&type=adx&apikey=${API_KEY}`);
-        const atrPromise = fetchWithCache(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=14&type=atr&apikey=${API_KEY}`);
-        const sma50Promise = fetchWithCache(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=50&type=sma&apikey=${API_KEY}`);
-        const sma100Promise = fetchWithCache(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=100&type=sma&apikey=${API_KEY}`);
-        const sma200Promise = fetchWithCache(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=200&type=sma&apikey=${API_KEY}`);
+        const adxPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=14&type=adx&apikey=${API_KEY}`);
+        const atrPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=14&type=atr&apikey=${API_KEY}`);
+        const sma50Promise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=50&type=sma&apikey=${API_KEY}`);
+        const sma100Promise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=100&type=sma&apikey=${API_KEY}`);
+        const sma200Promise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=200&type=sma&apikey=${API_KEY}`);
 
         // Weekly indicators
-        const sma50WeeklyPromise = fetchWithCache(`${BASE_URL}/technical_indicator/weekly/${apiSymbol}?period=50&type=sma&apikey=${API_KEY}`);
+        const sma50WeeklyPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/weekly/${apiSymbol}?period=50&type=sma&apikey=${API_KEY}`);
 
         const [quote, adx, atr, sma50, sma100, sma200, sma50_weekly] = await Promise.all([
             quotePromise, 
@@ -61,5 +66,3 @@ export async function getForexData(pairs: string[]): Promise<ForexData[]> {
 
     return Promise.all(promises);
 }
-
-    
