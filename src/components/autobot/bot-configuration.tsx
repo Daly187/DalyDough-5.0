@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Settings, Lightbulb, HelpCircle } from "lucide-react";
-import { Slider } from "@/components/ui/slider";
 import type { BotConfigurationData, DScore, Bot } from "@/lib/types";
 import { cn } from '@/lib/utils';
 import {
@@ -24,11 +23,11 @@ interface BotConfigurationProps {
   config: BotConfigurationData;
   allPairs: DScore[];
   activeBots: Bot[];
+  isLoading: boolean;
 }
 
-export default function BotConfiguration({ config: initialConfig, allPairs, activeBots }: BotConfigurationProps) {
+export default function BotConfiguration({ config: initialConfig, allPairs, activeBots, isLoading }: BotConfigurationProps) {
   const [config, setConfig] = React.useState(initialConfig);
-  const [minDSize, setMinDSize] = React.useState(7.0);
   const [selectedPair, setSelectedPair] = React.useState<string>("");
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -47,14 +46,6 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
   const handleSwitchChange = (id: keyof BotConfigurationData) => (checked: boolean) => {
     setConfig((prev) => ({ ...prev, [id]: checked }));
   };
-  
-  const handleSliderChange = (value: number[]) => {
-    setMinDSize(value[0]);
-  };
-
-  const filteredPairs = React.useMemo(() => {
-    return allPairs.filter(p => p.dScore >= minDSize);
-  }, [allPairs, minDSize]);
 
   const activeBotCounts = React.useMemo(() => {
     const counts: { [key: string]: number } = {};
@@ -68,12 +59,12 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
 
 
   React.useEffect(() => {
-    if (filteredPairs.length > 0 && !filteredPairs.find(p => p.pair === selectedPair)) {
-      setSelectedPair(filteredPairs[0].pair);
-    } else if (filteredPairs.length === 0) {
+    if (allPairs.length > 0 && !allPairs.find(p => p.pair === selectedPair)) {
+      setSelectedPair(allPairs[0].pair);
+    } else if (allPairs.length === 0) {
       setSelectedPair("");
     }
-  }, [filteredPairs, selectedPair]);
+  }, [allPairs, selectedPair]);
 
   const TooltipLabel = ({ htmlFor, label, tooltipText }: { htmlFor: string, label: string, tooltipText: string }) => (
     <div className="flex items-center gap-2">
@@ -102,17 +93,13 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
       <CardContent className="space-y-6">
         <div className="space-y-4">
             <div>
-                <Label htmlFor="minDSize">Min D-Size: <span className="text-primary font-bold">{minDSize.toFixed(1)}</span></Label>
-                <Slider id="minDSize" min={6} max={10} step={0.1} defaultValue={[minDSize]} onValueChange={handleSliderChange} />
-            </div>
-            <div>
-                <Label htmlFor="pairSelect">Select Pair ({filteredPairs.length} available)</Label>
-                 <Select value={selectedPair} onValueChange={handlePairSelectChange}>
+                <Label htmlFor="pairSelect">Select Pair ({allPairs.length} available)</Label>
+                 <Select value={selectedPair} onValueChange={handlePairSelectChange} disabled={isLoading || allPairs.length === 0}>
                     <SelectTrigger id="pairSelect">
-                        <SelectValue placeholder="Select a high-scoring pair" />
+                        <SelectValue placeholder={isLoading ? "Loading pairs..." : "Select a high-scoring pair"} />
                     </SelectTrigger>
                     <SelectContent>
-                        {filteredPairs.map(p => (
+                        {allPairs.map(p => (
                             <SelectItem key={p.id} value={p.pair}>
                                 {p.pair} (D: {p.dScore.toFixed(1)}, Bots: {activeBotCounts[p.pair] || 0})
                             </SelectItem>

@@ -18,9 +18,11 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import DScoreExplanationSheet from './d-score-explanation-sheet';
+import { Skeleton } from '../ui/skeleton';
 
 interface MarketOverviewTableProps {
   data: DScore[];
+  isLoading: boolean;
 }
 
 type SortKey = keyof DScore;
@@ -31,7 +33,7 @@ const signalConfig = {
     Block: { color: "text-muted-foreground", icon: <Minus className="h-4 w-4" />, label: "Block" },
 }
 
-export default function MarketOverviewTable({ data }: MarketOverviewTableProps) {
+export default function MarketOverviewTable({ data, isLoading }: MarketOverviewTableProps) {
   const [sortKey, setSortKey] = React.useState<SortKey>('dScore');
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc');
   const [selectedPair, setSelectedPair] = React.useState<DScore | null>(null);
@@ -90,35 +92,45 @@ export default function MarketOverviewTable({ data }: MarketOverviewTableProps) 
                 </TableRow>
               </TableHeader>
                 <TableBody>
-                {sortedData.map((item) => {
-                  const signal = signalConfig[item.signal];
-                  const isPriceValid = typeof item.price === 'number';
-                  const isChangeValid = typeof item.changesPercentage === 'number';
-
-                  return (
-                    <TableRow key={item.id} className="cursor-pointer" onClick={() => setSelectedPair(item)}>
-                      <TableCell>
-                        <div className="font-medium">{item.pair}</div>
-                        <div className={cn("text-xs", item.change >= 0 ? 'text-green-400' : 'text-red-400')}>
-                          {isPriceValid ? item.price.toFixed(item.pair.includes('JPY') ? 3 : 5) : 'N/A'}
-                          {isChangeValid && (
-                            <span className="ml-1">({item.changesPercentage.toFixed(2)}%)</span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-semibold text-lg text-primary">{item.dScore.toFixed(1)}</TableCell>
-                      <TableCell>{item.adxStrength.toFixed(1)}</TableCell>
-                       <TableCell>{item.atrVolatility.toFixed(1)}</TableCell>
-                      <TableCell>{item.marketRegimeFit.toFixed(1)}</TableCell>
-                      <TableCell className="text-right">
-                        <div className={cn("flex items-center justify-end gap-2 font-medium", signal.color)}>
-                            {signal.icon}
-                            {signal.label}
-                        </div>
+                {isLoading ? (
+                  Array.from({ length: 10 }).map((_, index) => (
+                    <TableRow key={index}>
+                      <TableCell colSpan={6}>
+                        <Skeleton className="h-8 w-full" />
                       </TableCell>
                     </TableRow>
-                  );
-                })}
+                  ))
+                ) : (
+                  sortedData.map((item) => {
+                    const signal = signalConfig[item.signal];
+                    const isPriceValid = typeof item.price === 'number';
+                    const isChangeValid = typeof item.changesPercentage === 'number';
+
+                    return (
+                      <TableRow key={item.id} className="cursor-pointer" onClick={() => setSelectedPair(item)}>
+                        <TableCell>
+                          <div className="font-medium">{item.pair}</div>
+                          <div className={cn("text-xs", item.change >= 0 ? 'text-green-400' : 'text-red-400')}>
+                            {isPriceValid ? item.price.toFixed(item.pair.includes('JPY') ? 3 : 5) : 'N/A'}
+                            {isChangeValid && (
+                              <span className="ml-1">({item.changesPercentage.toFixed(2)}%)</span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-semibold text-lg text-primary">{item.dScore.toFixed(1)}</TableCell>
+                        <TableCell>{item.adxStrength.toFixed(1)}</TableCell>
+                        <TableCell>{item.atrVolatility.toFixed(1)}</TableCell>
+                        <TableCell>{item.marketRegimeFit.toFixed(1)}</TableCell>
+                        <TableCell className="text-right">
+                          <div className={cn("flex items-center justify-end gap-2 font-medium", signal.color)}>
+                              {signal.icon}
+                              {signal.label}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
               </TableBody>
             </Table>
           </ScrollArea>
