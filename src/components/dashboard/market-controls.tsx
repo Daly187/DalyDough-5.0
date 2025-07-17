@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Pause, Play, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { Separator } from '../ui/separator';
 import { Switch } from '../ui/switch';
 import { cn } from '@/lib/utils';
@@ -21,7 +21,7 @@ export default function MarketControls({ threshold, onThresholdChange }: MarketC
   const [sliderValue, setSliderValue] = React.useState([threshold]);
   const [isPaused, setIsPaused] = React.useState(false);
   const [globalSL, setGlobalSL] = React.useState('');
-  const [isSLSet, setIsSLSet] = React.useState(false);
+  const [isSLEnabled, setIsSLEnabled] = React.useState(false);
 
   React.useEffect(() => {
     setSliderValue([threshold]);
@@ -34,27 +34,16 @@ export default function MarketControls({ threshold, onThresholdChange }: MarketC
   const handleCommit = (value: number[]) => {
     onThresholdChange(value[0]);
   };
-
-  const handleSLSet = () => {
-    if (globalSL) {
-      setIsSLSet(true);
-    }
-  }
-
-  const handleSLClear = () => {
-    setIsSLSet(false);
-    setGlobalSL('');
-  }
-
+  
   return (
     <Card>
       <CardHeader>
         <CardTitle className="font-headline text-xl">Market Controls</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
           
-          <div className="space-y-2 col-span-1">
+          <div className="space-y-4 pt-2">
             <Label htmlFor="dScoreThreshold">D-Score Threshold: <span className="text-primary font-bold">{sliderValue[0].toFixed(1)}</span></Label>
             <Slider
               id="dScoreThreshold"
@@ -65,18 +54,42 @@ export default function MarketControls({ threshold, onThresholdChange }: MarketC
               onValueChange={handleSliderChange}
               onValueCommit={handleCommit}
             />
+             <p className="text-[0.8rem] text-muted-foreground">
+                Filters the Market Overview table and the pairs available for new bot launches.
+            </p>
           </div>
-
-          <Separator orientation="vertical" className="hidden md:block h-24 mx-auto" />
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 col-span-1 md:col-span-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+             <div className="space-y-4">
+                <Label>Global Stop Loss</Label>
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                    <div className="space-y-0.5">
+                        <Label htmlFor="enable-gsl" className={cn(isSLEnabled && "text-destructive")}>
+                            {isSLEnabled ? "Global SL Active" : "Set Global SL"}
+                        </Label>
+                         <p className="text-[0.8rem] text-muted-foreground">
+                            {isSLEnabled ? `At $${parseFloat(globalSL || '0').toFixed(2)}` : "Close all if equity drops."}
+                         </p>
+                    </div>
+                    <Switch
+                        id="enable-gsl"
+                        checked={isSLEnabled}
+                        onCheckedChange={setIsSLEnabled}
+                        aria-label="Toggle Global Stop Loss"
+                    />
+                </div>
+                <Input 
+                    id="global-sl-value" 
+                    type="number" 
+                    placeholder="e.g., -1000.00" 
+                    value={globalSL}
+                    onChange={(e) => setGlobalSL(e.target.value)}
+                    disabled={!isSLEnabled}
+                />
+             </div>
              <div className="space-y-4">
                 <Label>Emergency Actions</Label>
                 <div className="space-y-4">
-                    <Button variant="destructive" className="w-full">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Close All Positions
-                    </Button>
                     <div className="flex items-center justify-between rounded-lg border p-3">
                         <div className="space-y-0.5">
                             <Label htmlFor="pause-all" className={cn(isPaused && "text-destructive")}>
@@ -93,30 +106,11 @@ export default function MarketControls({ threshold, onThresholdChange }: MarketC
                             aria-label="Pause all bots"
                         />
                     </div>
+                     <Button variant="destructive" className="w-full">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Close All Positions
+                    </Button>
                 </div>
-             </div>
-             <div className="space-y-4">
-                <Label>Global Stop Loss</Label>
-                {isSLSet ? (
-                     <div className="flex items-center justify-between rounded-lg border p-3">
-                        <div className="space-y-0.5">
-                           <p className="text-sm text-muted-foreground">Active at</p>
-                           <p className="font-semibold text-destructive">${parseFloat(globalSL).toFixed(2)}</p>
-                        </div>
-                         <Button variant="ghost" onClick={handleSLClear}>Clear</Button>
-                    </div>
-                ) : (
-                    <div className="flex gap-2">
-                        <Input 
-                          id="global-sl" 
-                          type="number" 
-                          placeholder="-1000.00" 
-                          value={globalSL}
-                          onChange={(e) => setGlobalSL(e.target.value)}
-                        />
-                        <Button onClick={handleSLSet} disabled={!globalSL}>Set</Button>
-                    </div>
-                )}
              </div>
           </div>
         </div>
