@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Pause, ShieldAlert, Trash2 } from 'lucide-react';
+import { Pause, Trash2 } from 'lucide-react';
 import { Separator } from '../ui/separator';
 
 interface MarketControlsProps {
@@ -37,7 +37,7 @@ export default function MarketControls({ threshold, onThresholdChange }: MarketC
         <CardTitle className="font-headline text-xl">Market Controls</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 items-center">
           
           <div className="space-y-2 col-span-1 md:col-span-1">
             <Label htmlFor="dScoreThreshold">D-Score Threshold: <span className="text-primary font-bold">{sliderValue[0].toFixed(1)}</span></Label>
