@@ -12,6 +12,7 @@ import { getForexData } from '@/lib/fmp';
 import type { DScore, ForexData } from '@/lib/types';
 import MarketControls from '@/components/dashboard/market-controls';
 import { Skeleton } from '@/components/ui/skeleton';
+import AiOptimizedReentries from '@/components/autobot/ai-optimized-reentries';
 
 export default function DashboardPage() {
   const [allDScoreData, setAllDScoreData] = React.useState<DScore[]>([]);
