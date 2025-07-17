@@ -11,13 +11,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { ArrowUp, ArrowDown, Minus, ArrowUpDown, ChevronsDown } from 'lucide-react';
+import { ArrowUp, ArrowDown, Minus, ArrowUpDown } from 'lucide-react';
 import type { DScore } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import DScoreExplanationSheet from './d-score-explanation-sheet';
 import { Skeleton } from '../ui/skeleton';
 
 interface MarketOverviewTableProps {
@@ -36,7 +34,6 @@ const signalConfig = {
 export default function MarketOverviewTable({ data, isLoading }: MarketOverviewTableProps) {
   const [sortKey, setSortKey] = React.useState<SortKey>('dScore');
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc');
-  const [selectedPair, setSelectedPair] = React.useState<DScore | null>(null);
 
   const sortedData = React.useMemo(() => {
     return [...data].sort((a, b) => {
@@ -107,7 +104,7 @@ export default function MarketOverviewTable({ data, isLoading }: MarketOverviewT
                     const isChangeValid = typeof item.changesPercentage === 'number';
 
                     return (
-                      <TableRow key={item.id} className="cursor-pointer" onClick={() => setSelectedPair(item)}>
+                      <TableRow key={item.id} className="cursor-pointer">
                         <TableCell>
                           <div className="font-medium">{item.pair}</div>
                           <div className={cn("text-xs", item.change >= 0 ? 'text-green-400' : 'text-red-400')}>
@@ -136,11 +133,6 @@ export default function MarketOverviewTable({ data, isLoading }: MarketOverviewT
           </ScrollArea>
         </CardContent>
       </Card>
-      <DScoreExplanationSheet
-        isOpen={!!selectedPair}
-        onOpenChange={() => setSelectedPair(null)}
-        pairData={selectedPair}
-      />
     </>
   );
 }
