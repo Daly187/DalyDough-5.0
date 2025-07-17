@@ -86,7 +86,7 @@ export default function MarketOverviewTable({ data, isLoading }: MarketOverviewT
                   <SortableHeader tkey="pair" label="Pair" />
                   <SortableHeader tkey="dScore" label="D-Score" />
                   <SortableHeader tkey="adxStrength" label="ADX" />
-                  <SortableHeader tkey="atrVolatility" label="ATR" />
+                  <SortableHeader tkey="bollingerBandVolatility" label="BB Vol" />
                   <SortableHeader tkey="marketRegimeFit" label="Regime" />
                   <TableHead className="text-right">Entry Signal</TableHead>
                 </TableRow>
@@ -111,7 +111,7 @@ export default function MarketOverviewTable({ data, isLoading }: MarketOverviewT
                         <TableCell>
                           <div className="font-medium">{item.pair}</div>
                           <div className={cn("text-xs", item.change >= 0 ? 'text-green-400' : 'text-red-400')}>
-                            {isPriceValid ? item.price.toFixed(item.pair.includes('JPY') ? 3 : 5) : 'N/A'}
+                            {isPriceValid && item.price > 0 ? item.price.toFixed(item.pair.includes('JPY') ? 3 : 5) : 'N/A'}
                             {isChangeValid && (
                               <span className="ml-1">({item.changesPercentage.toFixed(2)}%)</span>
                             )}
@@ -119,7 +119,7 @@ export default function MarketOverviewTable({ data, isLoading }: MarketOverviewT
                         </TableCell>
                         <TableCell className="font-semibold text-lg text-primary">{item.dScore.toFixed(1)}</TableCell>
                         <TableCell>{item.adxStrength.toFixed(1)}</TableCell>
-                        <TableCell>{item.atrVolatility.toFixed(1)}</TableCell>
+                        <TableCell>{item.bollingerBandVolatility.toFixed(1)}</TableCell>
                         <TableCell>{item.marketRegimeFit.toFixed(1)}</TableCell>
                         <TableCell className="text-right">
                           <div className={cn("flex items-center justify-end gap-2 font-medium", signal.color)}>

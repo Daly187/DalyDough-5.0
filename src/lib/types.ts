@@ -1,6 +1,5 @@
 
 
-
 export type DScore = {
   id: string;
   pair: string;
@@ -10,7 +9,7 @@ export type DScore = {
   dScore: number;
   grade: 'A' | 'B' | 'C';
   adxStrength: number; // 0-2.0
-  atrVolatility: number; // 0-1.5
+  bollingerBandVolatility: number; // 0-1.5
   trendAlignment: number; // 0-2.0
   srRetest: number; // 0-1.5
   priceStructure: number; // 0-1.5
@@ -158,6 +157,18 @@ type FMPADX = {
     mdi: number;
 };
 
+type FMPBB = {
+    date: string;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume: number;
+    upperBand: number;
+    middleBand: number;
+    lowerBand: number;
+}
+
 type FMPATR = {
     date: string;
     open: number;
@@ -183,10 +194,9 @@ export type ForexData = {
     quote: FMPQuote[] | null;
     adx: FMPADX[] | null;
     atr: FMPATR[] | null;
+    bb: FMPBB[] | null;
     sma50: FMPSMA[] | null;
     sma100: FMPSMA[] | null;
     sma200: FMPSMA[] | null;
     sma50_weekly: FMPSMA[] | null;
 };
-
-    

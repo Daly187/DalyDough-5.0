@@ -9,7 +9,6 @@ const getGrade = (score: number): 'A' | 'B' | 'C' => {
 
 export const pairs = ['AUD/CAD', 'AUD/CHF', 'AUD/JPY', 'AUD/NZD', 'AUD/USD', 'CAD/JPY', 'CHF/JPY', 'EUR/CAD', 'EUR/CHF', 'EUR/GBP', 'EUR/JPY', 'EUR/NZD', 'EUR/TRY', 'EUR/USD', 'GBP/AUD', 'GBP/CAD', 'GBP/CHF', 'GBP/JPY', 'GBP/USD', 'NZD/CAD', 'NZD/CHF', 'NZD/JPY', 'NZD/USD', 'USD/CAD', 'USD/CHF', 'USD/JPY', 'USD/TRY', 'USD/ZAR', 'XAU/USD'];
 
-// This strengthData is now used as a fallback and for CSI calculation structure
 export let strengthData: StrengthData[] = [
     { currency: 'EUR', data: [] },
     { currency: 'GBP', data: [] },
@@ -21,7 +20,6 @@ export let strengthData: StrengthData[] = [
     { currency: 'CHF', data: [] },
 ];
 
-// Update strength data based on live price changes
 const updateStrengthData = (allForexData: ForexData[]) => {
     const changes: Record<string, number[]> = {
         'EUR': [], 'GBP': [], 'JPY': [], 'USD': [], 'CAD': [], 'AUD': [], 'NZD': [], 'CHF': []
@@ -67,13 +65,15 @@ export const calculateDScore = async (data: ForexData, index: number, allForexDa
   const quote = data.quote?.[0];
   const price = quote?.price;
 
+  const defaultScore: DScore = {
+    id: `${index + 1}`, pair: data.pair, price: 0, change: 0, changesPercentage: 0, dScore: 0, grade: 'C',
+    adxStrength: 0, bollingerBandVolatility: 0, trendAlignment: 0, srRetest: 0, priceStructure: 0,
+    marketRegimeFit: 0, currencyStrengthIndex: 0, signal: 'Block', positions: 0,
+    trends: { d1: 'neutral', w1: 'neutral' },
+  };
+
   if (!price || !quote) {
-    return {
-        id: `${index + 1}`, pair: data.pair, price: 0, change: 0, changesPercentage: 0, dScore: 0, grade: 'C',
-        adxStrength: 0, atrVolatility: 0, trendAlignment: 0, srRetest: 0, priceStructure: 0,
-        marketRegimeFit: 0, currencyStrengthIndex: 0, signal: 'Block', positions: 0,
-        trends: { d1: 'neutral', w1: 'neutral' },
-    };
+    return defaultScore;
   }
 
   // 1. ADX Strength - Max 2.0 (LIVE)
@@ -82,33 +82,29 @@ export const calculateDScore = async (data: ForexData, index: number, allForexDa
   if (adx && adx > 25) adxStrength = 2.0;
   else if (adx && adx > 20) adxStrength = 1.0;
 
-  // 2. ATR/Volatility - Max 1.5 (LIVE)
-  const atr = data.atr?.[0]?.atr;
-  let atrVolatility = 0;
-  if (atr && price) {
-    const atrPercentage = (atr / price);
-    const isNormalVolatility = atrPercentage > 0.003 && atrPercentage < 0.02;
-    atrVolatility = isNormalVolatility ? 1.5 : 0;
+  // 2. Bollinger Band Volatility - Max 1.5 (LIVE)
+  const bb = data.bb?.[0];
+  let bollingerBandVolatility = 0;
+  if (bb && bb.middleBand > 0) {
+      const bbWidth = (bb.upperBand - bb.lowerBand) / bb.middleBand;
+      // Ideal width between 0.5% and 4%
+      if (bbWidth > 0.005 && bbWidth < 0.04) {
+          bollingerBandVolatility = 1.5;
+      } else if (bbWidth > 0.002 && bbWidth < 0.06) {
+          bollingerBandVolatility = 0.75; // Less ideal but acceptable
+      }
   }
 
-  // 3. Trend Alignment - Max 2.0 (MOCKED)
-  const trendAlignment = Math.random() * 2.0;
-
-  // 4. S/R Retest (Live) - Max 1.5 (MOCKED)
-  const srRetest = Math.random() * 1.5;
-
-  // 5. Price Structure (Live) - Max 1.5 (MOCKED)
-  const priceStructure = Math.random() * 1.5;
-
-  // 6. Market Regime Fit (Live) - Max 1.5 (MOCKED)
-  const marketRegimeFit = Math.random() * 1.5;
-
-  // 7. Currency Strength Index (Live) - Max 1.0 (MOCKED)
-  const currencyStrengthIndex = Math.random() * 1.0;
+  // Set unimplemented factors to 0
+  const trendAlignment = 0;
+  const srRetest = 0;
+  const priceStructure = 0;
+  const marketRegimeFit = 0;
+  const currencyStrengthIndex = 0;
 
   const totalScore = 
     adxStrength + 
-    atrVolatility + 
+    bollingerBandVolatility + 
     trendAlignment +
     srRetest + 
     priceStructure + 
@@ -122,26 +118,15 @@ export const calculateDScore = async (data: ForexData, index: number, allForexDa
   }
 
   return {
-    id: `${index + 1}`,
-    pair: data.pair,
+    ...defaultScore,
     price: price,
     change: quote?.change ?? 0,
     changesPercentage: quote?.changesPercentage ?? 0,
     dScore: Math.min(totalScore, 10),
     grade: getGrade(totalScore),
     adxStrength,
-    atrVolatility,
-    trendAlignment,
-    srRetest,
-    priceStructure,
-    marketRegimeFit,
-    currencyStrengthIndex,
+    bollingerBandVolatility,
     signal,
-    positions: Math.floor(Math.random() * 6),
-    trends: {
-      d1: 'neutral',
-      w1: 'neutral'
-    },
   };
 };
 
@@ -270,5 +255,3 @@ export const exposureData: ExposureData[] = [
     { currency: 'CHF', exposure: 1500.00, type: 'long' },
     { currency: 'NZD', exposure: -500.00, type: 'short' },
 ];
-
-    

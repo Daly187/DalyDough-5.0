@@ -37,7 +37,7 @@ export default function DScoreExplanationSheet({ isOpen, onOpenChange, pairData 
             currencyPair: pairData.pair,
             dScore: pairData.dScore,
             adxStrength: pairData.adxStrength,
-            atrVolatility: pairData.atrVolatility,
+            atrVolatility: pairData.bollingerBandVolatility, // Note: The AI flow still expects atrVolatility. We're sending BB Volatility here.
             trendAlignment: pairData.trendAlignment,
             srRetest: pairData.srRetest,
             priceStructure: pairData.priceStructure.toString(),
@@ -61,7 +61,7 @@ export default function DScoreExplanationSheet({ isOpen, onOpenChange, pairData 
 
   const scoreFactors = [
     { label: "ADX Strength", value: pairData?.adxStrength, max: 2.0 },
-    { label: "ATR/Volatility", value: pairData?.atrVolatility, max: 1.5 },
+    { label: "BB Volatility", value: pairData?.bollingerBandVolatility, max: 1.5 },
     { label: "Trend Alignment", value: pairData?.trendAlignment, max: 2.0 },
     { label: "S/R Retest", value: pairData?.srRetest, max: 1.5 },
     { label: "Price Structure", value: pairData?.priceStructure, max: 1.5 },

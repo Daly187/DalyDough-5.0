@@ -12,7 +12,6 @@ async function fetchWithCache<T>(url: string, ttl: number = 300): Promise<T | nu
             return null;
         }
         const data = await res.json();
-        // FMP returns an empty array for some symbols/indicators, which is valid but we treat as null
         if (Array.isArray(data) && data.length === 0) {
             return null;
         }
@@ -27,7 +26,6 @@ export async function getForexData(pairs: string[]): Promise<ForexData[]> {
     const promises = pairs.map(async (pair) => {
         const symbol = pair.replace('/', '');
         
-        // FMP uses 'XAUUSD' for Gold
         const apiSymbol = symbol === 'XAUUSD' ? symbol : symbol;
         
         const quotePromise = fetchWithCache<any[]>(`${BASE_URL}/quote/${apiSymbol}?apikey=${API_KEY}`);
@@ -35,6 +33,7 @@ export async function getForexData(pairs: string[]): Promise<ForexData[]> {
         // Daily indicators
         const adxPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=14&type=adx&apikey=${API_KEY}`);
         const atrPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=14&type=atr&apikey=${API_KEY}`);
+        const bbPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=20&type=bb&apikey=${API_KEY}`);
         const sma50Promise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=50&type=sma&apikey=${API_KEY}`);
         const sma100Promise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=100&type=sma&apikey=${API_KEY}`);
         const sma200Promise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=200&type=sma&apikey=${API_KEY}`);
@@ -42,10 +41,11 @@ export async function getForexData(pairs: string[]): Promise<ForexData[]> {
         // Weekly indicators
         const sma50WeeklyPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/weekly/${apiSymbol}?period=50&type=sma&apikey=${API_KEY}`);
 
-        const [quote, adx, atr, sma50, sma100, sma200, sma50_weekly] = await Promise.all([
+        const [quote, adx, atr, bb, sma50, sma100, sma200, sma50_weekly] = await Promise.all([
             quotePromise, 
             adxPromise, 
             atrPromise,
+            bbPromise,
             sma50Promise,
             sma100Promise,
             sma200Promise,
@@ -57,6 +57,7 @@ export async function getForexData(pairs: string[]): Promise<ForexData[]> {
             quote,
             adx,
             atr,
+            bb,
             sma50,
             sma100,
             sma200,
