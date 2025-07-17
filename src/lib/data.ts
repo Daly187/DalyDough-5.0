@@ -43,10 +43,7 @@ const updateStrengthData = (allForexData: ForexData[]) => {
             ? changes[s.currency].reduce((a, b) => a + b, 0) / changes[s.currency].length
             : 0;
         
-        // This is a simplified CSI logic. A more robust one would use rolling averages.
-        // For now, we simulate a "strength" value based on average daily change.
-        // A simple mapping: 1% change = 1 point of strength. Scale as needed.
-        const strengthValue = 5 + (avgChange * 2); // Base of 5, +/- based on avg change
+        const strengthValue = 5 + (avgChange * 2);
         
         return {
             ...s,
@@ -58,7 +55,6 @@ const updateStrengthData = (allForexData: ForexData[]) => {
 
 const getCurrencyStrength = (currency: string): number => {
     const data = strengthData.find(s => s.currency === currency);
-    // Use the most recent strength data, default to neutral 5
     return data?.data[data.data.length - 1]?.strength ?? 5; 
 }
 
@@ -71,8 +67,7 @@ export const calculateDScore = async (data: ForexData, index: number, allForexDa
   const quote = data.quote?.[0];
   const price = quote?.price;
 
-  if (!price) {
-    // Cannot calculate score without a price, return a default object
+  if (!price || !quote) {
     return {
         id: `${index + 1}`, pair: data.pair, price: 0, change: 0, changesPercentage: 0, dScore: 0, grade: 'C',
         adxStrength: 0, atrVolatility: 0, trendAlignment: 0, srRetest: 0, priceStructure: 0,
@@ -81,76 +76,35 @@ export const calculateDScore = async (data: ForexData, index: number, allForexDa
     };
   }
 
-  // 1. ADX Strength - Max 2.0
-  const adx = data.adx?.[0]?.adx ?? 0;
+  // 1. ADX Strength - Max 2.0 (LIVE)
+  const adx = data.adx?.[0]?.adx;
   let adxStrength = 0;
-  if (adx > 25) adxStrength = 2.0;
-  else if (adx > 20) adxStrength = 1.0;
+  if (adx && adx > 25) adxStrength = 2.0;
+  else if (adx && adx > 20) adxStrength = 1.0;
 
-  // 2. ATR/Volatility - Max 1.5
-  const atr = data.atr?.[0]?.atr ?? 0;
-  const atrPercentage = (atr / price);
-  const isNormalVolatility = atrPercentage > 0.003 && atrPercentage < 0.02;
-  const atrVolatility = isNormalVolatility ? 1.5 : 0;
-
-  // 3. Trend Alignment (1d/1w) - Max 2.0
-  const dailySMA50 = data.sma50?.[0]?.sma;
-  const weeklySMA50 = data.sma50_weekly?.[0]?.sma;
-  let trendAlignment = 0;
-  if (dailySMA50 && weeklySMA50) {
-      const dailyTrend: 'buy' | 'sell' = price > dailySMA50 ? 'buy' : 'sell';
-      const weeklyTrend: 'buy' | 'sell' = price > weeklySMA50 ? 'buy' : 'sell';
-      if (dailyTrend === weeklyTrend) {
-          trendAlignment = 2.0;
-      } else {
-          const dailyDiff = Math.abs(price - dailySMA50) / price;
-          const weeklyDiff = Math.abs(price - weeklySMA50) / price;
-          if (dailyDiff < 0.002 || weeklyDiff < 0.002) {
-              trendAlignment = 1.0;
-          }
-      }
-  }
-  
-  // 4. S/R Retest (Live) - Max 1.5
-  let srRetest = 0;
-  const sma50 = data.sma50?.[0]?.sma;
-  const sma100 = data.sma100?.[0]?.sma;
-  const sma200 = data.sma200?.[0]?.sma;
-  if (sma50 && sma100 && sma200) {
-    const smas = [sma50, sma100, sma200];
-    for (const sma of smas) {
-        if (Math.abs(price - sma) / price < 0.005) { // within 0.5% of a major SMA
-            srRetest = 1.5;
-            break;
-        }
-    }
+  // 2. ATR/Volatility - Max 1.5 (LIVE)
+  const atr = data.atr?.[0]?.atr;
+  let atrVolatility = 0;
+  if (atr && price) {
+    const atrPercentage = (atr / price);
+    const isNormalVolatility = atrPercentage > 0.003 && atrPercentage < 0.02;
+    atrVolatility = isNormalVolatility ? 1.5 : 0;
   }
 
-  // 5. Price Structure (Live) - Max 1.5
-  let priceStructure = 0;
-  if (sma50 && sma200) {
-      const isBullish = price > sma50 && sma50 > sma200;
-      const isBearish = price < sma50 && sma50 < sma200;
-      if (isBullish || isBearish) {
-          priceStructure = 1.5;
-      }
-  }
+  // 3. Trend Alignment - Max 2.0 (MOCKED)
+  const trendAlignment = Math.random() * 2.0;
 
-  // 6. Market Regime Fit (Live) - Max 2.0
-  const marketRegimeFit = (adx > 25) ? 1.5 : (adx > 20 ? 0.75 : 0);
+  // 4. S/R Retest (Live) - Max 1.5 (MOCKED)
+  const srRetest = Math.random() * 1.5;
 
+  // 5. Price Structure (Live) - Max 1.5 (MOCKED)
+  const priceStructure = Math.random() * 1.5;
 
-  // 7. Currency Strength Index (Live) - Max 1.0
-  const baseCurrency = data.pair.substring(0, 3);
-  const quoteCurrency = data.pair.substring(4, 7);
-  const baseStrength = getCurrencyStrength(baseCurrency);
-  const quoteStrength = getCurrencyStrength(quoteCurrency);
-  let currencyStrengthIndex = 0;
-  if ((baseStrength > 6 && quoteStrength < 4) || (baseStrength < 4 && quoteStrength > 6)) {
-      currencyStrengthIndex = 1.0;
-  } else if ((baseStrength > 5.5 && quoteStrength < 4.5) || (baseStrength < 4.5 && quoteStrength > 5.5)) {
-      currencyStrengthIndex = 0.5;
-  }
+  // 6. Market Regime Fit (Live) - Max 1.5 (MOCKED)
+  const marketRegimeFit = Math.random() * 1.5;
+
+  // 7. Currency Strength Index (Live) - Max 1.0 (MOCKED)
+  const currencyStrengthIndex = Math.random() * 1.0;
 
   const totalScore = 
     adxStrength + 
@@ -162,8 +116,8 @@ export const calculateDScore = async (data: ForexData, index: number, allForexDa
     currencyStrengthIndex;
   
   let signal: 'Buy' | 'Sell' | 'Block' = 'Block';
-  if (totalScore >= 7.0 && dailySMA50) {
-    if (price > dailySMA50) signal = 'Buy';
+  if (totalScore >= 7.0 && quote.price && data.sma50?.[0]?.sma) {
+    if (quote.price > data.sma50[0].sma) signal = 'Buy';
     else signal = 'Sell';
   }
 
@@ -185,8 +139,8 @@ export const calculateDScore = async (data: ForexData, index: number, allForexDa
     signal,
     positions: Math.floor(Math.random() * 6),
     trends: {
-      d1: price > (dailySMA50 ?? price) ? 'buy' : 'sell',
-      w1: price > (weeklySMA50 ?? price) ? 'buy' : 'sell'
+      d1: 'neutral',
+      w1: 'neutral'
     },
   };
 };
