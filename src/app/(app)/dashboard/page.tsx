@@ -7,7 +7,6 @@ import SystemStatus from '@/components/dashboard/system-status';
 import { activeBotsData, botConfigurationData, aiReentriesData, calculateDScore, pairs } from '@/lib/data';
 import ActiveBotsTable from '@/components/bots/active-bots-table';
 import BotConfiguration from '@/components/autobot/bot-configuration';
-import AiOptimizedReentries from '@/components/autobot/ai-optimized-reentries';
 import { Rocket } from 'lucide-react';
 import { getForexData } from '@/lib/fmp';
 import type { DScore, ForexData } from '@/lib/types';
@@ -22,7 +21,7 @@ export default function DashboardPage() {
   React.useEffect(() => {
     async function fetchData() {
       setIsLoading(true);
-      const forexData: ForexData[] = await getForexData(pairs);
+      const forexData: ForexData[] = await Promise.all(pairs.map(p => getForexData(p)));
       const calculatedScores: DScore[] = await Promise.all(
         forexData.map((data, index) => calculateDScore(data, index, forexData))
       );

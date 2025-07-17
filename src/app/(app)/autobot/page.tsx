@@ -1,4 +1,5 @@
 
+
 import MarketFilter from '@/components/autobot/market-filter';
 import MarketOpportunities from '@/components/autobot/market-opportunities';
 import BotConfiguration from '@/components/autobot/bot-configuration';
@@ -9,7 +10,7 @@ import { getForexData } from '@/lib/fmp';
 import type { DScore, ForexData } from '@/lib/types';
 
 export default async function AutoBotPage() {
-  const forexData: ForexData[] = await getForexData(pairs);
+  const forexData: ForexData[] = await Promise.all(pairs.map(p => getForexData(p)));
 
   const dScoreData: DScore[] = await Promise.all(
     forexData.map((data, index) => calculateDScore(data, index, forexData))
@@ -30,7 +31,7 @@ export default async function AutoBotPage() {
             <MarketOpportunities opportunities={dScoreData.slice(0, 9)} />
         </div>
         <div className="lg:col-span-2 flex flex-col gap-8">
-            <BotConfiguration config={botConfigurationData} allPairs={dScoreData} activeBots={activeBotsData} />
+            <BotConfiguration config={botConfigurationData} allPairs={dScoreData} activeBots={activeBotsData} isLoading={false} />
             <AiOptimizedReentries reentries={aiReentriesData} />
         </div>
       </div>
