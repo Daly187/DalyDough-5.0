@@ -66,7 +66,7 @@ export default function MarketOverviewDetailTable({ data }: MarketOverviewDetail
               <SortableHeader tkey="pair" label="Pair" />
               <SortableHeader tkey="dScore" label="D-Score" />
               <SortableHeader tkey="adxStrength" label="ADX" />
-              <SortableHeader tkey="atrVolatility" label="ATR" />
+              <SortableHeader tkey="bollingerBandVolatility" label="BB Vol" />
               <SortableHeader tkey="trendAlignment" label="Trend" />
               <SortableHeader tkey="srRetest" label="S/R" />
               <SortableHeader tkey="priceStructure" label="Structure" />
@@ -80,7 +80,7 @@ export default function MarketOverviewDetailTable({ data }: MarketOverviewDetail
                 <TableCell className="font-medium">{item.pair}</TableCell>
                 <TableCell className="font-semibold text-lg text-primary">{item.dScore.toFixed(1)}</TableCell>
                 <TableCell>{item.adxStrength.toFixed(1)}</TableCell>
-                <TableCell>{item.atrVolatility.toFixed(1)}</TableCell>
+                <TableCell>{item.bollingerBandVolatility.toFixed(1)}</TableCell>
                 <TableCell>{item.trendAlignment.toFixed(1)}</TableCell>
                 <TableCell>{item.srRetest.toFixed(1)}</TableCell>
                 <TableCell>{item.priceStructure.toFixed(1)}</TableCell>
