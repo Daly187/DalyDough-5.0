@@ -1,4 +1,5 @@
 
+
 import type { ForexData } from './types';
 
 const BASE_URL = 'https://financialmodelingprep.com/api/v3';
@@ -12,7 +13,9 @@ async function fetchWithCache<T>(url: string, ttl: number = 300): Promise<T | nu
             return null;
         }
         const data = await res.json();
+        // FMP returns an empty array for invalid symbols/data, not an error
         if (Array.isArray(data) && data.length === 0) {
+            // console.warn(`Empty array returned from ${url}`);
             return null;
         }
         return data as T;
@@ -22,48 +25,45 @@ async function fetchWithCache<T>(url: string, ttl: number = 300): Promise<T | nu
     }
 }
 
-export async function getForexData(pairs: string[]): Promise<ForexData[]> {
-    const promises = pairs.map(async (pair) => {
-        const symbol = pair.replace('/', '');
-        
-        const apiSymbol = symbol === 'XAUUSD' ? symbol : symbol;
-        
-        const quotePromise = fetchWithCache<any[]>(`${BASE_URL}/quote/${apiSymbol}?apikey=${API_KEY}`);
-        
-        // Daily indicators
-        const adxPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=14&type=adx&apikey=${API_KEY}`);
-        const atrPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=14&type=atr&apikey=${API_KEY}`);
-        const bbPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=20&type=bb&apikey=${API_KEY}`);
-        const sma50Promise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=50&type=sma&apikey=${API_KEY}`);
-        const sma100Promise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=100&type=sma&apikey=${API_KEY}`);
-        const sma200Promise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=200&type=sma&apikey=${API_KEY}`);
+export async function getForexData(pair: string): Promise<ForexData> {
+    const symbol = pair.replace('/', '');
+    
+    // Some APIs use a different symbol for Gold
+    const apiSymbol = symbol === 'XAUUSD' ? symbol : symbol;
+    
+    const quotePromise = fetchWithCache<any[]>(`${BASE_URL}/quote/${apiSymbol}?apikey=${API_KEY}`);
+    
+    // Daily indicators
+    const adxPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=14&type=adx&apikey=${API_KEY}`);
+    const atrPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=14&type=atr&apikey=${API_KEY}`);
+    const bbPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=20&standardDeviation=2&type=bb&apikey=${API_KEY}`);
+    const sma50Promise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=50&type=sma&apikey=${API_KEY}`);
+    const sma100Promise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=100&type=sma&apikey=${API_KEY}`);
+    const sma200Promise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=200&type=sma&apikey=${API_KEY}`);
 
-        // Weekly indicators
-        const sma50WeeklyPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/weekly/${apiSymbol}?period=50&type=sma&apikey=${API_KEY}`);
+    // Weekly indicators
+    const sma50WeeklyPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/weekly/${apiSymbol}?period=50&type=sma&apikey=${API_KEY}`);
 
-        const [quote, adx, atr, bb, sma50, sma100, sma200, sma50_weekly] = await Promise.all([
-            quotePromise, 
-            adxPromise, 
-            atrPromise,
-            bbPromise,
-            sma50Promise,
-            sma100Promise,
-            sma200Promise,
-            sma50WeeklyPromise
-        ]);
-        
-        return {
-            pair,
-            quote,
-            adx,
-            atr,
-            bb,
-            sma50,
-            sma100,
-            sma200,
-            sma50_weekly,
-        };
-    });
-
-    return Promise.all(promises);
+    const [quote, adx, atr, bb, sma50, sma100, sma200, sma50_weekly] = await Promise.all([
+        quotePromise, 
+        adxPromise, 
+        atrPromise,
+        bbPromise,
+        sma50Promise,
+        sma100Promise,
+        sma200Promise,
+        sma50WeeklyPromise
+    ]);
+    
+    return {
+        pair,
+        quote,
+        adx,
+        atr,
+        bb,
+        sma50,
+        sma100,
+        sma200,
+        sma50_weekly,
+    };
 }

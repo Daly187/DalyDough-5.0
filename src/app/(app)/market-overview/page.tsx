@@ -1,4 +1,5 @@
 
+
 import { getForexData } from '@/lib/fmp';
 import { calculateDScore, pairs } from '@/lib/data';
 import { DScore, ForexData } from '@/lib/types';
@@ -6,7 +7,7 @@ import MarketOverviewDetailTable from '@/components/market-overview/market-overv
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default async function MarketOverviewPage() {
-    const forexData: ForexData[] = await getForexData(pairs);
+    const forexData: ForexData[] = await Promise.all(pairs.map(p => getForexData(p)));
 
     const dScoreData: DScore[] = await Promise.all(forexData.map(async (data, index) => 
         calculateDScore(data, index, forexData)
@@ -15,7 +16,7 @@ export default async function MarketOverviewPage() {
     return (
         <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
             <div className="flex items-center">
-                <h1 className="text-lg font-semibold md:text-2xl font-headline">Detailed Market Overview</h1>
+                <h1 className="text-lg font-semibold md:text-2xl font-headline">Detailed D-Score Overview</h1>
             </div>
             <Card>
                 <CardHeader>
@@ -31,5 +32,3 @@ export default async function MarketOverviewPage() {
         </main>
     );
 }
-
-    

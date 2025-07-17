@@ -1,3 +1,4 @@
+
 "use client";
 
 import { usePathname } from 'next/navigation';
@@ -12,14 +13,15 @@ import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/market-overview', label: 'Market Overview', icon: Columns3 },
+  { href: '/market-detail', label: 'Market Detail', icon: Columns3 },
+  { href: '/market-overview', label: 'D-Score Overview', icon: FileText },
   { href: '/bots', label: 'Bots', icon: Bot },
   { href: '/autobot', label: 'Auto Bot', icon: Scan },
-  { href: '/strength', label: 'Strength Index', icon: TrendingUp },
-  { href: '/news', label: 'News', icon: Newspaper },
-  { href: '/analytics', label: 'Statistics', icon: BarChart2 },
-  { href: '/accounts', label: 'Accounts', icon: Wallet },
-  { href: '/settings', label: 'Settings', icon: Settings },
+  { href: '~/strength', label: 'Strength Index', icon: TrendingUp },
+  { href: '~/news', label: 'News', icon: Newspaper },
+  { href: '~/analytics', label: 'Statistics', icon: BarChart2 },
+  { href: '~/accounts', label: 'Accounts', icon: Wallet },
+  { href: '~/settings', label: 'Settings', icon: Settings },
 ];
 
 export default function SidebarNav() {
