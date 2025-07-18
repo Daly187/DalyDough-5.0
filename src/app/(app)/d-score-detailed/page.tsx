@@ -5,7 +5,7 @@ import type { DScore } from '@/lib/types';
 import MarketDetailTable from '@/components/market-detail/market-detail-table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-export default async function MarketDetailPage() {
+export default async function DScoreDetailedPage() {
     // getForexData now returns a DScore-like object, which is what we need.
     const forexData: DScore[] = await Promise.all(
       pairs.map(p => getForexData(p) as unknown as Promise<DScore>)
@@ -17,7 +17,7 @@ export default async function MarketDetailPage() {
                 <CardHeader>
                     <CardTitle>D-Score Detailed</CardTitle>
                     <CardDescription>
-                        Raw indicator values calculated from historical price data for each pair. Data is refreshed automatically every hour.
+                        Weighted scores calculated from raw indicator values for each pair. Data is refreshed automatically every hour.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>

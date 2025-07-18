@@ -56,7 +56,7 @@ async function fetchWithCache<T>(url: string, ttl: number = 3600): Promise<T | n
 // Bollinger Bands calculation function
 function calculateBollingerBands(prices: number[], period: number = 20, stdDevMultiplier: number = 2) {
     if (prices.length < period) {
-        return 0;
+        return { position: 0.5 };
     }
 
     const recentPrices = prices.slice(-period);
@@ -65,7 +65,7 @@ function calculateBollingerBands(prices: number[], period: number = 20, stdDevMu
     const stdDev = Math.sqrt(variance);
     
     if (stdDev === 0) {
-        return 0.5;
+        return { position: 0.5 };
     }
     
     const upperBand = sma + (stdDevMultiplier * stdDev);
@@ -74,7 +74,7 @@ function calculateBollingerBands(prices: number[], period: number = 20, stdDevMu
     const bandWidth = upperBand - lowerBand;
     const position = bandWidth > 0 ? (currentPrice - lowerBand) / bandWidth : 0.5;
     
-    return Math.max(0, Math.min(1, position));
+    return { position: Math.max(0, Math.min(1, position)) };
 }
 
 // Enhanced calculateIndicators function with fixed Bollinger Bands
@@ -91,11 +91,11 @@ function calculateIndicatorsEnhanced(historicalData: FMPHistoricalPrice[], optio
         }
 
         const indicators = calculateIndicators(historicalData, options);
-        const bollingerBands = calculateBollingerBands(closePrices, options.bbPeriod || 20, options.bbStdDev || 2);
+        const { position: bollingerBandsPosition } = calculateBollingerBands(closePrices, options.bbPeriod || 20, options.bbStdDev || 2);
         
         return {
             ...indicators,
-            bollingerBands,
+            bollingerBandsPosition: bollingerBandsPosition,
             price: closePrices[closePrices.length - 1] // Add current price to indicators
         };
     } catch (error) {
@@ -107,9 +107,10 @@ function calculateIndicatorsEnhanced(historicalData: FMPHistoricalPrice[], optio
 // SMART SCORING FUNCTIONS
 
 function getTrendDirection(ema: number, currentPrice: number): 'up' | 'down' {
-    if (!ema || !currentPrice) return 'down'; // Default to prevent errors, 'down' is arbitrary
+    if (!ema || !currentPrice) return 'down';
     return currentPrice >= ema ? 'up' : 'down';
 }
+
 
 function calculateTrendAlignment(indicators: IndicatorValues): { score: number, direction: 'up' | 'down' | 'mixed', signal: 'Buy' | 'Sell' | 'Block' } {
     const price4h = indicators.fourHour.price || 0;
@@ -138,7 +139,6 @@ function calculateTrendAlignment(indicators: IndicatorValues): { score: number, 
         return { score: 2.0, direction: 'down', signal: 'Sell' };
     }
     
-    // All other cases are mixed
     return { score: 1.0, direction: 'mixed', signal: 'Block' };
 }
 
@@ -216,7 +216,7 @@ function calculateAtrVolatilityScore(indicators: IndicatorValues): number {
 }
 
 function calculateBollingerBandsScore(indicators: IndicatorValues): number {
-    const bbPosition = indicators.daily.bollingerBands || 0.5;
+    const bbPosition = indicators.daily.bollingerBandsPosition || 0.5;
     
     let score = 0;
     if (bbPosition > 0.9 || bbPosition < 0.1) {
@@ -262,7 +262,7 @@ function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMP
         stochasticOscillator: calculateOtherIndicatorScore(stochValue / 100, 'Stochastic', 0.5),
         parabolicSAR: calculateOtherIndicatorScore(indicators.daily.sar || 0.5, 'Parabolic SAR', 0.5),
         cci: calculateOtherIndicatorScore(indicators.daily.cci || 0.5, 'CCI', 0.5),
-        obv: calculateOtherIndicatorScore(indicators.daily.obv || 0.5, 'OBV', 0.5)
+        obv: 0 // OBV not used for forex
     };
 
     const totalScore = Object.values(scores).reduce((sum, score) => sum + score, 0);
@@ -271,7 +271,7 @@ function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMP
     if (totalScore >= 8.5) grade = 'A';
     else if (totalScore >= 7.0) grade = 'B';
     
-    let signal: 'Buy' | 'Sell' | 'Block' = trendAnalysis.signal;
+    let signal = trendAnalysis.signal;
     if (totalScore < 7.0) {
         signal = 'Block';
     }
@@ -296,7 +296,18 @@ function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMP
         stochasticOscillator: scores.stochasticOscillator,
         parabolicSAR: scores.parabolicSAR,
         cci: scores.cci,
-        obv: scores.obv
+        obv: scores.obv,
+        rawIndicators: {
+            ema50: indicators.daily.ema50,
+            adx: indicators.daily.adx,
+            rsi: indicators.daily.rsi,
+            macd: indicators.daily.macd,
+            atr: indicators.daily.atr,
+            bb: indicators.daily.bb,
+            stochastic: indicators.daily.stochastic,
+            sar: indicators.daily.sar,
+            cci: indicators.daily.cci,
+        }
     };
 }
 
@@ -308,7 +319,7 @@ export async function getForexData(pair: string): Promise<DScore> {
         id: pair, pair: pair, price: 0, change: 0, changesPercentage: 0, dScore: 0, grade: 'C',
         signal: 'Block', positions: 0, lastUpdated: 0, trendAlignment: 0, adxStrength: 0, rsiMomentum: 0, 
         macdMomentum: 0, atrVolatility: 0, bollingerBands: 0, stochasticOscillator: 0, parabolicSAR: 0, 
-        cci: 0, obv: 0,
+        cci: 0, obv: 0, rawIndicators: {}
     };
 
     try {
@@ -330,14 +341,12 @@ export async function getForexData(pair: string): Promise<DScore> {
             };
         }
 
-        // ToDo: Replace these with actual 4H and weekly price fetches if needed
-        // Here, as before, for demonstration:
         const fourHourPrices = dailyPrices.slice(-100); 
-        const weeklyPrices = dailyPrices.filter((_, idx) => idx % 5 === 0); // crude weekly downsampling
+        const weeklyPrices = dailyPrices.filter((_, idx) => idx % 5 === 0);
 
         const dailyIndicators = calculateIndicatorsEnhanced(dailyPrices, { emaPeriod: 50 });
         const fourHourIndicators = calculateIndicatorsEnhanced(fourHourPrices, { emaPeriod: 50 }); 
-        const weeklyIndicators = calculateIndicatorsEnhanced(weeklyPrices, { emaPeriod: 50 }); // Use 50 for weekly EMA
+        const weeklyIndicators = calculateIndicatorsEnhanced(weeklyPrices, { emaPeriod: 50 });
 
         const indicators: IndicatorValues = {
             daily: { ...dailyIndicators, pair },

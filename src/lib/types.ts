@@ -1,4 +1,5 @@
 
+
 export type DScore = {
   id: string;
   pair: string;
@@ -22,6 +23,8 @@ export type DScore = {
   parabolicSAR: number;
   cci: number;
   obv: number; // Will remain 0 for Forex
+
+  rawIndicators: IndicatorSet;
 };
 
 export type Bot = {
