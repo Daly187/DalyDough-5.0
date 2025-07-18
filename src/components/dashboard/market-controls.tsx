@@ -8,31 +8,28 @@ import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
-import { Separator } from '../ui/separator';
 import { Switch } from '../ui/switch';
 import { cn } from '@/lib/utils';
 
 interface MarketControlsProps {
-  threshold: number;
-  onThresholdChange: (value: number) => void;
+  thresholds: { lower: number, upper: number };
+  onThresholdChange: (values: { lower: number, upper: number }) => void;
 }
 
-export default function MarketControls({ threshold, onThresholdChange }: MarketControlsProps) {
-  const [sliderValue, setSliderValue] = React.useState([threshold]);
+export default function MarketControls({ thresholds, onThresholdChange }: MarketControlsProps) {
+  const [lowerSlider, setLowerSlider] = React.useState([thresholds.lower]);
+  const [upperSlider, setUpperSlider] = React.useState([thresholds.upper]);
   const [isPaused, setIsPaused] = React.useState(false);
   const [globalSL, setGlobalSL] = React.useState('');
   const [isSLEnabled, setIsSLEnabled] = React.useState(false);
 
   React.useEffect(() => {
-    setSliderValue([threshold]);
-  }, [threshold]);
+    setLowerSlider([thresholds.lower]);
+    setUpperSlider([thresholds.upper]);
+  }, [thresholds]);
 
-  const handleSliderChange = (value: number[]) => {
-    setSliderValue(value);
-  };
-
-  const handleCommit = (value: number[]) => {
-    onThresholdChange(value[0]);
+  const handleCommit = () => {
+    onThresholdChange({ lower: lowerSlider[0], upper: upperSlider[0] });
   };
   
   return (
@@ -44,18 +41,37 @@ export default function MarketControls({ threshold, onThresholdChange }: MarketC
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
           
           <div className="space-y-4 pt-2">
-            <Label htmlFor="dScoreThreshold">D-Score Threshold: <span className="text-primary font-bold">{sliderValue[0].toFixed(1)}</span></Label>
-            <Slider
-              id="dScoreThreshold"
-              min={6}
-              max={10}
-              step={0.1}
-              value={sliderValue}
-              onValueChange={handleSliderChange}
-              onValueCommit={handleCommit}
-            />
+            <Label>D-Score Thresholds</Label>
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <Label htmlFor="dScoreLower" className="text-sm text-muted-foreground">Sell Signal &lt; <span className="font-bold text-red-400">{lowerSlider[0].toFixed(1)}</span></Label>
+                    <Slider
+                        id="dScoreLower"
+                        min={-10}
+                        max={0}
+                        step={0.1}
+                        value={lowerSlider}
+                        onValueChange={setLowerSlider}
+                        onValueCommit={handleCommit}
+                        className="[&>span>span]:bg-red-400"
+                    />
+                </div>
+                 <div>
+                    <Label htmlFor="dScoreUpper" className="text-sm text-muted-foreground">Buy Signal &gt; <span className="font-bold text-green-400">{upperSlider[0].toFixed(1)}</span></Label>
+                    <Slider
+                        id="dScoreUpper"
+                        min={0}
+                        max={10}
+                        step={0.1}
+                        value={upperSlider}
+                        onValueChange={setUpperSlider}
+                        onValueCommit={handleCommit}
+                        className="[&>span>span]:bg-green-400"
+                    />
+                </div>
+            </div>
              <p className="text-[0.8rem] text-muted-foreground">
-                Filters the Market Overview table and the pairs available for new bot launches.
+                Filter for pairs with a D-Score less than the sell threshold or greater than the buy threshold.
             </p>
           </div>
           

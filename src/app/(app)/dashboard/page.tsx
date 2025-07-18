@@ -17,7 +17,7 @@ import AiOptimizedReentries from '@/components/autobot/ai-optimized-reentries';
 export default function DashboardPage() {
   const [allDScoreData, setAllDScoreData] = React.useState<DScore[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
-  const [dScoreThreshold, setDScoreThreshold] = React.useState(7.0);
+  const [dScoreThresholds, setDScoreThresholds] = React.useState({ lower: -7.0, upper: 7.0 });
 
   React.useEffect(() => {
     async function fetchData() {
@@ -32,8 +32,8 @@ export default function DashboardPage() {
   }, []);
 
   const filteredDScoreData = React.useMemo(() => {
-    return allDScoreData.filter(p => p.dScore >= dScoreThreshold);
-  }, [allDScoreData, dScoreThreshold]);
+    return allDScoreData.filter(p => p.dScore <= dScoreThresholds.lower || p.dScore >= dScoreThresholds.upper);
+  }, [allDScoreData, dScoreThresholds]);
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
@@ -42,7 +42,7 @@ export default function DashboardPage() {
       {isLoading ? (
         <Skeleton className="h-[158px] w-full rounded-lg" />
       ) : (
-        <MarketControls threshold={dScoreThreshold} onThresholdChange={setDScoreThreshold} />
+        <MarketControls thresholds={dScoreThresholds} onThresholdChange={setDScoreThresholds} />
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

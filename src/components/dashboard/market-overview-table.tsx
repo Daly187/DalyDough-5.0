@@ -27,11 +27,9 @@ interface MarketOverviewTableProps {
 type SortKey = keyof DScore;
 
 const signalConfig = {
-    Buy: { color: "text-green-400", icon: <ArrowUp className="h-4 w-4" />, label: "Allow Buy" },
-    Sell: { color: "text-red-400", icon: <ArrowDown className="h-4 w-4" />, label: "Allow Sell" },
+    Buy: { color: "text-green-400", icon: <ArrowUp className="h-4 w-4" />, label: "Buy" },
+    Sell: { color: "text-red-400", icon: <ArrowDown className="h-4 w-4" />, label: "Sell" },
     Block: { color: "text-muted-foreground", icon: <Minus className="h-4 w-4" />, label: "Block" },
-    'Buy weak': { color: "text-green-400/70", icon: <ArrowUp className="h-4 w-4" />, label: "Allow Buy" },
-    'Sell weak': { color: "text-red-400/70", icon: <ArrowDown className="h-4 w-4" />, label: "Allow Sell" },
 }
 
 export default function MarketOverviewTable({ data, isLoading }: MarketOverviewTableProps) {
@@ -39,9 +37,10 @@ export default function MarketOverviewTable({ data, isLoading }: MarketOverviewT
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc');
 
   const sortedData = React.useMemo(() => {
+    // Sort by absolute value for the overview table to show strongest signals first
     return [...data].sort((a, b) => {
-      const aValue = a[sortKey];
-      const bValue = b[sortKey];
+      const aValue = Math.abs(a[sortKey] as number);
+      const bValue = Math.abs(b[sortKey] as number);
 
       if (aValue < bValue) {
         return sortOrder === 'asc' ? -1 : 1;
@@ -70,6 +69,10 @@ export default function MarketOverviewTable({ data, isLoading }: MarketOverviewT
       </Button>
     </TableHead>
   );
+
+  const formatScore = (score: number) => {
+    return (score > 0 ? '+' : '') + score.toFixed(1);
+  }
 
   return (
     <>
@@ -117,10 +120,15 @@ export default function MarketOverviewTable({ data, isLoading }: MarketOverviewT
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="font-semibold text-lg text-primary">{item.dScore.toFixed(1)}</TableCell>
-                        <TableCell>{item.trendAlignment.toFixed(1)}</TableCell>
+                        <TableCell className={cn(
+                            "font-semibold text-lg",
+                            item.dScore > 0 ? "text-green-400" : item.dScore < 0 ? "text-red-400" : "text-primary"
+                        )}>
+                            {formatScore(item.dScore)}
+                        </TableCell>
+                        <TableCell className={cn(item.trendAlignment > 0 ? "text-green-400/80" : "text-red-400/80")}>{item.trendAlignment.toFixed(1)}</TableCell>
                         <TableCell>{item.adxStrength.toFixed(1)}</TableCell>
-                        <TableCell>{item.rsiMomentum.toFixed(1)}</TableCell>
+                        <TableCell className={cn(item.rsiMomentum > 0 ? "text-green-400/80" : "text-red-400/80")}>{item.rsiMomentum.toFixed(1)}</TableCell>
                         <TableCell className="text-right">
                           <div className={cn("flex items-center justify-end gap-2 font-medium", signal.color)}>
                               {signal.icon}

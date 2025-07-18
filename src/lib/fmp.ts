@@ -10,13 +10,15 @@ interface IndicatorValues {
   pair: string;
 }
 
+type Direction = 'up' | 'down';
+
 // SMART SCORING FUNCTIONS
-function getTrendDirection(price?: number, ema?: number): 'up' | 'down' {
-    if (price === undefined || ema === undefined) return 'down';
+function getTrendDirection(price?: number, ema?: number): Direction | 'mixed' {
+    if (price === undefined || ema === undefined) return 'mixed';
     return price >= ema ? 'up' : 'down';
 }
 
-function calculateTrendAlignment(indicators: IndicatorValues): { score: number, direction: 'up' | 'down' | 'mixed', signal: 'Buy' | 'Sell' | 'Block' | 'Buy weak' | 'Sell weak' } {
+function calculateTrendAlignment(indicators: IndicatorValues): { score: number, direction: Direction | 'mixed' } {
     const price4h = indicators.fourHour.price;
     const price1d = indicators.daily.price;
     const price1w = indicators.weekly.price;
@@ -30,48 +32,35 @@ function calculateTrendAlignment(indicators: IndicatorValues): { score: number, 
     const upTrends = trends.filter(t => t === 'up').length;
     const downTrends = trends.filter(t => t === 'down').length;
 
-    if (upTrends === 3) {
-        return { score: 3.0, direction: 'up', signal: 'Buy' };
-    }
-    if (downTrends === 3) {
-        return { score: 3.0, direction: 'down', signal: 'Sell' };
-    }
-    if (upTrends === 2 && downTrends === 1) { // Fixed: was downTrends === 0
-        return { score: 2.0, direction: 'up', signal: 'Buy weak' };
-    }
-    if (downTrends === 2 && upTrends === 1) { // Fixed: was upTrends === 0
-        return { score: 2.0, direction: 'down', signal: 'Sell weak' };
-    }
+    if (upTrends === 3) return { score: 3.0, direction: 'up' };
+    if (downTrends === 3) return { score: -3.0, direction: 'down' };
+    if (upTrends === 2 && downTrends === 1) return { score: 1.5, direction: 'up' };
+    if (downTrends === 2 && upTrends === 1) return { score: -1.5, direction: 'down' };
     
-    return { score: 1.0, direction: 'mixed', signal: 'Block' };
+    return { score: 0, direction: 'mixed' };
 }
 
-function calculateAdxStrengthScore(indicators: IndicatorValues): number {
+function calculateAdxStrengthScore(indicators: IndicatorValues, trendDirection: Direction | 'mixed'): number {
     const adx = indicators.daily.adx || 0;
-    
-    let score = 0;
-    if (adx > 40) { 
-        score = 1.5;
-    } else if (adx > 25) { 
-        score = 1.0;
-    } else if (adx > 20) {
-        score = 0.5;
-    }
+    if (trendDirection === 'mixed') return 0;
 
-    return score;
+    let score = 0;
+    if (adx > 40) score = 1.5;
+    else if (adx > 25) score = 1.0;
+    else if (adx > 20) score = 0.5;
+
+    return trendDirection === 'up' ? score : -score;
 }
 
 function calculateRsiMomentumScore(indicators: IndicatorValues): number {
     const rsi = indicators.daily.rsi || 50;
     
     let score = 0;
-    if (rsi > 65 || rsi < 35) { 
-        score = 1.0;
-    } else if (rsi > 55 || rsi < 45) {
-        score = 0.6;
-    } else {
-        score = 0.2;
-    }
+    if (rsi > 65) score = 1.0;
+    else if (rsi < 35) score = -1.0;
+    else if (rsi > 55) score = 0.6;
+    else if (rsi < 45) score = -0.6;
+    else score = 0;
 
     return score;
 }
@@ -79,34 +68,30 @@ function calculateRsiMomentumScore(indicators: IndicatorValues): number {
 function calculateMacdMomentumScore(indicators: IndicatorValues): number {
     const macdItem = indicators.daily.macd;
     if (!macdItem || macdItem.macd === undefined || macdItem.histogram === undefined) return 0;
+
+    const isAlignedUp = macdItem.macd > 0 && macdItem.histogram > 0;
+    const isAlignedDown = macdItem.macd < 0 && macdItem.histogram < 0;
+
+    if (!isAlignedUp && !isAlignedDown) return 0;
     
-    const isAligned = (macdItem.macd > 0 && macdItem.histogram > 0) || (macdItem.macd < 0 && macdItem.histogram < 0);
+    let score = Math.abs(macdItem.histogram) > Math.abs(macdItem.macd * 0.1) ? 1.0 : 0.6;
     
-    if (isAligned) {
-        if (Math.abs(macdItem.histogram) > Math.abs(macdItem.macd * 0.1)) {
-            return 1.0;
-        } else {
-            return 0.6;
-        }
-    }
-    return 0.2;
+    return isAlignedUp ? score : -score;
 }
 
-function calculateAtrVolatilityScore(indicators: IndicatorValues): number {
+function calculateAtrVolatilityScore(indicators: IndicatorValues, trendDirection: Direction | 'mixed'): number {
+    if (trendDirection === 'mixed') return 0;
+
     const atr = indicators.daily.atr || 0;
     const currentPrice = indicators.daily.price || 1;
     const atrPercent = atr > 0 && currentPrice > 0 ? (atr / currentPrice) * 100 : 0;
     
     let score = 0;
-    if (atrPercent >= 0.5 && atrPercent <= 1.5) {
-        score = 1.0;
-    } else if (atrPercent > 0.3 && atrPercent < 2.5) {
-        score = 0.6;
-    } else {
-        score = 0.2;
-    }
+    if (atrPercent >= 0.5 && atrPercent <= 1.5) score = 1.0;
+    else if (atrPercent > 0.3 && atrPercent < 2.5) score = 0.6;
+    else score = 0.2;
 
-    return score;
+    return trendDirection === 'up' ? score : -score;
 }
 
 function calculateBollingerBandsScore(indicators: IndicatorValues): number {
@@ -119,72 +104,53 @@ function calculateBollingerBandsScore(indicators: IndicatorValues): number {
     if (!upper || !lower) return 0;
     
     const bandWidth = upper - lower;
-    if (bandWidth <= 0) return 0.1;
+    if (bandWidth <= 0) return 0;
 
-    const position = (price - lower) / bandWidth;
+    if (price > upper) return 0.5;
+    if (price < lower) return -0.5;
 
-    if (position > 0.95 || position < 0.05) {
-        return 0.5; 
-    } else if (position > 0.8 || position < 0.2) {
-        return 0.3;
-    }
-    
-    return 0.1;
+    return 0;
 }
 
-function calculateOtherIndicatorScore(value: number | undefined, name: string, maxScore: number): number {
-    if (typeof value !== 'number' || isNaN(value)) {
+function calculateOtherIndicatorScore(value: number | undefined, trendDirection: 'up' | 'down' | 'mixed'): number {
+    if (trendDirection === 'mixed' || typeof value !== 'number' || isNaN(value)) {
         return 0;
     }
-
-    let normalizedValue = 0;
-    if (name === 'stochastic') {
-        normalizedValue = Math.max(0, Math.min(1, value / 100)); // Added bounds checking
-    } else if (name === 'cci') {
-        normalizedValue = Math.max(0, Math.min(1, (value + 100) / 200)); // Added bounds checking
-    }
-
-    let score = 0;
-    if (normalizedValue > 0.7) {
-        score = maxScore;
-    } else if (normalizedValue > 0.5) {
-        score = maxScore * 0.6;
-    } else if (normalizedValue > 0.3) {
-        score = maxScore * 0.3;
-    } else {
-        score = maxScore * 0.1;
-    }
-    return score;
+    
+    const score = 0.5; // Simplified for now
+    return trendDirection === 'up' ? score : -score;
 }
+
 
 function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMPQuote | null): DScore {
     const trendAnalysis = calculateTrendAlignment(indicators);
+    const trendDirection = trendAnalysis.direction;
     const stochValue = indicators.daily.stochastic?.k ?? 50;
-
+    
     const scores = {
         trendAlignment: trendAnalysis.score,
-        adxStrength: calculateAdxStrengthScore(indicators),
+        adxStrength: calculateAdxStrengthScore(indicators, trendDirection),
         rsiMomentum: calculateRsiMomentumScore(indicators),
         macdMomentum: calculateMacdMomentumScore(indicators),
-        atrVolatility: calculateAtrVolatilityScore(indicators),
+        atrVolatility: calculateAtrVolatilityScore(indicators, trendDirection),
         bollingerBands: calculateBollingerBandsScore(indicators),
-        stochasticOscillator: calculateOtherIndicatorScore(stochValue, 'stochastic', 0.5),
-        parabolicSAR: 0, 
-        cci: calculateOtherIndicatorScore(indicators.daily.cci, 'cci', 0.5),
+        stochasticOscillator: calculateOtherIndicatorScore(stochValue, trendDirection),
+        parabolicSAR: calculateOtherIndicatorScore(indicators.daily.sar, trendDirection), 
+        cci: calculateOtherIndicatorScore(indicators.daily.cci, trendDirection),
     };
 
     const totalScore = Object.values(scores).reduce((sum, score) => sum + score, 0);
     
     let grade: 'A' | 'B' | 'C' = 'C';
-    if (totalScore >= 8.5) grade = 'A';
-    else if (totalScore >= 7.0) grade = 'B';
+    const absScore = Math.abs(totalScore);
+    if (absScore >= 8.5) grade = 'A';
+    else if (absScore >= 7.0) grade = 'B';
     
-    let finalSignal = trendAnalysis.signal;
-    if (totalScore < 7.0 && (finalSignal === 'Buy' || finalSignal === 'Sell' || finalSignal === 'Buy weak' || finalSignal === 'Sell weak')) {
-        finalSignal = 'Block';
-    }
+    let finalSignal: 'Buy' | 'Sell' | 'Block';
+    if (totalScore >= 7.0) finalSignal = 'Buy';
+    else if (totalScore <= -7.0) finalSignal = 'Sell';
+    else finalSignal = 'Block';
     
-    // Prioritize live data, but if unavailable, explicitly mark it as such.
     const price = currentPriceData?.price ?? 0;
     const change = currentPriceData?.change ?? 0;
     const changesPercentage = currentPriceData?.changesPercentage ?? 0;
@@ -241,7 +207,7 @@ export async function getForexData(pair: string): Promise<DScore> {
         
         const [quoteResult, dailyDataResult] = await Promise.all([quotePromise, dailyPromise]);
         
-        const quoteData = quoteResult?.[0] || null; // Ensure quoteData is null if not found
+        const quoteData = quoteResult?.[0] || null;
         const dailyPrices = dailyDataResult;
 
         if (!dailyPrices || dailyPrices.length < 200) { 
@@ -251,11 +217,9 @@ export async function getForexData(pair: string): Promise<DScore> {
                 change: quoteData?.change || 0,
                 changesPercentage: quoteData?.changesPercentage || 0,
                 lastUpdated: quoteData?.timestamp || 0,
-                signal: 'Block' // Ensure signal is block if not enough data
             };
         }
 
-        // Fixed: Better data slicing to ensure we have enough data for each timeframe
         const fourHourPrices = dailyPrices.slice(-Math.min(100, dailyPrices.length)); 
         const weeklyPrices = dailyPrices.filter((_, idx) => idx % 5 === 0).slice(-Math.min(50, Math.floor(dailyPrices.length / 5)));
 
@@ -274,21 +238,21 @@ export async function getForexData(pair: string): Promise<DScore> {
         console.error(`❌ Failed to process data for ${pair}:`, error);
         return {
             ...defaultScore,
-            signal: 'Block' // Ensure error cases always return Block signal
+            signal: 'Block'
         };
     }
 }
 
 export async function getStrengthData(): Promise<StrengthData[]> {
     const currencyIndexes = {
-        'USD': '^DXY',
-        'EUR': '^EXY',
-        'JPY': '^JXY', 
-        'GBP': '^BXY',
-        'AUD': '^AXY',
-        'CAD': '^CXY', 
-        'CHF': '^SXY', 
-        'NZD': '^ZXY'
+        'USD (DXY)': '^DXY',
+        'EUR (EXY)': '^EXY',
+        'JPY (JXY)': '^JXY', 
+        'GBP (BXY)': '^BXY',
+        'AUD (AXY)': '^AXY',
+        'CAD (CXY)': '^CXY', 
+        'CHF (SXY)': '^SXY', 
+        'NZD (ZXY)': '^ZXY'
     };
 
     const promises = Object.entries(currencyIndexes).map(async ([currency, symbol]) => {
@@ -296,7 +260,7 @@ export async function getStrengthData(): Promise<StrengthData[]> {
             const historicalData = await fetchHistorical(symbol, 11);
 
             if (!historicalData || historicalData.length === 0) {
-                return { currency: `${currency} (${symbol.replace('^', '')})`, data: [] };
+                return { currency: currency, data: [] };
             }
             
             // Reverse the array to have the oldest data first for trend calculation
@@ -305,10 +269,10 @@ export async function getStrengthData(): Promise<StrengthData[]> {
                 strength: item.close
             })).reverse(); 
 
-            return { currency: `${currency} (${symbol.replace('^', '')})`, data };
+            return { currency: currency, data };
         } catch (error) {
             console.error(`❌ Failed to fetch strength data for ${currency}:`, error);
-            return { currency: `${currency} (${symbol.replace('^', '')})`, data: [] };
+            return { currency: currency, data: [] };
         }
     });
 
