@@ -54,8 +54,8 @@ export default function MarketDetailTable({ data }: MarketDetailTableProps) {
       const quote: FMPQuote | null = item.quote?.[0] ?? null;
       return {
         pair: item.pair,
-        price: quote?.bid,
-        change: quote?.changes,
+        price: quote?.price,
+        change: quote?.change,
         timestamp: quote?.timestamp,
         daily: item.indicators.daily,
         fourHour: item.indicators.fourHour,

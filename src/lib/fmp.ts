@@ -15,8 +15,13 @@ async function fetchWithCache<T>(url: string, ttl: number = 3600): Promise<T | n
         }
         const data = await res.json();
         
-        if (!data || (Array.isArray(data) && data.length === 0) || (data && (data['Error Message'] || data.error))) {
-            console.warn(`FMP API Warning for ${url}: ${data?.['Error Message'] || data?.error || 'No data or empty array returned'}`);
+        if (!data || (data && (data['Error Message'] || data.error))) {
+            console.warn(`FMP API Warning for ${url}: ${data?.['Error Message'] || data?.error || 'No data returned'}`);
+            return null;
+        }
+
+        if (Array.isArray(data) && data.length === 0) {
+            console.warn(`FMP API Warning for ${url}: Empty array returned.`);
             return null;
         }
         
@@ -35,21 +40,19 @@ export async function getForexData(pair: string): Promise<ForexData> {
         const quotePromise = fetchWithCache<FMPQuote[]>(`${BASE_URL}/forex/${symbol}?apikey=${API_KEY}`, 10);
 
         // Fetch historical data with a longer cache time (1 hour).
-        const dailyPromise = fetchWithCache<{ historical: FMPHistoricalPrice[] }>(`${BASE_URL}/historical-price-full/${symbol}?timeseries=350&apikey=${API_KEY}`);
+        const dailyPromise = fetchWithCache<FMPHistoricalPrice[]>(`${BASE_URL}/historical-price-full/${symbol}?timeseries=350&apikey=${API_KEY}`);
         
-        const [quoteData, dailyDataResult] = await Promise.all([
+        const [quoteData, dailyPrices] = await Promise.all([
             quotePromise,
             dailyPromise
         ]);
 
-        const dailyPrices = dailyDataResult?.historical ?? [];
-        
         // Use daily prices as a fallback if 4-hour data is null or empty
         const fourHourPrices = dailyPrices; // Using daily as per previous fix to avoid bad endpoint.
         
-        const dailyIndicators = calculateIndicators(dailyPrices);
-        const fourHourIndicators = calculateIndicators(fourHourPrices);
-        const weeklyIndicators = calculateIndicators(dailyPrices, { emaPeriod: 50 });
+        const dailyIndicators = calculateIndicators(dailyPrices || []);
+        const fourHourIndicators = calculateIndicators(fourHourPrices || []);
+        const weeklyIndicators = calculateIndicators(dailyPrices || [], { emaPeriod: 50 });
 
         const indicators: CalculatedIndicators = {
             daily: dailyIndicators,

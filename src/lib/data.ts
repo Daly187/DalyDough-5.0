@@ -101,7 +101,7 @@ const calculateDScoreFromData = (pair: string, quote: FMPQuote | null, indicator
     return defaultScore;
   }
 
-  const price = quote?.bid ?? 0;
+  const price = quote?.price ?? 0;
   
   const { daily, fourHour, weekly } = indicators;
   
@@ -123,8 +123,8 @@ const calculateDScoreFromData = (pair: string, quote: FMPQuote | null, indicator
   if (totalScore >= 7.0 && daily.ema50 && price > daily.ema50) signal = 'Buy';
   if (totalScore >= 7.0 && daily.ema50 && price < daily.ema50) signal = 'Sell';
 
-  const change = quote?.changes ?? 0;
-  const changesPercentage = (quote.open && quote.open !== 0) ? (change / quote.open) * 100 : 0;
+  const change = quote?.change ?? 0;
+  const changesPercentage = quote?.changesPercentage ?? 0;
 
   return {
     ...defaultScore,

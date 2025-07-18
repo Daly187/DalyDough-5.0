@@ -121,13 +121,12 @@ export type ExposureData = {
 
 // FMP Types
 export type FMPQuote = {
-    ticker: string;
+    symbol: string;
     bid: number;
     ask: number;
-    open: number;
-    low: number;
-    high: number;
-    changes: number;
+    price: number;
+    change: number;
+    changesPercentage: number;
     timestamp: number;
 };
 
