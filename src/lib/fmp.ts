@@ -114,7 +114,7 @@ function getTrendDirection(ema: number, currentPrice: number): 'up' | 'down' | '
     return 'neutral';
 }
 
-function calculateTrendAlignment(indicators: IndicatorValues): number {
+function calculateTrendAlignment(indicators: IndicatorValues): { score: number, direction: 'up' | 'down' | 'mixed' } {
     const price = indicators.daily.price || 0;
     const trends = {
         fourHour: getTrendDirection(indicators.fourHour.ema50 || 0, price),
@@ -125,21 +125,18 @@ function calculateTrendAlignment(indicators: IndicatorValues): number {
     const upTrends = Object.values(trends).filter(t => t === 'up').length;
     const downTrends = Object.values(trends).filter(t => t === 'down').length;
 
-    if (upTrends === 3 || downTrends === 3) {
-        return 3.0; // All aligned
-    } else if ((upTrends === 2 && downTrends === 0) || (downTrends === 2 && upTrends === 0)) {
-        return 2.0; // Mostly aligned
+    if (upTrends === 3) {
+        return { score: 3.0, direction: 'up' };
+    } else if (downTrends === 3) {
+        return { score: 3.0, direction: 'down' };
+    } else if ((upTrends === 2 && downTrends === 0)) {
+        return { score: 2.0, direction: 'up' };
+    } else if ((downTrends === 2 && upTrends === 0)) {
+        return { score: 2.0, direction: 'down' };
     } else {
-        return 1.0; // Mixed or weak
+        return { score: 1.0, direction: 'mixed' };
     }
 }
-
-function getDailyTrendDirection(indicators: IndicatorValues): 'up' | 'down' | 'neutral' {
-    const price = indicators.daily.price || 0;
-    const dailyEma = indicators.daily.ema50 || 0;
-    return getTrendDirection(dailyEma, price);
-}
-
 
 function calculateAdxStrengthScore(indicators: IndicatorValues): number {
     const adxValues = [
@@ -248,10 +245,10 @@ function calculateOtherIndicatorScore(value: number, name: string, maxScore: num
 function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMPQuote | null): DScore {
 
     const stochValue = indicators.daily.stochastic?.k ?? 50;
-    const dailyTrendDirection = getDailyTrendDirection(indicators);
+    const trendAnalysis = calculateTrendAlignment(indicators);
     
     const scores: ScoreWeights = {
-        trendAlignment: calculateTrendAlignment(indicators),
+        trendAlignment: trendAnalysis.score,
         adxStrength: calculateAdxStrengthScore(indicators),
         rsiMomentum: calculateRsiMomentumScore(indicators),
         macdMomentum: calculateMacdMomentumScore(indicators),
@@ -271,9 +268,9 @@ function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMP
     
     let signal: 'Buy' | 'Sell' | 'Block' = 'Block';
     if (totalScore >= 7.0) {
-        if (dailyTrendDirection === 'up') {
+        if (trendAnalysis.direction === 'up') {
             signal = 'Buy';
-        } else if (dailyTrendDirection === 'down') {
+        } else if (trendAnalysis.direction === 'down') {
             signal = 'Sell';
         }
     }
