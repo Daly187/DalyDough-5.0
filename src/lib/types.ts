@@ -216,5 +216,6 @@ export type ForexData = {
     sma100: FMPSMA[] | null;
     sma200: FMPSMA[] | null;
     sma50_weekly: FMPSMA[] | null;
+    adx_weekly: FMPADX[] | null;
     historical: FMPHistoricalPrice[] | null;
 };

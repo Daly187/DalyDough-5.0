@@ -20,7 +20,24 @@ interface MarketDetailTableProps {
   data: ForexData[];
 }
 
-type SortKey = 'pair' | 'price' | 'adx' | 'bbw';
+type ProcessedData = {
+    pair: string;
+    price?: number;
+    change?: number;
+    adx?: number;
+    pdi?: number;
+    mdi?: number;
+    atr?: number;
+    bb_upper?: number;
+    bb_middle?: number;
+    bb_lower?: number;
+    sma50d?: number;
+    sma100d?: number;
+    sma200d?: number;
+    sma50w?: number;
+};
+
+type SortKey = keyof ProcessedData;
 
 const formatValue = (value: any, fixed: number = 2) => {
     if (typeof value === 'number') {
@@ -29,30 +46,36 @@ const formatValue = (value: any, fixed: number = 2) => {
     return 'N/A';
 }
 
-
 export default function MarketDetailTable({ data }: MarketDetailTableProps) {
   const [sortKey, setSortKey] = React.useState<SortKey>('pair');
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('asc');
 
-  const processedData = React.useMemo(() => {
+  const processedData = React.useMemo((): ProcessedData[] => {
     return data.map(item => {
       const quote = item.quote?.[0];
-      const bb = item.bb?.[0];
       const adx = item.adx?.[0];
-      
-      let bbw = null;
-      if (bb && bb.middleBand > 0) {
-        bbw = ((bb.upperBand - bb.lowerBand) / bb.middleBand) * 100;
-      }
+      const atr = item.atr?.[0];
+      const bb = item.bb?.[0];
+      const sma50d = item.sma50?.[0];
+      const sma100d = item.sma100?.[0];
+      const sma200d = item.sma200?.[0];
+      const sma50w = item.sma50_weekly?.[0];
       
       return {
         pair: item.pair,
         price: quote?.price,
+        change: quote?.changesPercentage,
         adx: adx?.adx,
+        pdi: adx?.pdi,
+        mdi: adx?.mdi,
+        atr: atr?.atr,
         bb_upper: bb?.upperBand,
         bb_middle: bb?.middleBand,
         bb_lower: bb?.lowerBand,
-        bbw: bbw, // Bollinger Band Width in %
+        sma50d: sma50d?.sma,
+        sma100d: sma100d?.sma,
+        sma200d: sma200d?.sma,
+        sma50w: sma50w?.sma,
       };
     });
   }, [data]);
@@ -100,11 +123,16 @@ export default function MarketDetailTable({ data }: MarketDetailTableProps) {
             <TableRow>
               <SortableHeader tkey="pair" label="Pair" />
               <SortableHeader tkey="price" label="Price" />
+              <SortableHeader tkey="change" label="Change %" />
               <SortableHeader tkey="adx" label="ADX" />
-              <SortableHeader tkey="bbw" label="BB Width (%)" />
-              <TableHead>BB Upper</TableHead>
-              <TableHead>BB Middle</TableHead>
-              <TableHead>BB Lower</TableHead>
+              <SortableHeader tkey="atr" label="ATR" />
+              <SortableHeader tkey="sma50d" label="SMA 50D" />
+              <SortableHeader tkey="sma100d" label="SMA 100D" />
+              <SortableHeader tkey="sma200d" label="SMA 200D" />
+              <SortableHeader tkey="sma50w" label="SMA 50W" />
+              <SortableHeader tkey="bb_upper" label="BB Upper" />
+              <SortableHeader tkey="bb_middle" label="BB Middle" />
+              <SortableHeader tkey="bb_lower" label="BB Lower" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -112,10 +140,15 @@ export default function MarketDetailTable({ data }: MarketDetailTableProps) {
               <TableRow key={item.pair}>
                 <TableCell className="font-medium">{item.pair}</TableCell>
                 <TableCell className="font-semibold text-primary">{formatValue(item.price, 5)}</TableCell>
-                <TableCell>{formatValue(item.adx)}</TableCell>
-                <TableCell className={cn(item.bbw && item.bbw > 4 && "text-yellow-400", item.bbw && item.bbw < 0.5 && "text-yellow-400")}>
-                    {formatValue(item.bbw, 3)}
+                <TableCell className={cn(item.change && item.change >= 0 ? 'text-green-400' : 'text-red-400')}>
+                    {formatValue(item.change)}%
                 </TableCell>
+                <TableCell>{formatValue(item.adx)}</TableCell>
+                <TableCell>{formatValue(item.atr, 5)}</TableCell>
+                <TableCell>{formatValue(item.sma50d, 5)}</TableCell>
+                <TableCell>{formatValue(item.sma100d, 5)}</TableCell>
+                <TableCell>{formatValue(item.sma200d, 5)}</TableCell>
+                <TableCell>{formatValue(item.sma50w, 5)}</TableCell>
                 <TableCell>{formatValue(item.bb_upper, 5)}</TableCell>
                 <TableCell>{formatValue(item.bb_middle, 5)}</TableCell>
                 <TableCell>{formatValue(item.bb_lower, 5)}</TableCell>
