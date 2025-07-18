@@ -12,8 +12,8 @@ interface StrengthTableProps {
 }
 
 export default function StrengthTable({ strengthData }: StrengthTableProps) {
-  const getLastTenDaysData = (data: { date: string; strength: number }[]) => {
-    // We need 11 items to compare 10 days
+  // We need 11 days of data to calculate 10 days of trends
+  const getLastElevenDaysData = (data: { date: string; strength: number }[]) => {
     return data.slice(-11);
   };
 
@@ -22,34 +22,34 @@ export default function StrengthTable({ strengthData }: StrengthTableProps) {
       <TableHeader>
         <TableRow>
           <TableHead className="w-[100px]">Currency</TableHead>
-          <TableHead className="text-center">Day 1</TableHead>
-          <TableHead className="text-center">Day 2</TableHead>
-          <TableHead className="text-center">Day 3</TableHead>
-          <TableHead className="text-center">Day 4</TableHead>
-          <TableHead className="text-center">Day 5</TableHead>
-          <TableHead className="text-center">Day 6</TableHead>
-          <TableHead className="text-center">Day 7</TableHead>
-          <TableHead className="text-center">Day 8</TableHead>
-          <TableHead className="text-center">Day 9</TableHead>
-          <TableHead className="text-center">Day 10</TableHead>
+          {Array.from({ length: 10 }).map((_, i) => (
+             <TableHead key={i} className="text-center">Day {i + 1}</TableHead>
+          ))}
         </TableRow>
       </TableHeader>
       <TableBody>
         {strengthData.map((currency) => {
-          const elevenDays = getLastTenDaysData(currency.data);
+          const elevenDays = getLastElevenDaysData(currency.data);
+          // If we don't have enough data, don't render the row
+          if (elevenDays.length < 11) {
+            return (
+                <TableRow key={currency.currency}>
+                    <TableCell className="font-medium">{currency.currency}</TableCell>
+                    <TableCell colSpan={10} className="text-center text-muted-foreground">Not enough data to display trend.</TableCell>
+                </TableRow>
+            );
+          }
           return (
             <TableRow key={currency.currency}>
               <TableCell className="font-medium">{currency.currency}</TableCell>
+              {/* We slice from the second day (index 1) to show 10 days of trends */}
               {elevenDays.slice(1).map((day, index) => {
-                // If there's no previous day data, we can't show a trend
-                if (index >= elevenDays.length - 1) {
-                    return <TableCell key={index} className="text-center">-</TableCell>;
-                }
-                const prevStrength = elevenDays[index].strength; // Compare with the previous day
-                const isUp = day.strength >= prevStrength;
+                // The previous day is at the same index in the original `elevenDays` array
+                const prevDay = elevenDays[index];
+                const isUp = day.strength >= prevDay.strength;
 
                 return (
-                  <TableCell key={index} className="text-center">
+                  <TableCell key={day.date} className="text-center">
                     <div className="flex flex-col items-center justify-center">
                         <span className="text-xs text-muted-foreground">{day.strength.toFixed(2)}</span>
                         {isUp ? (
