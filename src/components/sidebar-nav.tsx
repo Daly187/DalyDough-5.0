@@ -17,7 +17,6 @@ const navItems = [
   { href: '/market-detailed', label: 'Market Detailed', icon: Microscope },
   { href: '/bots', label: 'Bots', icon: Bot },
   { href: '/autobot', label: 'Auto Bot', icon: Scan },
-  { href: '/strength', label: 'Strength Index', icon: TrendingUp },
   { href: '/learning', label: 'Learning', icon: GraduationCap },
   { href: '/news', label: 'News', icon: Newspaper },
   { href: '/analytics', label: 'Statistics', icon: BarChart2 },

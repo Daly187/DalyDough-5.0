@@ -51,7 +51,7 @@ function calculateAdxStrengthScore(indicators: IndicatorValues, trendDirection: 
     if (trendDirection === 'mixed') return 0;
 
     let score = 0;
-    if (adx > 20) score = 2.0;
+    if (adx > 20) score = 2.5;
     
     return trendDirection === 'up' ? score : -score;
 }
@@ -111,45 +111,11 @@ function calculateConfirmationScore(indicators: IndicatorValues, trendDirection:
     return 0;
 }
 
-function calculateCurrencyIndexScore(pair: string, trendDirection: Direction | 'mixed', strengthData: StrengthData[]): number {
-    if (trendDirection === 'mixed') return 0;
-
-    const baseCurrency = pair.split('/')[0];
-    const quoteCurrency = pair.split('/')[1];
-
-    // Find the full name with the symbol, e.g., "USD (DXY)"
-    const baseIndex = strengthData.find(s => s.currency.startsWith(baseCurrency));
-    const quoteIndex = strengthData.find(s => s.currency.startsWith(quoteCurrency));
-
-    if (!baseIndex || !quoteIndex || baseIndex.data.length < 2 || quoteIndex.data.length < 2) {
-        return 0;
-    }
-
-    const isBaseStrong = baseIndex.data[baseIndex.data.length - 1].strength > baseIndex.data[baseIndex.data.length - 2].strength;
-    const isQuoteWeak = quoteIndex.data[quoteIndex.data.length - 1].strength < quoteIndex.data[quoteIndex.data.length - 2].strength;
-
-    let score = 0;
-
-    if (trendDirection === 'up' && isBaseStrong && isQuoteWeak) {
-        score = 0.5;
-    } else if (trendDirection === 'down' && !isBaseStrong && !isQuoteWeak) {
-        score = -0.5;
-    }
-
-    return score;
-}
-
 
 async function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMPQuote | null): Promise<DScore> {
     const trendAnalysis = calculateTrendAlignment(indicators);
     const trendDirection = trendAnalysis.direction;
     const price = currentPriceData?.price ?? indicators.daily.price ?? 0;
-
-    const now = Date.now();
-    if (!strengthCache || (now - strengthCacheTimestamp > STRENGTH_CACHE_TTL)) {
-        strengthCache = await getStrengthData();
-        strengthCacheTimestamp = now;
-    }
 
     const scores = {
         trendAlignment: trendAnalysis.score,
@@ -157,7 +123,6 @@ async function calculateSmartDScore(indicators: IndicatorValues, currentPriceDat
         atrVolatility: calculateAtrVolatilityScore(indicators, trendDirection),
         macdMomentum: calculateMacdMomentumScore(indicators, trendDirection),
         confirmationIndicators: calculateConfirmationScore(indicators, trendDirection),
-        currencyIndex: calculateCurrencyIndexScore(indicators.pair, trendDirection, strengthCache || []),
     };
 
     const totalScore = Object.values(scores).reduce((sum, score) => sum + score, 0);
@@ -191,7 +156,6 @@ async function calculateSmartDScore(indicators: IndicatorValues, currentPriceDat
         macdMomentum: scores.macdMomentum,
         atrVolatility: scores.atrVolatility,
         confirmationIndicators: scores.confirmationIndicators,
-        currencyIndex: scores.currencyIndex,
         rawIndicators: {
             ema50: indicators.daily.ema50,
             adx: indicators.daily.adx,
@@ -210,7 +174,7 @@ export async function getForexData(pair: string): Promise<DScore> {
     const defaultScore: DScore = {
         id: pair, pair: pair, price: 0, change: 0, changesPercentage: 0, dScore: 0, grade: 'C',
         signal: 'Block', positions: 0, lastUpdated: 0, trendAlignment: 0, adxStrength: 0, 
-        macdMomentum: 0, atrVolatility: 0, confirmationIndicators: 0, currencyIndex: 0,
+        macdMomentum: 0, atrVolatility: 0, confirmationIndicators: 0,
         rawIndicators: {}
     };
 

@@ -118,11 +118,10 @@ export default function MarketDetailTable({ data }: MarketDetailTableProps) {
               <SortableHeader tkey="dScore" label="D-Score" />
               <SortableHeader tkey="signal" label="Signal" />
               <SortableHeader tkey="trendAlignment" label="Trend (4.0)" />
-              <SortableHeader tkey="adxStrength" label="ADX (2.0)" />
+              <SortableHeader tkey="adxStrength" label="ADX (2.5)" />
               <SortableHeader tkey="atrVolatility" label="ATR (1.5)" />
               <SortableHeader tkey="macdMomentum" label="MACD (1.0)" />
               <SortableHeader tkey="confirmationIndicators" label="Confirm (1.0)" />
-              <SortableHeader tkey="currencyIndex" label="Index (0.5)" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -155,7 +154,6 @@ export default function MarketDetailTable({ data }: MarketDetailTableProps) {
                 <TableCell>{formatValue(item.atrVolatility, 1)}</TableCell>
                 <TableCell>{formatValue(item.macdMomentum, 1)}</TableCell>
                 <TableCell>{formatValue(item.confirmationIndicators, 1)}</TableCell>
-                <TableCell>{formatValue(item.currencyIndex, 1)}</TableCell>
               </TableRow>
             ))}
           </TableBody>

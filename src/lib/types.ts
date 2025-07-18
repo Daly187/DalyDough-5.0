@@ -17,7 +17,6 @@ export type DScore = {
   macdMomentum: number;
   atrVolatility: number;
   confirmationIndicators: number;
-  currencyIndex: number;
 
   rawIndicators: Partial<IndicatorSet>;
 };
