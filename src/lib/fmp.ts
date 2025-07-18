@@ -51,9 +51,8 @@ export async function getForexData(pair: string): Promise<ForexData> {
         const fourHourIndicators = calculateIndicators(fourHourPrices);
 
         // Simulate weekly indicators from daily data
-        // For EMA, we use a period of 50*5 (5 trading days) to approximate a 50-week EMA.
-        // For other indicators, we can use standard daily periods as a proxy.
-        const weeklyIndicators = calculateIndicators(dailyPrices, { emaPeriod: 250 });
+        // We use a period of 50 to approximate a 50-week EMA from daily candles.
+        const weeklyIndicators = calculateIndicators(dailyPrices, { emaPeriod: 50 });
 
         const indicators: CalculatedIndicators = {
             daily: dailyIndicators,
