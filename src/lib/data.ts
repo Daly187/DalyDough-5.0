@@ -13,6 +13,11 @@ export const strengthData: StrengthData[] = [
     {
         currency: 'USD',
         data: [
+            { date: '2024-07-10', strength: 104.8 },
+            { date: '2024-07-11', strength: 105.0 },
+            { date: '2024-07-12', strength: 105.2 },
+            { date: '2024-07-13', strength: 105.1 },
+            { date: '2024-07-14', strength: 105.3 },
             { date: '2024-07-15', strength: 105.5 },
             { date: '2024-07-16', strength: 105.7 },
             { date: '2024-07-17', strength: 105.6 },
@@ -24,6 +29,11 @@ export const strengthData: StrengthData[] = [
     {
         currency: 'EUR',
         data: [
+            { date: '2024-07-10', strength: 95.0 },
+            { date: '2024-07-11', strength: 95.1 },
+            { date: '2024-07-12', strength: 94.9 },
+            { date: '2024-07-13', strength: 95.2 },
+            { date: '2024-07-14', strength: 95.3 },
             { date: '2024-07-15', strength: 95.2 },
             { date: '2024-07-16', strength: 95.1 },
             { date: '2024-07-17', strength: 95.4 },
@@ -35,6 +45,11 @@ export const strengthData: StrengthData[] = [
     {
         currency: 'JPY',
         data: [
+            { date: '2024-07-10', strength: 71.0 },
+            { date: '2024-07-11', strength: 71.2 },
+            { date: '2024-07-12', strength: 71.1 },
+            { date: '2024-07-13', strength: 70.9 },
+            { date: '2024-07-14', strength: 70.8 },
             { date: '2024-07-15', strength: 70.8 },
             { date: '2024-07-16', strength: 70.5 },
             { date: '2024-07-17', strength: 70.4 },
@@ -46,6 +61,11 @@ export const strengthData: StrengthData[] = [
     {
         currency: 'GBP',
         data: [
+            { date: '2024-07-10', strength: 88.0 },
+            { date: '2024-07-11', strength: 87.9 },
+            { date: '2024-07-12', strength: 88.1 },
+            { date: '2024-07-13', strength: 88.2 },
+            { date: '2024-07-14', strength: 88.4 },
             { date: '2024-07-15', strength: 88.3 },
             { date: '2024-07-16', strength: 88.5 },
             { date: '2024-07-17', strength: 88.7 },
@@ -57,6 +77,11 @@ export const strengthData: StrengthData[] = [
     {
         currency: 'AUD',
         data: [
+            { date: '2024-07-10', strength: 77.5 },
+            { date: '2024-07-11', strength: 77.6 },
+            { date: '2024-07-12', strength: 77.9 },
+            { date: '2024-07-13', strength: 78.0 },
+            { date: '2024-07-14', strength: 78.2 },
             { date: '2024-07-15', strength: 78.1 },
             { date: '2024-07-16', strength: 78.3 },
             { date: '2024-07-17', strength: 78.0 },
@@ -68,6 +93,11 @@ export const strengthData: StrengthData[] = [
     {
         currency: 'CAD',
         data: [
+            { date: '2024-07-10', strength: 82.0 },
+            { date: '2024-07-11', strength: 82.2 },
+            { date: '2024-07-12', strength: 82.1 },
+            { date: '2024-07-13', strength: 82.3 },
+            { date: '2024-07-14', strength: 82.6 },
             { date: '2024-07-15', strength: 82.5 },
             { date: '2024-07-16', strength: 82.4 },
             { date: '2024-07-17', strength: 82.7 },
@@ -79,6 +109,11 @@ export const strengthData: StrengthData[] = [
     {
         currency: 'CHF',
         data: [
+            { date: '2024-07-10', strength: 98.8 },
+            { date: '2024-07-11', strength: 98.9 },
+            { date: '2024-07-12', strength: 99.0 },
+            { date: '2024-07-13', strength: 99.3 },
+            { date: '2024-07-14', strength: 99.1 },
             { date: '2024-07-15', strength: 99.0 },
             { date: '2024-07-16', strength: 99.2 },
             { date: '2024-07-17', strength: 99.1 },
@@ -90,6 +125,11 @@ export const strengthData: StrengthData[] = [
     {
         currency: 'NZD',
         data: [
+            { date: '2024-07-10', strength: 76.5 },
+            { date: '2024-07-11', strength: 76.4 },
+            { date: '2024-07-12', strength: 76.6 },
+            { date: '2024-07-13', strength: 76.3 },
+            { date: '2024-07-14', strength: 76.1 },
             { date: '2024-07-15', strength: 76.2 },
             { date: '2024-07-16', strength: 76.0 },
             { date: '2024-07-17', strength: 76.3 },
@@ -227,3 +267,4 @@ export const exposureData: ExposureData[] = [
     { currency: 'CHF', exposure: 1500.00, type: 'long' },
     { currency: 'NZD', exposure: -500.00, type: 'short' },
 ];
+

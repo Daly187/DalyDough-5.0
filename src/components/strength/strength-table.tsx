@@ -12,9 +12,9 @@ interface StrengthTableProps {
 }
 
 export default function StrengthTable({ strengthData }: StrengthTableProps) {
-  const getLastFiveDaysData = (data: { date: string; strength: number }[]) => {
-    // We need 6 items to compare 5 days
-    return data.slice(-6);
+  const getLastTenDaysData = (data: { date: string; strength: number }[]) => {
+    // We need 11 items to compare 10 days
+    return data.slice(-11);
   };
 
   return (
@@ -27,16 +27,21 @@ export default function StrengthTable({ strengthData }: StrengthTableProps) {
           <TableHead className="text-center">Day 3</TableHead>
           <TableHead className="text-center">Day 4</TableHead>
           <TableHead className="text-center">Day 5</TableHead>
+          <TableHead className="text-center">Day 6</TableHead>
+          <TableHead className="text-center">Day 7</TableHead>
+          <TableHead className="text-center">Day 8</TableHead>
+          <TableHead className="text-center">Day 9</TableHead>
+          <TableHead className="text-center">Day 10</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {strengthData.map((currency) => {
-          const sixDays = getLastFiveDaysData(currency.data);
+          const elevenDays = getLastTenDaysData(currency.data);
           return (
             <TableRow key={currency.currency}>
               <TableCell className="font-medium">{currency.currency}</TableCell>
-              {sixDays.slice(1).map((day, index) => {
-                const prevStrength = sixDays[index].strength; // Compare with the previous day in the 6-day slice
+              {elevenDays.slice(1).map((day, index) => {
+                const prevStrength = elevenDays[index].strength; // Compare with the previous day
                 const isUp = day.strength >= prevStrength;
                 return (
                   <TableCell key={index} className="text-center">
@@ -57,3 +62,4 @@ export default function StrengthTable({ strengthData }: StrengthTableProps) {
     </Table>
   );
 }
+
