@@ -24,19 +24,6 @@ interface ScoreWeights {
   obv: number;
 }
 
-const MAX_WEIGHTS: ScoreWeights = {
-  trendAlignment: 3.0,
-  adxStrength: 1.5,
-  rsiMomentum: 1.0,
-  macdMomentum: 1.0,
-  atrVolatility: 1.0,
-  bollingerBands: 0.5,
-  stochasticOscillator: 0.5,
-  parabolicSAR: 0.5,
-  cci: 0.5,
-  obv: 0.5
-};
-
 async function fetchWithCache<T>(url: string, ttl: number = 3600): Promise<T | null> {
     try {
         const res = await fetch(url, { next: { revalidate: ttl } });
@@ -122,12 +109,12 @@ function calculateIndicatorsEnhanced(historicalData: FMPHistoricalPrice[], optio
 function getTrendDirection(ema: number, currentPrice: number): 'up' | 'down' | 'neutral' {
     if (!ema || !currentPrice) return 'neutral';
     const diff = ((currentPrice - ema) / ema) * 100;
-    if (diff > 0.1) return 'up';
-    if (diff < -0.1) return 'down';
+    if (diff > 0.05) return 'up'; // Use a small tolerance
+    if (diff < -0.05) return 'down';
     return 'neutral';
 }
 
-function calculateTrendAlignment(indicators: IndicatorValues): { score: number, direction: 'up' | 'down' | 'mixed' } {
+function calculateTrendAlignment(indicators: IndicatorValues): number {
     const price = indicators.daily.price || 0;
     const trends = {
         fourHour: getTrendDirection(indicators.fourHour.ema50 || 0, price),
@@ -138,26 +125,19 @@ function calculateTrendAlignment(indicators: IndicatorValues): { score: number, 
     const upTrends = Object.values(trends).filter(t => t === 'up').length;
     const downTrends = Object.values(trends).filter(t => t === 'down').length;
 
-    let score = 0;
-    let direction: 'up' | 'down' | 'mixed' = 'mixed';
-    
-    if (upTrends === 3) {
-        score = 3.0; // All aligned
-        direction = 'up';
-    } else if (downTrends === 3) {
-        score = 3.0;
-        direction = 'down';
-    } else if (upTrends === 2 && downTrends === 0) {
-        score = 2.0; // Mostly up
-        direction = 'up';
-    } else if (downTrends === 2 && upTrends === 0) {
-        score = 2.0; // Mostly down
-        direction = 'down';
+    if (upTrends === 3 || downTrends === 3) {
+        return 3.0; // All aligned
+    } else if ((upTrends === 2 && downTrends === 0) || (downTrends === 2 && upTrends === 0)) {
+        return 2.0; // Mostly aligned
     } else {
-        score = 1.0; // Mixed or weak
+        return 1.0; // Mixed or weak
     }
+}
 
-    return { score, direction };
+function getDailyTrendDirection(indicators: IndicatorValues): 'up' | 'down' | 'neutral' {
+    const price = indicators.daily.price || 0;
+    const dailyEma = indicators.daily.ema50 || 0;
+    return getTrendDirection(dailyEma, price);
 }
 
 
@@ -173,14 +153,12 @@ function calculateAdxStrengthScore(indicators: IndicatorValues): number {
     const avgAdx = adxValues.reduce((sum, val) => sum + val, 0) / adxValues.length;
     
     let score = 0;
-    if (avgAdx > 50) {
-        score = 1.5; // Very strong
-    } else if (avgAdx > 30) {
-        score = 1.0; // Strong
+    if (avgAdx > 40) { // Stricter threshold for higher score
+        score = 1.5;
+    } else if (avgAdx > 25) { // Common threshold for trending
+        score = 1.0;
     } else if (avgAdx > 20) {
-        score = 0.5; // Moderate
-    } else {
-        score = 0; // Weak
+        score = 0.5;
     }
 
     return score;
@@ -190,12 +168,12 @@ function calculateRsiMomentumScore(indicators: IndicatorValues): number {
     const rsi = indicators.daily.rsi || 50;
     
     let score = 0;
-    if (rsi > 70 || rsi < 30) {
-        score = 1.0; // Strong momentum
-    } else if (rsi > 60 || rsi < 40) {
-        score = 0.6; // Moderate momentum
+    if (rsi > 65 || rsi < 35) { // Strong momentum away from center
+        score = 1.0;
+    } else if (rsi > 55 || rsi < 45) { // Moderate momentum
+        score = 0.6;
     } else {
-        score = 0.2; // Weak momentum
+        score = 0.2; // Weak/neutral
     }
 
     return score;
@@ -205,13 +183,14 @@ function calculateMacdMomentumScore(indicators: IndicatorValues): number {
     const macdItem = indicators.daily.macd;
     if (!macdItem || macdItem.macd === undefined || macdItem.histogram === undefined) return 0;
     
+    // Score based on histogram expansion (momentum)
     let score = 0;
-    if (Math.abs(macdItem.histogram) > 0.001) {
-        score = 1.0; // Strong
-    } else if (Math.abs(macdItem.histogram) > 0.0005) {
-        score = 0.6; // Moderate
+    if (Math.abs(macdItem.histogram) > Math.abs(macdItem.macd * 0.1)) { // Histogram is significant relative to MACD value
+        score = 1.0;
+    } else if (Math.abs(macdItem.histogram) > Math.abs(macdItem.macd * 0.05)) {
+        score = 0.6;
     } else {
-        score = 0.2; // Weak
+        score = 0.2;
     }
 
     return score;
@@ -224,11 +203,11 @@ function calculateAtrVolatilityScore(indicators: IndicatorValues): number {
     
     let score = 0;
     if (atrPercent >= 0.5 && atrPercent <= 1.5) {
-        score = 1.0; // Optimal
-    } else if (atrPercent >= 0.3 && atrPercent <= 2.0) {
-        score = 0.6; // Moderate
+        score = 1.0; // Optimal volatility
+    } else if (atrPercent > 0.3 && atrPercent < 2.5) {
+        score = 0.6; // Acceptable volatility
     } else {
-        score = 0.2; // Too low/high
+        score = 0.2; // Too low or too high
     }
 
     return score;
@@ -238,12 +217,12 @@ function calculateBollingerBandsScore(indicators: IndicatorValues): number {
     const bbPosition = indicators.daily.bollingerBands || 0.5;
     
     let score = 0;
-    if (bbPosition > 0.8 || bbPosition < 0.2) {
-        score = 0.5; // Near bands
-    } else if (bbPosition > 0.6 || bbPosition < 0.4) {
-        score = 0.3; // Moderate
+    if (bbPosition > 0.9 || bbPosition < 0.1) {
+        score = 0.5; // At the edges, potential reversal or breakout
+    } else if (bbPosition > 0.7 || bbPosition < 0.3) {
+        score = 0.3;
     } else {
-        score = 0.1; // Neutral
+        score = 0.1; // Near the middle, less clear signal
     }
     
     return score;
@@ -251,6 +230,7 @@ function calculateBollingerBandsScore(indicators: IndicatorValues): number {
 
 function calculateOtherIndicatorScore(value: number, name: string, maxScore: number): number {
     // Generic scoring for remaining indicators
+    if (isNaN(value)) return 0;
     let score = 0;
     if (value > 0.7) {
         score = maxScore;
@@ -268,10 +248,10 @@ function calculateOtherIndicatorScore(value: number, name: string, maxScore: num
 function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMPQuote | null): DScore {
 
     const stochValue = indicators.daily.stochastic?.k ?? 50;
-    const { score: trendAlignmentScore, direction: trendDirection } = calculateTrendAlignment(indicators);
+    const dailyTrendDirection = getDailyTrendDirection(indicators);
     
     const scores: ScoreWeights = {
-        trendAlignment: trendAlignmentScore,
+        trendAlignment: calculateTrendAlignment(indicators),
         adxStrength: calculateAdxStrengthScore(indicators),
         rsiMomentum: calculateRsiMomentumScore(indicators),
         macdMomentum: calculateMacdMomentumScore(indicators),
@@ -291,9 +271,9 @@ function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMP
     
     let signal: 'Buy' | 'Sell' | 'Block' = 'Block';
     if (totalScore >= 7.0) {
-        if (trendDirection === 'up') {
+        if (dailyTrendDirection === 'up') {
             signal = 'Buy';
-        } else if (trendDirection === 'down') {
+        } else if (dailyTrendDirection === 'down') {
             signal = 'Sell';
         }
     }
@@ -374,5 +354,3 @@ export async function getForexData(pair: string): Promise<DScore> {
         return defaultScore;
     }
 }
-
-    
