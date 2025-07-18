@@ -44,6 +44,7 @@ export default function AppLayout({
       setLoading(false);
     });
 
+    // Cleanup subscription on unmount
     return () => unsubscribe();
   }, [router]);
 
@@ -63,7 +64,7 @@ export default function AppLayout({
   if (loading) {
     return (
       <div className="flex min-h-screen w-full">
-        <div className="hidden md:flex flex-col gap-4 border-r bg-muted/40 p-2">
+        <div className="hidden flex-col gap-4 border-r bg-muted/40 p-2 md:flex">
             <div className="p-2">
                 <Skeleton className="h-8 w-40" />
             </div>
