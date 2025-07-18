@@ -1,7 +1,8 @@
 
-import type { DScore, FMPQuote, StrengthData } from './types';
+import type { DScore, FMPQuote, StrengthData, NewsEvent } from './types';
 import { calculateIndicators } from './indicators';
-import { fetchHistorical, fetchQuote } from './api/fmp-api';
+import { fetchHistorical, fetchQuote, fetchEconomicCalendar } from './api/fmp-api';
+import { format, startOfWeek, endOfWeek, addDays } from 'date-fns';
 
 interface IndicatorValues {
   daily: ReturnType<typeof calculateIndicators>;
@@ -240,4 +241,16 @@ export async function getForexData(pair: string): Promise<DScore> {
             signal: 'Block'
         };
     }
+}
+
+
+export async function getEconomicCalendar(): Promise<NewsEvent[] | null> {
+    const today = new Date();
+    const fromDate = startOfWeek(today, { weekStartsOn: 1 }); // Monday
+    const toDate = endOfWeek(today, { weekStartsOn: 1 }); // Sunday
+
+    const from = format(fromDate, 'yyyy-MM-dd');
+    const to = format(toDate, 'yyyy-MM-dd');
+    
+    return fetchEconomicCalendar(from, to);
 }

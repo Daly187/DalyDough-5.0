@@ -1,9 +1,14 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import NewsCalendar from "@/components/news/news-calendar";
-import { newsData } from "@/lib/data";
+import { getEconomicCalendar } from "@/lib/fmp";
+import type { NewsEvent } from "@/lib/types";
+import { RefreshCw } from "lucide-react";
+import RefreshButton from "@/components/news/refresh-button";
 
-export default function NewsPage() {
-  const currencies = Array.from(new Set(newsData.map(event => event.currency)));
+export default async function NewsPage() {
+  const events: NewsEvent[] = await getEconomicCalendar() ?? [];
+
+  const currencies = Array.from(new Set(events.map(event => event.currency))).filter(Boolean) as string[];
   const impacts = ['High', 'Medium', 'Low'];
 
   return (
@@ -12,14 +17,17 @@ export default function NewsPage() {
         <h1 className="text-lg font-semibold md:text-2xl font-headline">Forex News Calendar</h1>
       </div>
        <Card>
-        <CardHeader>
-          <CardTitle>Economic Events</CardTitle>
-          <CardDescription>
-            Stay ahead of market-moving events with a real-time economic calendar.
-          </CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+                <CardTitle>Economic Events</CardTitle>
+                <CardDescription>
+                    Stay ahead of market-moving events with a real-time economic calendar.
+                </CardDescription>
+            </div>
+            <RefreshButton />
         </CardHeader>
         <CardContent>
-          <NewsCalendar events={newsData} currencies={currencies} impacts={impacts} />
+          <NewsCalendar events={events} currencies={currencies} impacts={impacts} />
         </CardContent>
       </Card>
     </main>

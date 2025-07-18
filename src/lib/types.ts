@@ -89,16 +89,16 @@ export type StrengthData = {
 };
 
 export type NewsEvent = {
-  id: string;
-  date: string;
-  time: string;
+  date: string; // ISO 8601 format "YYYY-MM-DD HH:MM:SS"
+  country: string;
   currency: string;
-  impact: 'High' | 'Medium' | 'Low';
-  event: string;
+  impact: 'High' | 'Medium' | 'Low' | string; // FMP can return other strings
+  eventName: string;
   actual: string | null;
-  forecast: string | null;
   previous: string | null;
+  estimate: string | null;
 };
+
 
 export type MarketRegime = {
   currencyPair: string;
