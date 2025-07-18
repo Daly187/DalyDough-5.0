@@ -24,6 +24,7 @@ type ProcessedData = {
     pair: string;
     price?: number;
     change?: number;
+    timestamp?: number;
     adx?: number;
     pdi?: number;
     mdi?: number;
@@ -42,6 +43,13 @@ type SortKey = keyof ProcessedData;
 const formatValue = (value: any, fixed: number = 2) => {
     if (typeof value === 'number') {
         return value.toFixed(fixed);
+    }
+    return 'N/A';
+}
+
+const formatTimestamp = (timestamp: any) => {
+    if (typeof timestamp === 'number') {
+        return new Date(timestamp * 1000).toLocaleString();
     }
     return 'N/A';
 }
@@ -65,6 +73,7 @@ export default function MarketDetailTable({ data }: MarketDetailTableProps) {
         pair: item.pair,
         price: quote?.price,
         change: quote?.changesPercentage,
+        timestamp: quote?.timestamp,
         adx: adx?.adx,
         pdi: adx?.pdi,
         mdi: adx?.mdi,
@@ -124,6 +133,7 @@ export default function MarketDetailTable({ data }: MarketDetailTableProps) {
               <SortableHeader tkey="pair" label="Pair" />
               <SortableHeader tkey="price" label="Price" />
               <SortableHeader tkey="change" label="Change %" />
+              <SortableHeader tkey="timestamp" label="Last Update" />
               <SortableHeader tkey="adx" label="ADX" />
               <SortableHeader tkey="atr" label="ATR" />
               <SortableHeader tkey="sma50d" label="SMA 50D" />
@@ -143,6 +153,7 @@ export default function MarketDetailTable({ data }: MarketDetailTableProps) {
                 <TableCell className={cn(item.change && item.change >= 0 ? 'text-green-400' : 'text-red-400')}>
                     {formatValue(item.change)}%
                 </TableCell>
+                <TableCell>{formatTimestamp(item.timestamp)}</TableCell>
                 <TableCell>{formatValue(item.adx)}</TableCell>
                 <TableCell>{formatValue(item.atr, 5)}</TableCell>
                 <TableCell>{formatValue(item.sma50d, 5)}</TableCell>
