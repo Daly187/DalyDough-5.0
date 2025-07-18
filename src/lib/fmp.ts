@@ -13,11 +13,19 @@ async function fetchWithCache<T>(url: string, ttl: number = 300): Promise<T | nu
             return null;
         }
         const data = await res.json();
-        // FMP returns an empty array for invalid symbols/data, not an error
-        if (Array.isArray(data) && data.length === 0) {
-            // console.warn(`Empty array returned from ${url}`);
+        
+        // FMP can return an error message object instead of an array
+        if (data && data['Error Message']) {
+            console.warn(`FMP API Error for ${url}: ${data['Error Message']}`);
             return null;
         }
+        
+        // FMP can also return an empty array for invalid symbols/data
+        if (Array.isArray(data) && data.length === 0) {
+            // This can be normal for some indicators on some days, so not logging as a hard error.
+            return null;
+        }
+        
         return data as T;
     } catch (error) {
         console.error(`Error fetching ${url}:`, error);
