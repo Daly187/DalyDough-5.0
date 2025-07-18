@@ -1,3 +1,4 @@
+
 import type { FMPHistoricalPrice, ForexData, CalculatedIndicators } from './types';
 import { calculateIndicators } from './indicators';
 
@@ -29,33 +30,42 @@ async function fetchWithCache<T>(url: string, ttl: number = 3600): Promise<T | n
 export async function getForexData(pair: string): Promise<ForexData> {
     const symbol = pair.replace('/', '');
 
-    // 1. Fetch historical data for all required timeframes
-    const dailyPromise = fetchWithCache<{ historical: FMPHistoricalPrice[] }>(`${BASE_URL}/historical-price-full/${symbol}?timeseries=100&apikey=${API_KEY}`);
-    const fourHourPromise = fetchWithCache<FMPHistoricalPrice[]>(`${BASE_URL}/historical-chart/4hour/${symbol}?apikey=${API_KEY}`);
-    const weeklyPromise = fetchWithCache<FMPHistoricalPrice[]>(`${BASE_URL}/historical-chart/weekly/${symbol}?apikey=${API_KEY}`);
-    const quotePromise = fetchWithCache<any[]>(`${BASE_URL}/forex/${symbol}?apikey=${API_KEY}`);
+    try {
+        // 1. Fetch historical data for all required timeframes
+        const dailyPromise = fetchWithCache<{ historical: FMPHistoricalPrice[] }>(`${BASE_URL}/historical-price-full/${symbol}?timeseries=100&apikey=${API_KEY}`);
+        const fourHourPromise = fetchWithCache<FMPHistoricalPrice[]>(`${BASE_URL}/historical-chart/4hour/${symbol}?apikey=${API_KEY}`);
+        const weeklyPromise = fetchWithCache<FMPHistoricalPrice[]>(`${BASE_URL}/historical-chart/weekly/${symbol}?apikey=${API_KEY}`);
+        const quotePromise = fetchWithCache<any[]>(`${BASE_URL}/forex/${symbol}?apikey=${API_KEY}`);
 
-    const [dailyData, fourHourData, weeklyData, quoteData] = await Promise.all([
-        dailyPromise,
-        fourHourPromise,
-        weeklyPromise,
-        quotePromise
-    ]);
+        const [dailyData, fourHourData, weeklyData, quoteData] = await Promise.all([
+            dailyPromise,
+            fourHourPromise,
+            weeklyPromise,
+            quotePromise
+        ]);
 
-    const dailyPrices = dailyData?.historical ?? [];
-    const fourHourPrices = fourHourData ?? [];
-    const weeklyPrices = weeklyData ?? [];
-    
-    // 2. Calculate indicators locally
-    const indicators: CalculatedIndicators = {
-        daily: calculateIndicators(dailyPrices),
-        fourHour: calculateIndicators(fourHourPrices),
-        weekly: calculateIndicators(weeklyPrices),
-    };
+        const dailyPrices = dailyData?.historical ?? [];
+        const fourHourPrices = fourHourData ?? [];
+        const weeklyPrices = weeklyData ?? [];
+        
+        // 2. Calculate indicators locally
+        const indicators: CalculatedIndicators = {
+            daily: calculateIndicators(dailyPrices),
+            fourHour: calculateIndicators(fourHourPrices),
+            weekly: calculateIndicators(weeklyPrices),
+        };
 
-    return {
-        pair,
-        quote: quoteData,
-        indicators,
-    };
+        return {
+            pair,
+            quote: quoteData,
+            indicators,
+        };
+    } catch (error) {
+        console.error(`Failed to process data for ${pair}:`, error);
+        return {
+            pair,
+            quote: null,
+            indicators: { daily: {}, fourHour: {}, weekly: {} }
+        }
+    }
 }

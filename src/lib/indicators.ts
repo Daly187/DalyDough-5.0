@@ -1,3 +1,4 @@
+
 import {
     EMA, ADX, RSI, MACD, ATR,
     BollingerBands as BB, Stochastic,
@@ -23,7 +24,7 @@ export function calculateIndicators(prices: FMPHistoricalPrice[]): IndicatorSet 
     }
 
     const input = preparePriceData(prices);
-    const last = (arr: number[] | undefined) => arr?.[arr.length - 1];
+    const last = (arr: any[] | undefined) => arr?.[arr.length - 1];
 
     try {
         const ema50 = last(EMA.calculate({ period: 50, values: input.close }));
@@ -38,7 +39,9 @@ export function calculateIndicators(prices: FMPHistoricalPrice[]): IndicatorSet 
             SimpleMAOscillator: false,
             SimpleMASignal: false,
         });
-        const macd = last(macdResult);
+        const macdItem = last(macdResult);
+        const macd = macdItem ? { macd: macdItem.MACD, signal: macdItem.signal, histogram: macdItem.histogram } : undefined;
+
 
         const atr = last(ATR.calculate({ high: input.high, low: input.low, close: input.close, period: 14 }));
         
