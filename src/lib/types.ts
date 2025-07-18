@@ -1,4 +1,5 @@
 
+
 export type DScore = {
   id: string;
   pair: string;
@@ -130,26 +131,14 @@ type FMPBase = {
 };
 
 // FMP Indicator Types
-export type FMPQuote = FMPBase & {
-    symbol: string;
-    name: string;
-    price: number;
-    changesPercentage: number;
-    change: number;
-    dayLow: number;
-    dayHigh: number;
-    yearHigh: number;
-    yearLow: number;
-    marketCap: number | null;
-    priceAvg50: number;
-    priceAvg200: number;
-    exchange: string;
-    avgVolume: number;
-    previousClose: number;
-    eps: number | null;
-    pe: number | null;
-    earningsAnnouncement: string | null;
-    sharesOutstanding: number | null;
+export type FMPQuote = {
+    ticker: string;
+    bid: number;
+    ask: number;
+    open: number;
+    low: number;
+    high: number;
+    changes: number;
     timestamp: number;
 };
 

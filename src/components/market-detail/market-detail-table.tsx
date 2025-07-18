@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from 'react';
@@ -66,8 +67,8 @@ export default function MarketDetailTable({ data }: MarketDetailTableProps) {
       const quote = item.quote?.[0];
       return {
         pair: item.pair,
-        price: quote?.price,
-        change: quote?.changesPercentage,
+        price: quote?.bid,
+        change: quote?.changes,
         timestamp: quote?.timestamp,
         ema50_4h: item.ema50_4h?.[0]?.ema,
         ema50d: item.ema50d?.[0]?.ema,
@@ -130,7 +131,7 @@ export default function MarketDetailTable({ data }: MarketDetailTableProps) {
             <TableRow>
               <SortableHeader tkey="pair" label="Pair" />
               <SortableHeader tkey="price" label="Price" />
-              <SortableHeader tkey="change" label="Change %" />
+              <SortableHeader tkey="change" label="Change" />
               <SortableHeader tkey="timestamp" label="Last Update" />
               <SortableHeader tkey="ema50_4h" label="EMA 4H" />
               <SortableHeader tkey="ema50d" label="EMA 1D" />
@@ -154,7 +155,7 @@ export default function MarketDetailTable({ data }: MarketDetailTableProps) {
                 <TableCell className="font-medium">{item.pair}</TableCell>
                 <TableCell className="font-semibold text-primary">{formatValue(item.price, 5)}</TableCell>
                 <TableCell className={cn(item.change && item.change >= 0 ? 'text-green-400' : 'text-red-400')}>
-                    {formatValue(item.change)}%
+                    {formatValue(item.change)}
                 </TableCell>
                 <TableCell>{formatTimestamp(item.timestamp)}</TableCell>
                 <TableCell>{formatValue(item.ema50_4h, 5)}</TableCell>

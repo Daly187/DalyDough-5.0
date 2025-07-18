@@ -1,4 +1,5 @@
 
+
 import type { DScore, Bot, EquityData, RiskMetric, ApiKey, NewsEvent, BotConfigurationData, AIReentry, MarketRegime, ExposureData, ForexData, FMPHistoricalPrice } from './types';
 
 const getGrade = (score: number): 'A' | 'B' | 'C' => {
@@ -86,7 +87,8 @@ const calculateCci = (cci: number): number => {
 
 export const calculateDScore = async (data: ForexData): Promise<DScore> => {
   const quote = data.quote?.[0];
-  const price = quote?.price ?? 0;
+  const price = quote?.bid ?? 0;
+  const change = quote?.changes ?? 0;
 
   const defaultScore: DScore = {
     id: data.pair, pair: data.pair, price: 0, change: 0, changesPercentage: 0, dScore: 0, grade: 'C',
@@ -133,11 +135,13 @@ export const calculateDScore = async (data: ForexData): Promise<DScore> => {
   if (totalScore >= 7.0 && price > ema50d) signal = 'Buy';
   if (totalScore >= 7.0 && price < ema50d) signal = 'Sell';
 
+  const changesPercentage = quote.open !== 0 ? (change / quote.open) * 100 : 0;
+
   return {
     ...defaultScore,
     price,
-    change: quote?.change ?? 0,
-    changesPercentage: quote?.changesPercentage ?? 0,
+    change,
+    changesPercentage,
     dScore: Math.min(totalScore, 10),
     grade: getGrade(totalScore),
     signal,
