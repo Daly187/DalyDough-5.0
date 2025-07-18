@@ -1,4 +1,3 @@
-
 import type { FMPHistoricalPrice, ForexData, CalculatedIndicators, FMPQuote, DScore, IndicatorSet } from './types';
 import { calculateIndicators } from './indicators';
 
@@ -114,26 +113,43 @@ function getTrendDirection(ema: number, currentPrice: number): 'up' | 'down' | '
     return 'neutral';
 }
 
+// UPDATED: Calculate trend alignment and return the overall trend direction
 function calculateTrendAlignment(indicators: IndicatorValues): { score: number, direction: 'up' | 'down' | 'mixed' } {
-    const price = indicators.daily.price || 0;
+    const price4h = indicators.fourHour.price || 0;
+    const price1d = indicators.daily.price || 0;
+    const price1w = indicators.weekly.price || 0;
+
     const trends = {
-        fourHour: getTrendDirection(indicators.fourHour.ema50 || 0, price),
-        daily: getTrendDirection(indicators.daily.ema50 || 0, price),
-        weekly: getTrendDirection(indicators.weekly.ema50 || 0, price)
+        fourHour: getTrendDirection(indicators.fourHour.ema50 || 0, price4h),
+        daily: getTrendDirection(indicators.daily.ema50 || 0, price1d),
+        weekly: getTrendDirection(indicators.weekly.ema50 || 0, price1w)
     };
+
+    // DEBUG LOGGING - Add this to see what's happening
+    console.log('=== TREND ANALYSIS DEBUG ===');
+    console.log('4H: Price =', price4h, 'EMA50 =', indicators.fourHour.ema50, 'Trend =', trends.fourHour);
+    console.log('Daily: Price =', price1d, 'EMA50 =', indicators.daily.ema50, 'Trend =', trends.daily);
+    console.log('Weekly: Price =', price1w, 'EMA50 =', indicators.weekly.ema50, 'Trend =', trends.weekly);
 
     const upTrends = Object.values(trends).filter(t => t === 'up').length;
     const downTrends = Object.values(trends).filter(t => t === 'down').length;
 
+    console.log('Up trends:', upTrends, 'Down trends:', downTrends);
+
     if (upTrends === 3) {
+        console.log('Result: ALL UP → Buy signal');
         return { score: 3.0, direction: 'up' };
     } else if (downTrends === 3) {
+        console.log('Result: ALL DOWN → Sell signal');
         return { score: 3.0, direction: 'down' };
     } else if ((upTrends === 2 && downTrends === 0)) {
+        console.log('Result: MOSTLY UP → Buy signal');
         return { score: 2.0, direction: 'up' };
     } else if ((downTrends === 2 && upTrends === 0)) {
+        console.log('Result: MOSTLY DOWN → Sell signal');
         return { score: 2.0, direction: 'down' };
     } else {
+        console.log('Result: MIXED → Block signal');
         return { score: 1.0, direction: 'mixed' };
     }
 }
@@ -241,7 +257,7 @@ function calculateOtherIndicatorScore(value: number, name: string, maxScore: num
     return score;
 }
 
-// MAIN SMART SCORING FUNCTION
+// UPDATED: Main scoring function with simplified signal logic based purely on trend direction
 function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMPQuote | null): DScore {
 
     const stochValue = indicators.daily.stochastic?.k ?? 50;
@@ -266,14 +282,15 @@ function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMP
     if (totalScore >= 8.5) grade = 'A';
     else if (totalScore >= 7.0) grade = 'B';
     
+    // SIMPLIFIED SIGNAL LOGIC: Based purely on trend direction
     let signal: 'Buy' | 'Sell' | 'Block' = 'Block';
-    if (totalScore >= 7.0) {
-        if (trendAnalysis.direction === 'up') {
-            signal = 'Buy';
-        } else if (trendAnalysis.direction === 'down') {
-            signal = 'Sell';
-        }
+    
+    if (trendAnalysis.direction === 'up') {
+        signal = 'Buy';
+    } else if (trendAnalysis.direction === 'down') {
+        signal = 'Sell';
     }
+    // If direction is 'mixed', signal stays 'Block'
 
     return {
         id: indicators.daily.pair || '',
@@ -298,7 +315,6 @@ function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMP
         obv: scores.obv
     };
 }
-
 
 export async function getForexData(pair: string): Promise<DScore> {
     const baseSymbol = pair.replace('/', '');
@@ -329,12 +345,14 @@ export async function getForexData(pair: string): Promise<DScore> {
             };
         }
 
-        // We assume 4h is roughly the same as daily for this simplified model
+        // ToDo: Replace these with actual 4H and weekly price fetches if needed
+        // Here, as before, for demonstration:
         const fourHourPrices = dailyPrices.slice(-100); 
+        const weeklyPrices = dailyPrices.filter((_, idx) => idx % 5 === 0); // crude weekly downsampling
 
         const dailyIndicators = calculateIndicatorsEnhanced(dailyPrices, { emaPeriod: 50 });
         const fourHourIndicators = calculateIndicatorsEnhanced(fourHourPrices, { emaPeriod: 50 }); 
-        const weeklyIndicators = calculateIndicatorsEnhanced(dailyPrices, { emaPeriod: 200 });
+        const weeklyIndicators = calculateIndicatorsEnhanced(weeklyPrices, { emaPeriod: 50 }); // Use 50 for weekly EMA
 
         const indicators: IndicatorValues = {
             daily: { ...dailyIndicators, pair },
