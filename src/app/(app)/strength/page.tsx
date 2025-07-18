@@ -1,3 +1,4 @@
+
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import StrengthTable from "@/components/strength/strength-table";
 import { getStrengthData } from "@/lib/fmp";

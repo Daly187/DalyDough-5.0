@@ -39,8 +39,9 @@ function calculateTrendAlignment(indicators: IndicatorValues): { score: number, 
 
     if (upTrends === 3) return { score: 4.0, direction: 'up' };
     if (downTrends === 3) return { score: -4.0, direction: 'down' };
-    if (upTrends === 2 && downTrends <= 1) return { score: 2.0, direction: 'up' };
-    if (downTrends === 2 && upTrends <= 1) return { score: -2.0, direction: 'down' };
+    
+    if (upTrends === 2 && downTrends <= 1) return { score: 1.5, direction: 'up' };
+    if (downTrends === 2 && upTrends <= 1) return { score: -1.5, direction: 'down' };
     
     return { score: 0, direction: 'mixed' };
 }
@@ -50,9 +51,8 @@ function calculateAdxStrengthScore(indicators: IndicatorValues, trendDirection: 
     if (trendDirection === 'mixed') return 0;
 
     let score = 0;
-    if (adx > 25) score = 2.0;
-    else if (adx > 20) score = 1.0;
-
+    if (adx > 20) score = 2.0;
+    
     return trendDirection === 'up' ? score : -score;
 }
 
@@ -78,11 +78,7 @@ function calculateAtrVolatilityScore(indicators: IndicatorValues, trendDirection
     const atrPercent = atr > 0 && currentPrice > 0 ? (atr / currentPrice) * 100 : 0;
     
     let score = 0;
-    // We give a positive score if volatility is present, as it's needed for movement.
-    // ATR above a certain threshold indicates active market.
-    if (atrPercent > 0.3) score = 1.5;
-    else if (atrPercent > 0.15) score = 0.75;
-
+    if (atrPercent > 0.15) score = 1.5;
 
     return trendDirection === 'up' ? score : -score;
 }
@@ -118,7 +114,10 @@ function calculateConfirmationScore(indicators: IndicatorValues, trendDirection:
 function calculateCurrencyIndexScore(pair: string, trendDirection: Direction | 'mixed', strengthData: StrengthData[]): number {
     if (trendDirection === 'mixed') return 0;
 
-    const [baseCurrency, quoteCurrency] = pair.split('/');
+    const baseCurrency = pair.split('/')[0];
+    const quoteCurrency = pair.split('/')[1];
+
+    // Find the full name with the symbol, e.g., "USD (DXY)"
     const baseIndex = strengthData.find(s => s.currency.startsWith(baseCurrency));
     const quoteIndex = strengthData.find(s => s.currency.startsWith(quoteCurrency));
 
@@ -155,8 +154,8 @@ async function calculateSmartDScore(indicators: IndicatorValues, currentPriceDat
     const scores = {
         trendAlignment: trendAnalysis.score,
         adxStrength: calculateAdxStrengthScore(indicators, trendDirection),
-        macdMomentum: calculateMacdMomentumScore(indicators, trendDirection),
         atrVolatility: calculateAtrVolatilityScore(indicators, trendDirection),
+        macdMomentum: calculateMacdMomentumScore(indicators, trendDirection),
         confirmationIndicators: calculateConfirmationScore(indicators, trendDirection),
         currencyIndex: calculateCurrencyIndexScore(indicators.pair, trendDirection, strengthCache || []),
     };
@@ -277,7 +276,7 @@ export async function getStrengthData(): Promise<StrengthData[]> {
                 return { currency: currency, data: [] };
             }
             
-            // FMP returns newest first, reverse for oldest first
+            // FMP returns newest first, reverse for oldest first for trend calculation
             const data = historicalData.map(item => ({
                 date: item.date,
                 strength: item.close
