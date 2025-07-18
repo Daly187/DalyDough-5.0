@@ -11,19 +11,19 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { ArrowUpDown } from 'lucide-react';
-import type { DScore, IndicatorSet } from '@/lib/types'; // Using DScore now
+import { ArrowDown, ArrowUp, ArrowUpDown, Minus } from 'lucide-react';
+import type { DScore } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { Badge } from '../ui/badge';
 
 interface MarketDetailTableProps {
   data: DScore[];
 }
 
-// The data is already processed into DScore format, which includes what we need.
 type ProcessedData = DScore;
 
-type SortKey = 'pair' | 'price' | 'change' | 'lastUpdated';
+type SortKey = 'pair' | 'price' | 'change' | 'lastUpdated' | 'dScore';
 
 const formatValue = (value: any, fixed: number = 2) => {
     if (typeof value === 'number') {
@@ -33,17 +33,22 @@ const formatValue = (value: any, fixed: number = 2) => {
 };
 
 const formatTimestamp = (timestamp?: any) => {
-    if (typeof timestamp === 'number') {
-        return new Date(timestamp * 1000).toLocaleString();
+    if (typeof timestamp === 'number' && timestamp > 0) {
+        return new Date(timestamp).toLocaleString();
     }
     return 'N/A';
 };
 
-export default function MarketDetailTable({ data }: MarketDetailTableProps) {
-  const [sortKey, setSortKey] = React.useState<SortKey>('pair');
-  const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('asc');
+const signalConfig = {
+    Buy: { label: "Buy" },
+    Sell: { label: "Sell" },
+    Block: { label: "Block" },
+};
 
-  // Data is already in the right format.
+export default function MarketDetailTable({ data }: MarketDetailTableProps) {
+  const [sortKey, setSortKey] = React.useState<SortKey>('dScore');
+  const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc');
+
   const processedData: ProcessedData[] = data;
 
   const sortedData = React.useMemo(() => {
@@ -81,31 +86,7 @@ export default function MarketDetailTable({ data }: MarketDetailTableProps) {
       </Button>
     </TableHead>
   );
-
-  const IndicatorCell = ({ indicatorValue, toFixed = 2 }: { indicatorValue: number | undefined | {macd?: any, histogram?: any} | {k?: any, d?: any}, toFixed?: number }) => {
-    if (typeof indicatorValue === 'object' && indicatorValue !== null) {
-      if ('macd' in indicatorValue) { // MACD object
-        return (
-          <TableCell>
-            <div>H: {formatValue(indicatorValue.histogram, 5)}</div>
-            <div>M: {formatValue(indicatorValue.macd, 5)}</div>
-          </TableCell>
-        );
-      }
-       if ('k' in indicatorValue) { // Stochastic object
-        return (
-          <TableCell>
-            <div>K: {formatValue(indicatorValue.k, toFixed)}</div>
-            <div>D: {formatValue(indicatorValue.d, toFixed)}</div>
-          </TableCell>
-        );
-      }
-    }
-    return <TableCell>{formatValue(indicatorValue, toFixed)}</TableCell>;
-  };
   
-  // NOTE: This table is showing component scores, not raw indicator values. This is a simplification
-  // to fit the new data structure. A future refactor could pass down the raw indicators if needed.
   return (
       <ScrollArea className="h-[75vh] border rounded-md">
         <Table>
@@ -115,6 +96,8 @@ export default function MarketDetailTable({ data }: MarketDetailTableProps) {
               <SortableHeader tkey="price" label="Price" />
               <SortableHeader tkey="change" label="Change" />
               <SortableHeader tkey="lastUpdated" label="Last Update" />
+              <SortableHeader tkey="dScore" label="D-Score" />
+              <TableHead>Signal</TableHead>
               <TableHead>Trend (3.0)</TableHead>
               <TableHead>ADX (1.5)</TableHead>
               <TableHead>RSI (1.0)</TableHead>
@@ -135,6 +118,20 @@ export default function MarketDetailTable({ data }: MarketDetailTableProps) {
                     {formatValue(item.change, 4)}
                 </TableCell>
                 <TableCell>{formatTimestamp(item.lastUpdated)}</TableCell>
+                <TableCell className="font-semibold text-lg text-primary">{item.dScore.toFixed(1)}</TableCell>
+                <TableCell>
+                    <Badge
+                        variant="outline"
+                        className={cn(
+                            "text-xs",
+                            item.signal === 'Buy' && 'bg-green-500/20 text-green-400 border-green-500/30',
+                            item.signal === 'Sell' && 'bg-red-500/20 text-red-400 border-red-500/30',
+                            item.signal === 'Block' && 'bg-gray-500/20 text-gray-400 border-gray-500/30'
+                        )}
+                    >
+                        {signalConfig[item.signal].label}
+                    </Badge>
+                </TableCell>
                 <TableCell>{formatValue(item.trendAlignment, 1)}</TableCell>
                 <TableCell>{formatValue(item.adxStrength, 1)}</TableCell>
                 <TableCell>{formatValue(item.rsiMomentum, 1)}</TableCell>
