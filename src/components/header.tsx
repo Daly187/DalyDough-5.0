@@ -1,16 +1,16 @@
 
 "use client";
 
-import { useRouter } from 'next/navigation';
+import { useRefresh } from '@/context/refresh-context';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Button } from './ui/button';
 import { RefreshCw } from 'lucide-react';
 
 export default function Header() {
-  const router = useRouter();
+  const { triggerRefresh } = useRefresh();
 
   const handleRefresh = () => {
-    router.refresh();
+    triggerRefresh();
   };
 
   return (

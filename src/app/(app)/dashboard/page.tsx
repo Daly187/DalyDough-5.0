@@ -13,11 +13,13 @@ import type { DScore } from '@/lib/types';
 import MarketControls from '@/components/dashboard/market-controls';
 import { Skeleton } from '@/components/ui/skeleton';
 import AiOptimizedReentries from '@/components/autobot/ai-optimized-reentries';
+import { useRefresh } from '@/context/refresh-context';
 
 export default function DashboardPage() {
   const [allDScoreData, setAllDScoreData] = React.useState<DScore[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [dScoreThresholds, setDScoreThresholds] = React.useState({ lower: -7.0, upper: 7.0 });
+  const { refreshKey } = useRefresh();
 
   React.useEffect(() => {
     async function fetchData() {
@@ -29,7 +31,7 @@ export default function DashboardPage() {
       setIsLoading(false);
     }
     fetchData();
-  }, []);
+  }, [refreshKey]);
 
   const filteredDScoreData = React.useMemo(() => {
     return allDScoreData.filter(p => p.dScore <= dScoreThresholds.lower || p.dScore >= dScoreThresholds.upper);

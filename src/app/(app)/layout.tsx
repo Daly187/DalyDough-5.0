@@ -22,6 +22,7 @@ import { auth, signOut } from '@/lib/firebase/auth';
 import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { RefreshProvider } from '@/context/refresh-context';
 
 export default function AppLayout({
   children,
@@ -111,8 +112,10 @@ export default function AppLayout({
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <Header />
-        {children}
+        <RefreshProvider>
+          <Header />
+          {children}
+        </RefreshProvider>
       </SidebarInset>
     </SidebarProvider>
   );
