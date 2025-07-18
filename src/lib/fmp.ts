@@ -40,19 +40,21 @@ export async function getForexData(pair: string): Promise<ForexData> {
         const quotePromise = fetchWithCache<FMPQuote[]>(`${BASE_URL}/forex/${symbol}?apikey=${API_KEY}`, 10);
 
         // Fetch historical data with a longer cache time (1 hour).
-        const dailyPromise = fetchWithCache<FMPHistoricalPrice[]>(`${BASE_URL}/historical-price-full/${symbol}?timeseries=350&apikey=${API_KEY}`);
+        const dailyPromise = fetchWithCache<{ historical: FMPHistoricalPrice[] }>(`${BASE_URL}/historical-price-full/${symbol}?timeseries=350&apikey=${API_KEY}`);
         
-        const [quoteData, dailyPrices] = await Promise.all([
+        const [quoteData, dailyDataResult] = await Promise.all([
             quotePromise,
             dailyPromise
         ]);
-
-        // Use daily prices as a fallback if 4-hour data is null or empty
-        const fourHourPrices = dailyPrices; // Using daily as per previous fix to avoid bad endpoint.
         
-        const dailyIndicators = calculateIndicators(dailyPrices || []);
-        const fourHourIndicators = calculateIndicators(fourHourPrices || []);
-        const weeklyIndicators = calculateIndicators(dailyPrices || [], { emaPeriod: 50 });
+        const dailyPrices = dailyDataResult?.historical || [];
+
+        // Use daily prices for all timeframes as a robust solution
+        const fourHourPrices = dailyPrices;
+        
+        const dailyIndicators = calculateIndicators(dailyPrices);
+        const fourHourIndicators = calculateIndicators(fourHourPrices);
+        const weeklyIndicators = calculateIndicators(dailyPrices, { emaPeriod: 50 });
 
         const indicators: CalculatedIndicators = {
             daily: dailyIndicators,
