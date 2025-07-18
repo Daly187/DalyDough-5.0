@@ -16,10 +16,8 @@ export type DScore = {
   adxStrength: number;
   macdMomentum: number;
   atrVolatility: number;
-  stochasticOscillator: number;
-  parabolicSAR: number;
-  cci: number;
-  obv: number; // Will remain 0 for Forex
+  confirmationIndicators: number;
+  currencyIndex: number;
 
   rawIndicators: Partial<IndicatorSet>;
 };

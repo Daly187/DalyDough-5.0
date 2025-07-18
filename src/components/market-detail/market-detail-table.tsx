@@ -22,20 +22,29 @@ interface MarketDetailTableProps {
   data: DScore[];
 }
 
-type ProcessedData = DScore;
-
 type SortKey = keyof DScore;
 
 const formatValue = (value: any, fixed: number = 2) => {
     if (typeof value === 'number') {
-        return value.toFixed(fixed);
+        return (value > 0 ? '+' : '') + value.toFixed(fixed);
     }
     return 'N/A';
 };
 
+const formatPrice = (value: any, fixed: number = 2) => {
+    if (typeof value === 'number') {
+        return value.toFixed(fixed);
+    }
+    return 'N/A';
+}
+
 const formatTimestamp = (timestamp?: any) => {
     if (typeof timestamp === 'number' && timestamp > 0) {
-        return format(new Date(timestamp * 1000), "yyyy-MM-dd HH:mm:ss");
+        try {
+            return format(new Date(timestamp * 1000), "yyyy-MM-dd HH:mm:ss");
+        } catch (e) {
+            return 'Invalid Date'
+        }
     }
     return 'N/A';
 };
@@ -44,15 +53,13 @@ const signalConfig = {
     Buy: { label: "Buy" },
     Sell: { label: "Sell" },
     Block: { label: "Block" },
-    'Buy weak': { label: "Buy weak" },
-    'Sell weak': { label: "Sell weak" },
 };
 
 export default function MarketDetailTable({ data }: MarketDetailTableProps) {
   const [sortKey, setSortKey] = React.useState<SortKey>('dScore');
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc');
 
-  const processedData: ProcessedData[] = data;
+  const processedData: DScore[] = data;
 
   const sortedData = React.useMemo(() => {
     return [...processedData].sort((a, b) => {
@@ -61,6 +68,15 @@ export default function MarketDetailTable({ data }: MarketDetailTableProps) {
 
       if (aValue === undefined || aValue === null) return 1;
       if (bValue === undefined || bValue === null) return -1;
+
+      // For dScore, sort by absolute value to find strongest signals
+      if (sortKey === 'dScore') {
+          const absA = Math.abs(aValue as number);
+          const absB = Math.abs(bValue as number);
+          if (absA < absB) return sortOrder === 'asc' ? -1 : 1;
+          if (absA > absB) return sortOrder === 'asc' ? 1 : -1;
+          return 0;
+      }
       
       if (aValue < bValue) {
         return sortOrder === 'asc' ? -1 : 1;
@@ -101,25 +117,26 @@ export default function MarketDetailTable({ data }: MarketDetailTableProps) {
               <SortableHeader tkey="lastUpdated" label="Last Update" />
               <SortableHeader tkey="dScore" label="D-Score" />
               <SortableHeader tkey="signal" label="Signal" />
-              <SortableHeader tkey="trendAlignment" label="Trend (3.0)" />
-              <SortableHeader tkey="adxStrength" label="ADX (1.5)" />
+              <SortableHeader tkey="trendAlignment" label="Trend (4.0)" />
+              <SortableHeader tkey="adxStrength" label="ADX (2.0)" />
+              <SortableHeader tkey="atrVolatility" label="ATR (1.5)" />
               <SortableHeader tkey="macdMomentum" label="MACD (1.0)" />
-              <SortableHeader tkey="atrVolatility" label="ATR (1.0)" />
-              <SortableHeader tkey="stochasticOscillator" label="Stoch (0.5)" />
-              <SortableHeader tkey="parabolicSAR" label="SAR (0.5)" />
-              <SortableHeader tkey="cci" label="CCI (0.5)" />
+              <SortableHeader tkey="confirmationIndicators" label="Confirm (1.0)" />
+              <SortableHeader tkey="currencyIndex" label="Index (0.5)" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {sortedData.map((item) => (
               <TableRow key={item.pair}>
                 <TableCell className="font-medium">{item.pair}</TableCell>
-                <TableCell className="font-semibold text-primary">{formatValue(item.price, 5)}</TableCell>
-                <TableCell className={cn(item.change && item.change >= 0 ? 'text-green-400' : 'text-red-400')}>
-                    {formatValue(item.change, 4)}
+                <TableCell className="font-semibold text-primary">{formatPrice(item.price, 5)}</TableCell>
+                <TableCell className={cn(item.change >= 0 ? 'text-green-400' : 'text-red-400')}>
+                    {formatPrice(item.change, 4)}
                 </TableCell>
                 <TableCell>{formatTimestamp(item.lastUpdated)}</TableCell>
-                <TableCell className="font-semibold text-lg text-primary">{item.dScore.toFixed(1)}</TableCell>
+                <TableCell className={cn("font-semibold text-lg", item.dScore > 0 ? "text-green-400" : "text-red-400")}>
+                  {formatValue(item.dScore, 1)}
+                </TableCell>
                 <TableCell>
                     <Badge
                         variant="outline"
@@ -127,21 +144,18 @@ export default function MarketDetailTable({ data }: MarketDetailTableProps) {
                             "text-xs",
                             item.signal === 'Buy' && 'bg-green-500/20 text-green-400 border-green-500/30',
                             item.signal === 'Sell' && 'bg-red-500/20 text-red-400 border-red-500/30',
-                            item.signal === 'Block' && 'bg-gray-500/20 text-gray-400 border-gray-500/30',
-                            item.signal === 'Buy weak' && 'bg-green-500/10 text-green-400/70 border-green-500/20',
-                            item.signal === 'Sell weak' && 'bg-red-500/10 text-red-400/70 border-red-500/20',
+                            item.signal === 'Block' && 'bg-gray-500/20 text-gray-400 border-gray-500/30'
                         )}
                     >
-                        {signalConfig[item.signal].label}
+                        {signalConfig[item.signal]?.label ?? 'Block'}
                     </Badge>
                 </TableCell>
                 <TableCell>{formatValue(item.trendAlignment, 1)}</TableCell>
                 <TableCell>{formatValue(item.adxStrength, 1)}</TableCell>
-                <TableCell>{formatValue(item.macdMomentum, 1)}</TableCell>
                 <TableCell>{formatValue(item.atrVolatility, 1)}</TableCell>
-                <TableCell>{formatValue(item.stochasticOscillator, 1)}</TableCell>
-                <TableCell>{formatValue(item.parabolicSAR, 1)}</TableCell>
-                <TableCell>{formatValue(item.cci, 1)}</TableCell>
+                <TableCell>{formatValue(item.macdMomentum, 1)}</TableCell>
+                <TableCell>{formatValue(item.confirmationIndicators, 1)}</TableCell>
+                <TableCell>{formatValue(item.currencyIndex, 1)}</TableCell>
               </TableRow>
             ))}
           </TableBody>

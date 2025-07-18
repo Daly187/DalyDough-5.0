@@ -12,6 +12,11 @@ interface IndicatorValues {
 
 type Direction = 'up' | 'down';
 
+// --- STRENGTH INDEX CACHE ---
+let strengthCache: StrengthData[] | null = null;
+let strengthCacheTimestamp: number = 0;
+const STRENGTH_CACHE_TTL = 1000 * 60 * 60; // 1 hour
+
 // SMART SCORING FUNCTIONS
 function getTrendDirection(price?: number, ema?: number): Direction | 'mixed' {
     if (price === undefined || ema === undefined) return 'mixed';
@@ -32,10 +37,10 @@ function calculateTrendAlignment(indicators: IndicatorValues): { score: number, 
     const upTrends = trends.filter(t => t === 'up').length;
     const downTrends = trends.filter(t => t === 'down').length;
 
-    if (upTrends === 3) return { score: 3.0, direction: 'up' };
-    if (downTrends === 3) return { score: -3.0, direction: 'down' };
-    if (upTrends === 2 && downTrends === 1) return { score: 1.5, direction: 'up' };
-    if (downTrends === 2 && upTrends === 1) return { score: -1.5, direction: 'down' };
+    if (upTrends === 3) return { score: 4.0, direction: 'up' };
+    if (downTrends === 3) return { score: -4.0, direction: 'down' };
+    if (upTrends === 2 && downTrends <= 1) return { score: 2.0, direction: 'up' };
+    if (downTrends === 2 && upTrends <= 1) return { score: -2.0, direction: 'down' };
     
     return { score: 0, direction: 'mixed' };
 }
@@ -45,9 +50,8 @@ function calculateAdxStrengthScore(indicators: IndicatorValues, trendDirection: 
     if (trendDirection === 'mixed') return 0;
 
     let score = 0;
-    if (adx > 40) score = 1.5;
-    else if (adx > 25) score = 1.0;
-    else if (adx > 20) score = 0.5;
+    if (adx > 25) score = 2.0;
+    else if (adx > 20) score = 1.0;
 
     return trendDirection === 'up' ? score : -score;
 }
@@ -61,7 +65,7 @@ function calculateMacdMomentumScore(indicators: IndicatorValues, trendDirection:
 
     if (!isAlignedUp && !isAlignedDown) return 0;
     
-    let score = Math.abs(macdItem.histogram) > 0.0001 ? 1.0 : 0.5;
+    const score = 1.0;
     
     return isAlignedUp ? score : -score;
 }
@@ -74,43 +78,87 @@ function calculateAtrVolatilityScore(indicators: IndicatorValues, trendDirection
     const atrPercent = atr > 0 && currentPrice > 0 ? (atr / currentPrice) * 100 : 0;
     
     let score = 0;
-    if (atrPercent >= 0.5 && atrPercent <= 1.5) score = 1.0;
-    else if (atrPercent > 0.3 && atrPercent < 2.5) score = 0.6;
-    else score = 0.2;
+    // We give a positive score if volatility is present, as it's needed for movement.
+    // ATR above a certain threshold indicates active market.
+    if (atrPercent > 0.3) score = 1.5;
+    else if (atrPercent > 0.15) score = 0.75;
+
 
     return trendDirection === 'up' ? score : -score;
 }
 
 
-function calculateOtherIndicatorScore(value: number | undefined, trendDirection: 'up' | 'down' | 'mixed', upCondition: (v:number) => boolean, downCondition: (v:number) => boolean): number {
-    if (trendDirection === 'mixed' || typeof value !== 'number' || isNaN(value)) {
-        return 0;
-    }
+function calculateConfirmationScore(indicators: IndicatorValues, trendDirection: 'up' | 'down' | 'mixed'): number {
+    if (trendDirection === 'mixed') return 0;
+
+    const price = indicators.daily.price;
+    const stoch = indicators.daily.stochastic?.k;
+    const sar = indicators.daily.sar;
+    const cci = indicators.daily.cci;
     
-    const score = 0.5;
-    if (trendDirection === 'up' && upCondition(value)) {
-        return score;
+    if (price === undefined || stoch === undefined || sar === undefined || cci === undefined) return 0;
+
+    let confirmations = 0;
+    if (trendDirection === 'up') {
+        if (stoch < 80) confirmations++; // Not overbought
+        if (sar < price) confirmations++; // SAR is below price
+        if (cci > 0) confirmations++; // CCI confirms upward momentum
+    } else { // 'down'
+        if (stoch > 20) confirmations++; // Not oversold
+        if (sar > price) confirmations++; // SAR is above price
+        if (cci < 0) confirmations++; // CCI confirms downward momentum
     }
-    if (trendDirection === 'down' && downCondition(value)) {
-        return -score;
+
+    if (confirmations === 3) {
+        return trendDirection === 'up' ? 1.0 : -1.0;
     }
     return 0;
 }
 
+function calculateCurrencyIndexScore(pair: string, trendDirection: Direction | 'mixed', strengthData: StrengthData[]): number {
+    if (trendDirection === 'mixed') return 0;
 
-function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMPQuote | null): DScore {
+    const [baseCurrency, quoteCurrency] = pair.split('/');
+    const baseIndex = strengthData.find(s => s.currency.startsWith(baseCurrency));
+    const quoteIndex = strengthData.find(s => s.currency.startsWith(quoteCurrency));
+
+    if (!baseIndex || !quoteIndex || baseIndex.data.length < 2 || quoteIndex.data.length < 2) {
+        return 0;
+    }
+
+    const isBaseStrong = baseIndex.data[baseIndex.data.length - 1].strength > baseIndex.data[baseIndex.data.length - 2].strength;
+    const isQuoteWeak = quoteIndex.data[quoteIndex.data.length - 1].strength < quoteIndex.data[quoteIndex.data.length - 2].strength;
+
+    let score = 0;
+
+    if (trendDirection === 'up' && isBaseStrong && isQuoteWeak) {
+        score = 0.5;
+    } else if (trendDirection === 'down' && !isBaseStrong && !isQuoteWeak) {
+        score = -0.5;
+    }
+
+    return score;
+}
+
+
+async function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMPQuote | null): Promise<DScore> {
     const trendAnalysis = calculateTrendAlignment(indicators);
     const trendDirection = trendAnalysis.direction;
     const price = currentPriceData?.price ?? indicators.daily.price ?? 0;
-    
+
+    const now = Date.now();
+    if (!strengthCache || (now - strengthCacheTimestamp > STRENGTH_CACHE_TTL)) {
+        strengthCache = await getStrengthData();
+        strengthCacheTimestamp = now;
+    }
+
     const scores = {
         trendAlignment: trendAnalysis.score,
         adxStrength: calculateAdxStrengthScore(indicators, trendDirection),
         macdMomentum: calculateMacdMomentumScore(indicators, trendDirection),
         atrVolatility: calculateAtrVolatilityScore(indicators, trendDirection),
-        stochasticOscillator: calculateOtherIndicatorScore(indicators.daily.stochastic?.k, trendDirection, v => v < 80, v => v > 20),
-        parabolicSAR: calculateOtherIndicatorScore(indicators.daily.sar, trendDirection, v => v < price, v => v > price),
-        cci: calculateOtherIndicatorScore(indicators.daily.cci, trendDirection, v => v > 0, v => v < 0),
+        confirmationIndicators: calculateConfirmationScore(indicators, trendDirection),
+        currencyIndex: calculateCurrencyIndexScore(indicators.pair, trendDirection, strengthCache || []),
     };
 
     const totalScore = Object.values(scores).reduce((sum, score) => sum + score, 0);
@@ -120,12 +168,9 @@ function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMP
     if (absScore >= 8.5) grade = 'A';
     else if (absScore >= 7.0) grade = 'B';
     
-    let finalSignal: DScore['signal'];
+    let finalSignal: DScore['signal'] = 'Block';
     if (totalScore >= 7.0) finalSignal = 'Buy';
     else if (totalScore <= -7.0) finalSignal = 'Sell';
-    else if (totalScore > 0) finalSignal = 'Buy weak';
-    else if (totalScore < 0) finalSignal = 'Sell weak';
-    else finalSignal = 'Block';
     
     const change = currentPriceData?.change ?? 0;
     const changesPercentage = currentPriceData?.changesPercentage ?? 0;
@@ -146,10 +191,8 @@ function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMP
         adxStrength: scores.adxStrength,
         macdMomentum: scores.macdMomentum,
         atrVolatility: scores.atrVolatility,
-        stochasticOscillator: scores.stochasticOscillator,
-        parabolicSAR: scores.parabolicSAR,
-        cci: scores.cci,
-        obv: 0, 
+        confirmationIndicators: scores.confirmationIndicators,
+        currencyIndex: scores.currencyIndex,
         rawIndicators: {
             ema50: indicators.daily.ema50,
             adx: indicators.daily.adx,
@@ -168,8 +211,8 @@ export async function getForexData(pair: string): Promise<DScore> {
     const defaultScore: DScore = {
         id: pair, pair: pair, price: 0, change: 0, changesPercentage: 0, dScore: 0, grade: 'C',
         signal: 'Block', positions: 0, lastUpdated: 0, trendAlignment: 0, adxStrength: 0, 
-        macdMomentum: 0, atrVolatility: 0, stochasticOscillator: 0, parabolicSAR: 0, 
-        cci: 0, obv: 0, rawIndicators: {}
+        macdMomentum: 0, atrVolatility: 0, confirmationIndicators: 0, currencyIndex: 0,
+        rawIndicators: {}
     };
 
     try {
@@ -201,7 +244,7 @@ export async function getForexData(pair: string): Promise<DScore> {
             pair
         };
         
-        const finalResult = calculateSmartDScore(indicators, quoteData);
+        const finalResult = await calculateSmartDScore(indicators, quoteData);
         
         return finalResult;
 
@@ -234,6 +277,7 @@ export async function getStrengthData(): Promise<StrengthData[]> {
                 return { currency: currency, data: [] };
             }
             
+            // FMP returns newest first, reverse for oldest first
             const data = historicalData.map(item => ({
                 date: item.date,
                 strength: item.close
