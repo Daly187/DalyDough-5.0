@@ -1,3 +1,9 @@
+
+'use client';
+
+import * as React from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
   Sidebar,
@@ -10,12 +16,69 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import SidebarNav from '@/components/sidebar-nav';
 import Header from '@/components/header';
+import { useToast } from '@/hooks/use-toast';
+import { onAuthStateChanged, User } from 'firebase/auth';
+import { auth, signOut } from '@/lib/firebase/auth';
+import { Button } from '@/components/ui/button';
+import { LogOut } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function AppLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [user, setUser] = React.useState<User | null>(null);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+      } else {
+        router.push('/login');
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [router]);
+
+  const handleSignOut = async () => {
+    const { error } = await signOut();
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Sign Out Failed",
+        description: error.message,
+      });
+    } else {
+      router.push('/login');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen w-full">
+        <div className="hidden md:flex flex-col gap-4 border-r bg-muted/40 p-2">
+            <div className="p-2">
+                <Skeleton className="h-8 w-40" />
+            </div>
+            <div className="flex flex-col gap-2 px-2">
+                {Array.from({ length: 10 }).map((_, i) => (
+                    <Skeleton key={i} className="h-8 w-full" />
+                ))}
+            </div>
+        </div>
+        <div className="flex-1 p-8">
+            <Skeleton className="h-full w-full" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <SidebarProvider>
       <Sidebar>
@@ -29,16 +92,22 @@ export default function AppLayout({
           <SidebarNav />
         </SidebarContent>
         <SidebarFooter>
-          <div className="flex items-center gap-3">
-            <Avatar>
-              <AvatarImage src="https://placehold.co/40x40.png" alt="@trader" />
-              <AvatarFallback>T</AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col">
-              <span className="text-sm font-medium text-foreground">John Trader</span>
-              <span className="text-xs text-muted-foreground">john.trader@email.com</span>
+            <div className='w-full space-y-2'>
+                <Button variant="ghost" onClick={handleSignOut} className="w-full justify-start">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sign Out
+                </Button>
+                <div className="flex items-center gap-3 border-t pt-2">
+                    <Avatar>
+                    <AvatarImage src={user?.photoURL ?? `https://placehold.co/40x40.png`} alt={user?.displayName ?? 'User'} />
+                    <AvatarFallback>{user?.displayName?.charAt(0) ?? user?.email?.charAt(0) ?? 'U'}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col overflow-hidden">
+                    <span className="text-sm font-medium text-foreground truncate">{user?.displayName ?? 'Welcome'}</span>
+                    <span className="text-xs text-muted-foreground truncate">{user?.email}</span>
+                    </div>
+                </div>
             </div>
-          </div>
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
