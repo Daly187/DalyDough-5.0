@@ -277,32 +277,30 @@ export async function getForexData(pair: string): Promise<DScore> {
 
 
 export async function getStrengthData(): Promise<StrengthData[]> {
-    const currencies = {
+    const currencyIndexes = {
         'USD': '^DXY',
-        'EUR': 'EURUSD',
-        'JPY': 'USDJPY', 
-        'GBP': 'GBPUSD',
-        'AUD': 'AUDUSD',
-        'CAD': 'USDCAD', 
-        'CHF': 'USDCHF', 
-        'NZD': 'NZDUSD'
+        'EUR': '^EXY',
+        'JPY': '^JXY', 
+        'GBP': '^BXY',
+        'AUD': '^AXY',
+        'CAD': '^CXY', 
+        'CHF': '^SXY', 
+        'NZD': '^ZXY'
     };
 
-    const promises = Object.entries(currencies).map(async ([currency, symbol]) => {
+    const promises = Object.entries(currencyIndexes).map(async ([currency, symbol]) => {
         const historicalData = await fetchHistorical(symbol, 11);
 
         if (!historicalData) {
-            return { currency, data: [] };
+            return { currency: `${currency} (${symbol.replace('^', '')})`, data: [] };
         }
-
-        const isInverted = ['USDJPY', 'USDCAD', 'USDCHF'].includes(symbol);
         
         const data = historicalData.map(item => ({
             date: item.date,
-            strength: isInverted ? 1 / item.close : item.close
+            strength: item.close
         })).reverse(); 
 
-        return { currency, data };
+        return { currency: `${currency} (${symbol.replace('^', '')})`, data };
     });
 
     return Promise.all(promises);

@@ -41,14 +41,17 @@ export default function StrengthTable({ strengthData }: StrengthTableProps) {
             <TableRow key={currency.currency}>
               <TableCell className="font-medium">{currency.currency}</TableCell>
               {elevenDays.slice(1).map((day, index) => {
+                // If there's no previous day data, we can't show a trend
+                if (index >= elevenDays.length - 1) {
+                    return <TableCell key={index} className="text-center">-</TableCell>;
+                }
                 const prevStrength = elevenDays[index].strength; // Compare with the previous day
                 const isUp = day.strength >= prevStrength;
-                const isDXY = currency.currency === 'USD';
 
                 return (
                   <TableCell key={index} className="text-center">
                     <div className="flex flex-col items-center justify-center">
-                        <span className="text-xs text-muted-foreground">{day.strength.toFixed(isDXY ? 2 : 4)}</span>
+                        <span className="text-xs text-muted-foreground">{day.strength.toFixed(2)}</span>
                         {isUp ? (
                             <ArrowUp className="h-5 w-5 text-green-500" />
                         ) : (
