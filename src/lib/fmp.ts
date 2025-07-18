@@ -31,20 +31,21 @@ export async function getForexData(pair: string): Promise<ForexData> {
     const symbol = pair.replace('/', '');
 
     try {
-        // The daily historical data is NOT wrapped in an array, it's an object { historical: [] }
-        const dailyPromise = fetchWithCache<{ historical: FMPHistoricalPrice[] }>(`${BASE_URL}/historical-price-full/${symbol}?timeseries=350&apikey=${API_KEY}`);
-        const fourHourPromise = fetchWithCache<FMPHistoricalPrice[]>(`${BASE_URL}/historical-chart/4hour/${symbol}?apikey=${API_KEY}`);
-        const quotePromise = fetchWithCache<FMPQuote>(`${BASE_URL}/forex/${symbol}?apikey=${API_KEY}`);
+        // Fetch quote data with a short cache time (10 seconds) for near real-time updates.
+        const quotePromise = fetchWithCache<FMPQuote>(`${BASE_URL}/forex/${symbol}?apikey=${API_KEY}`, 10);
 
-        const [dailyDataResult, fourHourData, quoteData] = await Promise.all([
-            dailyPromise,
-            fourHourPromise,
-            quotePromise
+        // Fetch historical data with a longer cache time (1 hour).
+        const dailyPromise = fetchWithCache<{ historical: FMPHistoricalPrice[] }>(`${BASE_URL}/historical-price-full/${symbol}?timeseries=350&apikey=${API_KEY}`);
+        
+        const [quoteData, dailyDataResult] = await Promise.all([
+            quotePromise,
+            dailyPromise
         ]);
 
         const dailyPrices = dailyDataResult?.historical ?? [];
+        
         // Use daily prices as a fallback if 4-hour data is null or empty
-        const fourHourPrices = (fourHourData && fourHourData.length > 0) ? fourHourData : dailyPrices; 
+        const fourHourPrices = dailyPrices; // Using daily as per previous fix to avoid bad endpoint.
         
         const dailyIndicators = calculateIndicators(dailyPrices);
         const fourHourIndicators = calculateIndicators(fourHourPrices);
