@@ -30,7 +30,7 @@ const signalConfig = {
     Buy: { color: "text-green-400", icon: <ArrowUp className="h-4 w-4" />, label: "Buy" },
     Sell: { color: "text-red-400", icon: <ArrowDown className="h-4 w-4" />, label: "Sell" },
     Block: { color: "text-muted-foreground", icon: <Minus className="h-4 w-4" />, label: "Block" },
-}
+};
 
 export default function MarketOverviewTable({ data, isLoading }: MarketOverviewTableProps) {
   const [sortKey, setSortKey] = React.useState<SortKey>('dScore');
@@ -90,7 +90,7 @@ export default function MarketOverviewTable({ data, isLoading }: MarketOverviewT
                   <SortableHeader tkey="dScore" label="D-Score" />
                   <SortableHeader tkey="trendAlignment" label="Trend" />
                   <SortableHeader tkey="adxStrength" label="ADX" />
-                  <SortableHeader tkey="rsiMomentum" label="RSI" />
+                  <SortableHeader tkey="macdMomentum" label="MACD" />
                   <TableHead className="text-right">Entry Signal</TableHead>
                 </TableRow>
               </TableHeader>
@@ -128,7 +128,7 @@ export default function MarketOverviewTable({ data, isLoading }: MarketOverviewT
                         </TableCell>
                         <TableCell className={cn(item.trendAlignment > 0 ? "text-green-400/80" : "text-red-400/80")}>{item.trendAlignment.toFixed(1)}</TableCell>
                         <TableCell>{item.adxStrength.toFixed(1)}</TableCell>
-                        <TableCell className={cn(item.rsiMomentum > 0 ? "text-green-400/80" : "text-red-400/80")}>{item.rsiMomentum.toFixed(1)}</TableCell>
+                        <TableCell className={cn(item.macdMomentum > 0 ? "text-green-400/80" : "text-red-400/80")}>{item.macdMomentum.toFixed(1)}</TableCell>
                         <TableCell className="text-right">
                           <div className={cn("flex items-center justify-end gap-2 font-medium", signal.color)}>
                               {signal.icon}

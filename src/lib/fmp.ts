@@ -52,19 +52,6 @@ function calculateAdxStrengthScore(indicators: IndicatorValues, trendDirection: 
     return trendDirection === 'up' ? score : -score;
 }
 
-function calculateRsiMomentumScore(indicators: IndicatorValues): number {
-    const rsi = indicators.daily.rsi || 50;
-    
-    let score = 0;
-    if (rsi > 65) score = 1.0;
-    else if (rsi < 35) score = -1.0;
-    else if (rsi > 55) score = 0.6;
-    else if (rsi < 45) score = -0.6;
-    else score = 0;
-
-    return score;
-}
-
 function calculateMacdMomentumScore(indicators: IndicatorValues): number {
     const macdItem = indicators.daily.macd;
     if (!macdItem || macdItem.macd === undefined || macdItem.histogram === undefined) return 0;
@@ -94,24 +81,6 @@ function calculateAtrVolatilityScore(indicators: IndicatorValues, trendDirection
     return trendDirection === 'up' ? score : -score;
 }
 
-function calculateBollingerBandsScore(indicators: IndicatorValues): number {
-    const bb = indicators.daily.bb;
-    const price = indicators.daily.price;
-
-    if (!bb || !price) return 0;
-
-    const { upper, lower } = bb;
-    if (!upper || !lower) return 0;
-    
-    const bandWidth = upper - lower;
-    if (bandWidth <= 0) return 0;
-
-    if (price > upper) return 0.5;
-    if (price < lower) return -0.5;
-
-    return 0;
-}
-
 function calculateOtherIndicatorScore(value: number | undefined, trendDirection: 'up' | 'down' | 'mixed'): number {
     if (trendDirection === 'mixed' || typeof value !== 'number' || isNaN(value)) {
         return 0;
@@ -130,10 +99,8 @@ function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMP
     const scores = {
         trendAlignment: trendAnalysis.score,
         adxStrength: calculateAdxStrengthScore(indicators, trendDirection),
-        rsiMomentum: calculateRsiMomentumScore(indicators),
         macdMomentum: calculateMacdMomentumScore(indicators),
         atrVolatility: calculateAtrVolatilityScore(indicators, trendDirection),
-        bollingerBands: calculateBollingerBandsScore(indicators),
         stochasticOscillator: calculateOtherIndicatorScore(stochValue, trendDirection),
         parabolicSAR: calculateOtherIndicatorScore(indicators.daily.sar, trendDirection), 
         cci: calculateOtherIndicatorScore(indicators.daily.cci, trendDirection),
@@ -169,10 +136,8 @@ function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMP
         lastUpdated,
         trendAlignment: scores.trendAlignment,
         adxStrength: scores.adxStrength,
-        rsiMomentum: scores.rsiMomentum,
         macdMomentum: scores.macdMomentum,
         atrVolatility: scores.atrVolatility,
-        bollingerBands: scores.bollingerBands,
         stochasticOscillator: scores.stochasticOscillator,
         parabolicSAR: scores.parabolicSAR,
         cci: scores.cci,
@@ -196,8 +161,8 @@ export async function getForexData(pair: string): Promise<DScore> {
     
     const defaultScore: DScore = {
         id: pair, pair: pair, price: 0, change: 0, changesPercentage: 0, dScore: 0, grade: 'C',
-        signal: 'Block', positions: 0, lastUpdated: 0, trendAlignment: 0, adxStrength: 0, rsiMomentum: 0, 
-        macdMomentum: 0, atrVolatility: 0, bollingerBands: 0, stochasticOscillator: 0, parabolicSAR: 0, 
+        signal: 'Block', positions: 0, lastUpdated: 0, trendAlignment: 0, adxStrength: 0, 
+        macdMomentum: 0, atrVolatility: 0, stochasticOscillator: 0, parabolicSAR: 0, 
         cci: 0, obv: 0, rawIndicators: {}
     };
 

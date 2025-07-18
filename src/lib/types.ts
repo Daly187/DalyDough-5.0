@@ -14,10 +14,8 @@ export type DScore = {
   // Score components
   trendAlignment: number;
   adxStrength: number;
-  rsiMomentum: number;
   macdMomentum: number;
   atrVolatility: number;
-  bollingerBands: number;
   stochasticOscillator: number;
   parabolicSAR: number;
   cci: number;

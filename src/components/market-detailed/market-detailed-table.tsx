@@ -42,7 +42,6 @@ const formatValue = (value: any, fixed: number = 2) => {
 
 const formatTimestamp = (timestamp?: any) => {
     if (typeof timestamp === 'number' && timestamp > 0) {
-        // Use a consistent format
         return format(new Date(timestamp * 1000), "yyyy-MM-dd HH:mm:ss");
     }
     return 'N/A';
@@ -116,10 +115,8 @@ export default function MarketDetailedTable({ data }: MarketDetailedTableProps) 
               <SortableHeader tkey="lastUpdated" label="Last Update" />
               <SortableHeader tkey="ema50" label="EMA 50" />
               <SortableHeader tkey="adx" label="ADX" />
-              <SortableHeader tkey="rsi" label="RSI" />
               <SortableHeader tkey="macd" label="MACD Hist" />
               <SortableHeader tkey="atr" label="ATR" />
-              <SortableHeader tkey="bb" label="BB" />
               <SortableHeader tkey="stochastic" label="Stoch" />
               <SortableHeader tkey="sar" label="SAR" />
               <SortableHeader tkey="cci" label="CCI" />
@@ -139,10 +136,8 @@ export default function MarketDetailedTable({ data }: MarketDetailedTableProps) 
                         <TableCell>{formatTimestamp(item.lastUpdated)}</TableCell>
                         <TableCell>{formatValue(indicators.ema50, 4)}</TableCell>
                         <TableCell>{formatValue(indicators.adx, 2)}</TableCell>
-                        <TableCell>{formatValue(indicators.rsi, 2)}</TableCell>
                         <TableCell>{formatValue(indicators.macd, 4)}</TableCell>
                         <TableCell>{formatValue(indicators.atr, 5)}</TableCell>
-                        <TableCell>{formatValue(indicators.bb, 4)}</TableCell>
                         <TableCell>{formatValue(indicators.stochastic, 2)}</TableCell>
                         <TableCell>{formatValue(indicators.sar, 4)}</TableCell>
                         <TableCell>{formatValue(indicators.cci, 2)}</TableCell>

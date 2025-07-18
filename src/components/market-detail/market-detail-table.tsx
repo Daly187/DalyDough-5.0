@@ -35,7 +35,6 @@ const formatValue = (value: any, fixed: number = 2) => {
 
 const formatTimestamp = (timestamp?: any) => {
     if (typeof timestamp === 'number' && timestamp > 0) {
-        // Use a consistent format
         return format(new Date(timestamp * 1000), "yyyy-MM-dd HH:mm:ss");
     }
     return 'N/A';
@@ -104,10 +103,8 @@ export default function MarketDetailTable({ data }: MarketDetailTableProps) {
               <SortableHeader tkey="signal" label="Signal" />
               <SortableHeader tkey="trendAlignment" label="Trend (3.0)" />
               <SortableHeader tkey="adxStrength" label="ADX (1.5)" />
-              <SortableHeader tkey="rsiMomentum" label="RSI (1.0)" />
               <SortableHeader tkey="macdMomentum" label="MACD (1.0)" />
               <SortableHeader tkey="atrVolatility" label="ATR (1.0)" />
-              <SortableHeader tkey="bollingerBands" label="BB (0.5)" />
               <SortableHeader tkey="stochasticOscillator" label="Stoch (0.5)" />
               <SortableHeader tkey="parabolicSAR" label="SAR (0.5)" />
               <SortableHeader tkey="cci" label="CCI (0.5)" />
@@ -140,10 +137,8 @@ export default function MarketDetailTable({ data }: MarketDetailTableProps) {
                 </TableCell>
                 <TableCell>{formatValue(item.trendAlignment, 1)}</TableCell>
                 <TableCell>{formatValue(item.adxStrength, 1)}</TableCell>
-                <TableCell>{formatValue(item.rsiMomentum, 1)}</TableCell>
                 <TableCell>{formatValue(item.macdMomentum, 1)}</TableCell>
                 <TableCell>{formatValue(item.atrVolatility, 1)}</TableCell>
-                <TableCell>{formatValue(item.bollingerBands, 1)}</TableCell>
                 <TableCell>{formatValue(item.stochasticOscillator, 1)}</TableCell>
                 <TableCell>{formatValue(item.parabolicSAR, 1)}</TableCell>
                 <TableCell>{formatValue(item.cci, 1)}</TableCell>
