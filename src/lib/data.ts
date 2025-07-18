@@ -97,7 +97,7 @@ export const calculateDScore = async (data: ForexData): Promise<DScore> => {
     atrVolatility: 0, bollingerBands: 0, stochasticOscillator: 0, parabolicSAR: 0, cci: 0, obv: 0,
   };
   
-  const quote = data.quote?.[0];
+  const quote = data.quote;
 
   if (!quote || !data.indicators) {
     return defaultScore;

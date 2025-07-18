@@ -161,6 +161,6 @@ export type CalculatedIndicators = {
 
 export type ForexData = {
     pair: string;
-    quote: FMPQuote[] | null;
+    quote: FMPQuote | null;
     indicators: CalculatedIndicators;
 };
