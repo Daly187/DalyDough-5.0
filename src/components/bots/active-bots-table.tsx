@@ -41,13 +41,14 @@ const statusConfig: Record<Bot['status'] | 'unknown', { label: string; color: st
 const BotRow = ({ bot, allPairs, isClosed }: { bot: Bot, allPairs: DScore[], isClosed?: boolean }) => {
     const [stopLoss, setStopLoss] = React.useState(bot.stopLoss ?? 50);
     const [takeProfit, setTakeProfit] = React.useState(bot.takeProfit ?? 100);
+    const [dScoreExit, setDScoreExit] = React.useState(bot.d_score_exit ?? 6.0);
     const [botStatus, setBotStatus] = React.useState(bot.status);
 
     const getCurrentDScore = (pair: string) => {
         return allPairs.find(p => p.pair === pair)?.dScore;
     }
     
-    const currentStatus = isClosed ? 'closed' : bot.status;
+    const currentStatus = isClosed ? 'closed' : botStatus;
     const config = statusConfig[currentStatus] || statusConfig.unknown;
     const currentDScore = getCurrentDScore(bot.pair);
 
@@ -62,9 +63,6 @@ const BotRow = ({ bot, allPairs, isClosed }: { bot: Bot, allPairs: DScore[], isC
             </TableCell>
             <TableCell className={cn(bot.profit_loss >= 0 ? 'text-green-400' : 'text-red-400')}>
                 {bot.profit_loss >= 0 ? '+' : ''}${bot.profit_loss.toFixed(2)}
-            </TableCell>
-            <TableCell className='text-yellow-400'>
-                ${bot.drawdown.toFixed(2)}
             </TableCell>
             <TableCell>{bot.d_score_entry.toFixed(1)}</TableCell>
             <TableCell>{isClosed ? bot.d_score_exit?.toFixed(1) ?? 'N/A' : currentDScore?.toFixed(1) ?? 'N/A'}</TableCell>
@@ -86,6 +84,14 @@ const BotRow = ({ bot, allPairs, isClosed }: { bot: Bot, allPairs: DScore[], isC
                             onChange={(e) => setTakeProfit(parseFloat(e.target.value))} 
                         />
                     </TableCell>
+                     <TableCell>
+                        <Input 
+                            type="number" 
+                            className="w-24 h-8"
+                            value={dScoreExit} 
+                            onChange={(e) => setDScoreExit(parseFloat(e.target.value))} 
+                        />
+                    </TableCell>
                     <TableCell>
                         <Select value={botStatus} onValueChange={(value) => setBotStatus(value as Bot['status'])}>
                             <SelectTrigger className="w-32 h-8">
@@ -95,6 +101,7 @@ const BotRow = ({ bot, allPairs, isClosed }: { bot: Bot, allPairs: DScore[], isC
                                 <SelectItem value="active">Active</SelectItem>
                                 <SelectItem value="paused">Pause</SelectItem>
                                 <SelectItem value="close_at_tp">Close at TP</SelectItem>
+                                <SelectItem value="close_now">Close Now</SelectItem>
                             </SelectContent>
                         </Select>
                     </TableCell>
@@ -131,13 +138,13 @@ export default function ActiveBotsTable({ data, allPairs, title, description, is
                     <TableHead>Strategy</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>P/L</TableHead>
-                    <TableHead>Drawdown</TableHead>
                     <TableHead>Entry D-Score</TableHead>
                     <TableHead>{isClosed ? 'Exit D-Score' : 'Current D-Score'}</TableHead>
                     {!isClosed && (
                         <>
                             <TableHead>Stop Loss</TableHead>
                             <TableHead>Take Profit</TableHead>
+                            <TableHead>D-Score Exit</TableHead>
                             <TableHead>Control</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                         </>
