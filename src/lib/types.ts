@@ -33,7 +33,6 @@ export type Bot = {
   strategy: string;
   status: 'active' | 'paused' | 'error' | 'close_at_tp' | 'closed';
   profit_loss: number;
-  drawdown: number;
   entry_time: string;
   d_score_entry: number;
   d_score_exit?: number;
@@ -91,7 +90,7 @@ export type StrengthData = {
   currency: string;
   data: {
     date: string;
-    strength: number;
+    strength: number; // This is the closing price
   }[];
 };
 

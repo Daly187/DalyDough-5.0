@@ -1,5 +1,5 @@
 
-import type { FMPHistoricalPrice, ForexData, CalculatedIndicators, FMPQuote, DScore, IndicatorSet } from './types';
+import type { FMPHistoricalPrice, ForexData, CalculatedIndicators, FMPQuote, DScore, IndicatorSet, StrengthData } from './types';
 import { calculateIndicators } from './indicators';
 
 const BASE_URL = 'https://financialmodelingprep.com/api/v3';
@@ -57,11 +57,11 @@ async function fetchWithCache<T>(url: string, ttl: number = 3600): Promise<T | n
 
 // SMART SCORING FUNCTIONS
 function getTrendDirection(price?: number, ema?: number): 'up' | 'down' {
-    if (!price || !ema) return 'down';
+    if (!price || !ema) return 'down'; // Default to down if data is missing
     return price >= ema ? 'up' : 'down';
 }
 
-function calculateTrendAlignment(indicators: IndicatorValues): { score: number, direction: 'up' | 'down' | 'mixed', signal: 'Buy' | 'Sell' | 'Block' } {
+function calculateTrendAlignment(indicators: IndicatorValues): { score: number, direction: 'up' | 'down' | 'mixed', signal: 'Buy' | 'Sell' | 'Block' | 'Buy weak' | 'Sell weak' } {
     const price4h = indicators.fourHour.price;
     const price1d = indicators.daily.price;
     const price1w = indicators.weekly.price;
@@ -82,10 +82,10 @@ function calculateTrendAlignment(indicators: IndicatorValues): { score: number, 
         return { score: 3.0, direction: 'down', signal: 'Sell' };
     }
     if (upTrends === 2 && downTrends === 0) {
-        return { score: 2.0, direction: 'up', signal: 'Buy' };
+        return { score: 2.0, direction: 'up', signal: 'Buy weak' };
     }
     if (downTrends === 2 && upTrends === 0) {
-        return { score: 2.0, direction: 'down', signal: 'Sell' };
+        return { score: 2.0, direction: 'down', signal: 'Sell weak' };
     }
     
     return { score: 1.0, direction: 'mixed', signal: 'Block' };
@@ -221,7 +221,7 @@ function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMP
     else if (totalScore >= 7.0) grade = 'B';
     
     let finalSignal = trendAnalysis.signal;
-    if (totalScore < 7.0) {
+    if (totalScore < 7.0 && (finalSignal === 'Buy' || finalSignal === 'Sell' || finalSignal === 'Buy weak' || finalSignal === 'Sell weak')) {
         finalSignal = 'Block';
     }
     
@@ -312,4 +312,38 @@ export async function getForexData(pair: string): Promise<DScore> {
         console.error(`❌ Failed to process data for ${pair}:`, error);
         return defaultScore;
     }
+}
+
+
+export async function getStrengthData(): Promise<StrengthData[]> {
+    const currencies = {
+        'USD': '^DXY',
+        'EUR': 'EURUSD',
+        'JPY': 'USDJPY', // Inverted
+        'GBP': 'GBPUSD',
+        'AUD': 'AUDUSD',
+        'CAD': 'USDCAD', // Inverted
+        'CHF': 'USDCHF', // Inverted
+        'NZD': 'NZDUSD'
+    };
+
+    const promises = Object.entries(currencies).map(async ([currency, symbol]) => {
+        const url = `${BASE_URL}/historical-price-full/${symbol}?timeseries=11&apikey=${API_KEY}`;
+        const historicalData = await fetchWithCache<FMPHistoricalPrice[]>(url, 3600);
+
+        if (!historicalData) {
+            return { currency, data: [] };
+        }
+
+        const isInverted = ['USDJPY', 'USDCAD', 'USDCHF'].includes(symbol);
+        
+        const data = historicalData.map(item => ({
+            date: item.date,
+            strength: isInverted ? 1 / item.close : item.close
+        })).reverse(); // FMP returns newest first, we want oldest first for trend calculation
+
+        return { currency, data };
+    });
+
+    return Promise.all(promises);
 }
