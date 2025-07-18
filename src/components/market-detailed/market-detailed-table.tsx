@@ -27,8 +27,14 @@ const formatValue = (value: any, fixed: number = 2) => {
     if (typeof value === 'number') {
         return value.toFixed(fixed);
     }
-    if (typeof value === 'object' && value !== null) {
-        return JSON.stringify(value);
+    if (typeof value === 'object' && value !== null && value.histogram !== undefined) {
+        return value.histogram.toFixed(4);
+    }
+    if (typeof value === 'object' && value !== null && value.k !== undefined) {
+        return value.k.toFixed(2);
+    }
+     if (typeof value === 'object' && value !== null && value.middle !== undefined) {
+        return value.middle.toFixed(4);
     }
     return value ?? 'N/A';
 };
@@ -50,8 +56,8 @@ export default function MarketDetailedTable({ data }: MarketDetailedTableProps) 
       let bValue: any;
 
       if (['pair', 'price', 'change', 'lastUpdated'].includes(sortKey)) {
-        aValue = a[sortKey as keyof Omit<DScore, 'rawIndicators'>];
-        bValue = b[sortKey as keyof Omit<DScore, 'rawIndicators'>];
+        aValue = a[sortKey as keyof Omit<DScore, 'rawIndicators' | 'rawIndicators'>];
+        bValue = b[sortKey as keyof Omit<DScore, 'rawIndicators' | 'rawIndicators'>];
       } else {
         aValue = a.rawIndicators?.[sortKey as keyof DScore['rawIndicators']];
         bValue = b.rawIndicators?.[sortKey as keyof DScore['rawIndicators']];
@@ -60,6 +66,10 @@ export default function MarketDetailedTable({ data }: MarketDetailedTableProps) 
       // Handle nested MACD object
       if (sortKey === 'macd' && typeof aValue === 'object' && aValue !== null) aValue = aValue.histogram;
       if (sortKey === 'macd' && typeof bValue === 'object' && bValue !== null) bValue = bValue.histogram;
+      if (sortKey === 'stochastic' && typeof aValue === 'object' && aValue !== null) aValue = aValue.k;
+      if (sortKey === 'stochastic' && typeof bValue === 'object' && bValue !== null) bValue = bValue.k;
+      if (sortKey === 'bb' && typeof aValue === 'object' && aValue !== null) aValue = aValue.middle;
+      if (sortKey === 'bb' && typeof bValue === 'object' && bValue !== null) bValue = bValue.middle;
 
 
       if (aValue === undefined || aValue === null) return 1;
@@ -121,17 +131,17 @@ export default function MarketDetailedTable({ data }: MarketDetailedTableProps) 
                     <TableRow key={item.pair}>
                         <TableCell className="font-medium">{item.pair}</TableCell>
                         <TableCell className="font-semibold text-primary">{formatValue(item.price, 5)}</TableCell>
-                        <TableCell className={cn(item.change && item.change >= 0 ? 'text-green-400' : 'text-red-400')}>
-                            {formatValue(item.change, 4)}
+                        <TableCell className={cn(item.change >= 0 ? 'text-green-400' : 'text-red-400')}>
+                            {formatValue(item.change, 4)} ({formatValue(item.changesPercentage, 2)}%)
                         </TableCell>
                         <TableCell>{formatTimestamp(item.lastUpdated)}</TableCell>
                         <TableCell>{formatValue(indicators.ema50, 4)}</TableCell>
                         <TableCell>{formatValue(indicators.adx, 2)}</TableCell>
                         <TableCell>{formatValue(indicators.rsi, 2)}</TableCell>
-                        <TableCell>{formatValue(indicators.macd?.histogram, 4)}</TableCell>
+                        <TableCell>{formatValue(indicators.macd, 4)}</TableCell>
                         <TableCell>{formatValue(indicators.atr, 5)}</TableCell>
-                        <TableCell>{formatValue(indicators.bb?.middle, 4)}</TableCell>
-                        <TableCell>{formatValue(indicators.stochastic?.k, 2)}</TableCell>
+                        <TableCell>{formatValue(indicators.bb, 4)}</TableCell>
+                        <TableCell>{formatValue(indicators.stochastic, 2)}</TableCell>
                         <TableCell>{formatValue(indicators.sar, 4)}</TableCell>
                         <TableCell>{formatValue(indicators.cci, 2)}</TableCell>
                     </TableRow>

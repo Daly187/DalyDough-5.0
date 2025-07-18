@@ -8,7 +8,8 @@ import type { FMPHistoricalPrice, IndicatorSet } from './types';
 
 // Helper function to prepare price data for the library
 const preparePriceData = (prices: FMPHistoricalPrice[]) => {
-    const reversed = [...prices].reverse(); // technicalindicators expects oldest-to-newest
+    // technicalindicators expects oldest-to-newest, but FMP provides newest-to-oldest.
+    const reversed = [...prices].reverse(); 
     return {
         open: reversed.map(p => p.open),
         high: reversed.map(p => p.high),

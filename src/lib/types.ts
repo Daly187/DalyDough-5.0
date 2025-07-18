@@ -126,8 +126,9 @@ export type ExposureData = {
 // FMP Types
 export type FMPQuote = {
     symbol: string;
-    bid: number;
-    ask: number;
+    name?: string; // name is sometimes included
+    bid?: number;
+    ask?: number;
     price: number;
     change: number;
     changesPercentage: number;
@@ -145,10 +146,11 @@ export type FMPHistoricalPrice = {
 
 // Locally Calculated Indicator Types
 export type IndicatorSet = {
+    price?: number;
     ema50?: number;
     adx?: number;
     rsi?: number;
-    macd?: { macd: number; signal: number; histogram: number };
+    macd?: { macd?: number; signal?: number; histogram?: number };
     atr?: number;
     bb?: { upper: number; middle: number; lower: number };
     stochastic?: { k: number; d: number };

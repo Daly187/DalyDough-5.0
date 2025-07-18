@@ -9,20 +9,21 @@ interface IndicatorValues {
   daily: any;
   fourHour: any;
   weekly: any;
+  pair: string;
 }
 
-interface ScoreWeights {
-  trendAlignment: number;
-  adxStrength: number;
-  rsiMomentum: number;
-  macdMomentum: number;
-  atrVolatility: number;
-  bollingerBands: number;
-  stochasticOscillator: number;
-  parabolicSAR: number;
-  cci: number;
-  obv: number;
-}
+const WEIGHTS = {
+    trendAlignment: 3.0,
+    adxStrength: 1.5,
+    rsiMomentum: 1.0,
+    macdMomentum: 1.0,
+    atrVolatility: 1.0,
+    bollingerBands: 0.5,
+    stochasticOscillator: 0.5,
+    parabolicSAR: 0.5,
+    cci: 0.5,
+};
+
 
 async function fetchWithCache<T>(url: string, ttl: number = 3600): Promise<T | null> {
     try {
@@ -53,74 +54,22 @@ async function fetchWithCache<T>(url: string, ttl: number = 3600): Promise<T | n
     }
 }
 
-// Bollinger Bands calculation function
-function calculateBollingerBands(prices: number[], period: number = 20, stdDevMultiplier: number = 2) {
-    if (prices.length < period) {
-        return { position: 0.5 };
-    }
-
-    const recentPrices = prices.slice(-period);
-    const sma = recentPrices.reduce((sum, price) => sum + price, 0) / period;
-    const variance = recentPrices.reduce((sum, price) => sum + Math.pow(price - sma, 2), 0) / period;
-    const stdDev = Math.sqrt(variance);
-    
-    if (stdDev === 0) {
-        return { position: 0.5 };
-    }
-    
-    const upperBand = sma + (stdDevMultiplier * stdDev);
-    const lowerBand = sma - (stdDevMultiplier * stdDev);
-    const currentPrice = prices[prices.length - 1];
-    const bandWidth = upperBand - lowerBand;
-    const position = bandWidth > 0 ? (currentPrice - lowerBand) / bandWidth : 0.5;
-    
-    return { position: Math.max(0, Math.min(1, position)) };
-}
-
-// Enhanced calculateIndicators function with fixed Bollinger Bands
-function calculateIndicatorsEnhanced(historicalData: FMPHistoricalPrice[], options: any = {}) {
-    try {
-        if (!historicalData || historicalData.length < 50) {
-            return {};
-        }
-
-        const closePrices = historicalData.map(d => d.close).filter(price => price && price > 0);
-        
-        if (closePrices.length < 50) {
-            return {};
-        }
-
-        const indicators = calculateIndicators(historicalData, options);
-        const { position: bollingerBandsPosition } = calculateBollingerBands(closePrices, options.bbPeriod || 20, options.bbStdDev || 2);
-        
-        return {
-            ...indicators,
-            bollingerBandsPosition: bollingerBandsPosition,
-            price: closePrices[closePrices.length - 1] // Add current price to indicators
-        };
-    } catch (error) {
-        console.error('Error calculating indicators:', error);
-        return {};
-    }
-}
 
 // SMART SCORING FUNCTIONS
-
-function getTrendDirection(ema: number, currentPrice: number): 'up' | 'down' {
-    if (!ema || !currentPrice) return 'down';
-    return currentPrice >= ema ? 'up' : 'down';
+function getTrendDirection(price?: number, ema?: number): 'up' | 'down' {
+    if (!price || !ema) return 'down';
+    return price >= ema ? 'up' : 'down';
 }
 
-
 function calculateTrendAlignment(indicators: IndicatorValues): { score: number, direction: 'up' | 'down' | 'mixed', signal: 'Buy' | 'Sell' | 'Block' } {
-    const price4h = indicators.fourHour.price || 0;
-    const price1d = indicators.daily.price || 0;
-    const price1w = indicators.weekly.price || 0;
+    const price4h = indicators.fourHour.price;
+    const price1d = indicators.daily.price;
+    const price1w = indicators.weekly.price;
 
     const trends = [
-        getTrendDirection(indicators.fourHour.ema50 || 0, price4h),
-        getTrendDirection(indicators.daily.ema50 || 0, price1d),
-        getTrendDirection(indicators.weekly.ema50 || 0, price1w)
+        getTrendDirection(price4h, indicators.fourHour.ema50),
+        getTrendDirection(price1d, indicators.daily.ema50),
+        getTrendDirection(price1w, indicators.weekly.ema50)
     ];
 
     const upTrends = trends.filter(t => t === 'up').length;
@@ -144,22 +93,14 @@ function calculateTrendAlignment(indicators: IndicatorValues): { score: number, 
 
 
 function calculateAdxStrengthScore(indicators: IndicatorValues): number {
-    const adxValues = [
-        indicators.daily.adx || 0,
-        indicators.fourHour.adx || 0,
-        indicators.weekly.adx || 0
-    ].filter(val => val > 0);
-
-    if (adxValues.length === 0) return 0;
-    
-    const avgAdx = adxValues.reduce((sum, val) => sum + val, 0) / adxValues.length;
+    const adx = indicators.daily.adx || 0;
     
     let score = 0;
-    if (avgAdx > 40) { // Stricter threshold for higher score
+    if (adx > 40) { 
         score = 1.5;
-    } else if (avgAdx > 25) { // Common threshold for trending
+    } else if (adx > 25) { 
         score = 1.0;
-    } else if (avgAdx > 20) {
+    } else if (adx > 20) {
         score = 0.5;
     }
 
@@ -170,12 +111,12 @@ function calculateRsiMomentumScore(indicators: IndicatorValues): number {
     const rsi = indicators.daily.rsi || 50;
     
     let score = 0;
-    if (rsi > 65 || rsi < 35) { // Strong momentum away from center
+    if (rsi > 65 || rsi < 35) { 
         score = 1.0;
-    } else if (rsi > 55 || rsi < 45) { // Moderate momentum
+    } else if (rsi > 55 || rsi < 45) {
         score = 0.6;
     } else {
-        score = 0.2; // Weak/neutral
+        score = 0.2;
     }
 
     return score;
@@ -185,17 +126,16 @@ function calculateMacdMomentumScore(indicators: IndicatorValues): number {
     const macdItem = indicators.daily.macd;
     if (!macdItem || macdItem.macd === undefined || macdItem.histogram === undefined) return 0;
     
-    // Score based on histogram expansion (momentum)
-    let score = 0;
-    if (Math.abs(macdItem.histogram) > Math.abs(macdItem.macd * 0.1)) { // Histogram is significant relative to MACD value
-        score = 1.0;
-    } else if (Math.abs(macdItem.histogram) > Math.abs(macdItem.macd * 0.05)) {
-        score = 0.6;
-    } else {
-        score = 0.2;
+    const isAligned = (macdItem.macd > 0 && macdItem.histogram > 0) || (macdItem.macd < 0 && macdItem.histogram < 0);
+    
+    if (isAligned) {
+      if (Math.abs(macdItem.histogram) > Math.abs(macdItem.macd * 0.1)) {
+          return 1.0;
+      } else {
+          return 0.6;
+      }
     }
-
-    return score;
+    return 0.2;
 }
 
 function calculateAtrVolatilityScore(indicators: IndicatorValues): number {
@@ -205,46 +145,56 @@ function calculateAtrVolatilityScore(indicators: IndicatorValues): number {
     
     let score = 0;
     if (atrPercent >= 0.5 && atrPercent <= 1.5) {
-        score = 1.0; // Optimal volatility
+        score = 1.0;
     } else if (atrPercent > 0.3 && atrPercent < 2.5) {
-        score = 0.6; // Acceptable volatility
+        score = 0.6;
     } else {
-        score = 0.2; // Too low or too high
+        score = 0.2;
     }
 
     return score;
 }
 
 function calculateBollingerBandsScore(indicators: IndicatorValues): number {
-    const bbPosition = indicators.daily.bollingerBandsPosition || 0.5;
+    const bb = indicators.daily.bb;
+    const price = indicators.daily.price;
+
+    if (!bb || !price) return 0;
+
+    const { upper, lower } = bb;
+    if (!upper || !lower) return 0;
     
-    let score = 0;
-    if (bbPosition > 0.9 || bbPosition < 0.1) {
-        score = 0.5; // At the edges, potential reversal or breakout
-    } else if (bbPosition > 0.7 || bbPosition < 0.3) {
-        score = 0.3;
-    } else {
-        score = 0.1; // Near the middle, less clear signal
+    const bandWidth = upper - lower;
+    if (bandWidth <= 0) return 0.1;
+
+    const position = (price - lower) / bandWidth;
+
+    if (position > 0.95 || position < 0.05) {
+        return 0.5; 
+    } else if (position > 0.8 || position < 0.2) {
+        return 0.3;
     }
     
-    return score;
+    return 0.1;
 }
 
-function calculateOtherIndicatorScore(value: number, name: string, maxScore: number): number {
+function calculateOtherIndicatorScore(value: number | undefined, name: string, maxScore: number): number {
     if (typeof value !== 'number' || isNaN(value)) {
         return 0;
     }
-    let score = 0;
-    if (value > 0.7) {
-        score = maxScore;
-    } else if (value > 0.5) {
-        score = maxScore * 0.6;
-    } else if (value > 0.3) {
-        score = maxScore * 0.3;
-    } else {
-        score = maxScore * 0.1;
+
+    let normalizedValue = value;
+    if (name === 'stochastic') normalizedValue = value / 100;
+    if (name === 'cci') normalizedValue = (value + 100) / 200; // Normalize from [-100, 100] to [0, 1]
+
+    if (normalizedValue > 0.7) {
+        return maxScore;
+    } else if (normalizedValue > 0.5) {
+        return maxScore * 0.6;
+    } else if (normalizedValue > 0.3) {
+        return maxScore * 0.3;
     }
-    return score;
+    return maxScore * 0.1;
 }
 
 function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMPQuote | null): DScore {
@@ -252,17 +202,16 @@ function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMP
     const trendAnalysis = calculateTrendAlignment(indicators);
     const stochValue = indicators.daily.stochastic?.k ?? 50;
 
-    const scores: ScoreWeights = {
+    const scores = {
         trendAlignment: trendAnalysis.score,
         adxStrength: calculateAdxStrengthScore(indicators),
         rsiMomentum: calculateRsiMomentumScore(indicators),
         macdMomentum: calculateMacdMomentumScore(indicators),
         atrVolatility: calculateAtrVolatilityScore(indicators),
         bollingerBands: calculateBollingerBandsScore(indicators),
-        stochasticOscillator: calculateOtherIndicatorScore(stochValue / 100, 'Stochastic', 0.5),
-        parabolicSAR: calculateOtherIndicatorScore(indicators.daily.sar || 0.5, 'Parabolic SAR', 0.5),
-        cci: calculateOtherIndicatorScore(indicators.daily.cci || 0.5, 'CCI', 0.5),
-        obv: 0 // OBV not used for forex
+        stochasticOscillator: calculateOtherIndicatorScore(stochValue, 'stochastic', 0.5),
+        parabolicSAR: 0, // Placeholder, SAR logic needs context
+        cci: calculateOtherIndicatorScore(indicators.daily.cci, 'cci', 0.5),
     };
 
     const totalScore = Object.values(scores).reduce((sum, score) => sum + score, 0);
@@ -271,22 +220,22 @@ function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMP
     if (totalScore >= 8.5) grade = 'A';
     else if (totalScore >= 7.0) grade = 'B';
     
-    let signal = trendAnalysis.signal;
+    let finalSignal = trendAnalysis.signal;
     if (totalScore < 7.0) {
-        signal = 'Block';
+        finalSignal = 'Block';
     }
     
     return {
-        id: indicators.daily.pair || '',
-        pair: indicators.daily.pair || '',
-        price: currentPriceData?.price || 0,
-        change: currentPriceData?.change || 0,
-        changesPercentage: currentPriceData?.changesPercentage || 0,
+        id: indicators.pair,
+        pair: indicators.pair,
+        price: currentPriceData?.price ?? indicators.daily.price ?? 0,
+        change: currentPriceData?.change ?? 0,
+        changesPercentage: currentPriceData?.changesPercentage ?? 0,
         dScore: parseFloat(totalScore.toFixed(1)),
         grade,
-        signal,
+        signal: finalSignal,
         positions: 0,
-        lastUpdated: currentPriceData?.timestamp || 0,
+        lastUpdated: currentPriceData?.timestamp ?? Math.floor(Date.now() / 1000),
         trendAlignment: scores.trendAlignment,
         adxStrength: scores.adxStrength,
         rsiMomentum: scores.rsiMomentum,
@@ -296,7 +245,7 @@ function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMP
         stochasticOscillator: scores.stochasticOscillator,
         parabolicSAR: scores.parabolicSAR,
         cci: scores.cci,
-        obv: scores.obv,
+        obv: 0,
         rawIndicators: {
             ema50: indicators.daily.ema50,
             adx: indicators.daily.adx,
@@ -323,15 +272,15 @@ export async function getForexData(pair: string): Promise<DScore> {
     };
 
     try {
-        const quotePromise = fetchWithCache<FMPQuote[]>(`${BASE_URL}/forex/${baseSymbol}?apikey=${API_KEY}`, 10);
-        const dailyPromise = fetchWithCache<{ historical: FMPHistoricalPrice[] }>(`${BASE_URL}/historical-price-full/${baseSymbol}?timeseries=350&apikey=${API_KEY}`, 3600);
-
+        const quotePromise = fetchWithCache<FMPQuote[]>(`${BASE_URL}/quote/${baseSymbol}?apikey=${API_KEY}`, 10);
+        const dailyPromise = fetchWithCache<FMPHistoricalPrice[]>(`${BASE_URL}/historical-price-full/${baseSymbol}?timeseries=350&apikey=${API_KEY}`, 3600);
+        
         const [quoteResult, dailyDataResult] = await Promise.all([quotePromise, dailyPromise]);
         
         const quoteData = quoteResult?.[0];
-        const dailyPrices = dailyDataResult?.historical;
+        const dailyPrices = dailyDataResult;
 
-        if (!dailyPrices || dailyPrices.length < 200) { // Increased minimum length for weekly EMA
+        if (!dailyPrices || dailyPrices.length < 200) { 
              return {
                 ...defaultScore,
                 price: quoteData?.price || 0,
@@ -344,14 +293,15 @@ export async function getForexData(pair: string): Promise<DScore> {
         const fourHourPrices = dailyPrices.slice(-100); 
         const weeklyPrices = dailyPrices.filter((_, idx) => idx % 5 === 0);
 
-        const dailyIndicators = calculateIndicatorsEnhanced(dailyPrices, { emaPeriod: 50 });
-        const fourHourIndicators = calculateIndicatorsEnhanced(fourHourPrices, { emaPeriod: 50 }); 
-        const weeklyIndicators = calculateIndicatorsEnhanced(weeklyPrices, { emaPeriod: 50 });
+        const dailyIndicators = calculateIndicators(dailyPrices);
+        const fourHourIndicators = calculateIndicators(fourHourPrices); 
+        const weeklyIndicators = calculateIndicators(weeklyPrices);
 
         const indicators: IndicatorValues = {
-            daily: { ...dailyIndicators, pair },
-            fourHour: { ...fourHourIndicators, pair },
-            weekly: { ...weeklyIndicators, pair }
+            daily: { ...dailyIndicators, price: dailyPrices[dailyPrices.length - 1]?.close },
+            fourHour: { ...fourHourIndicators, price: fourHourPrices[fourHourPrices.length - 1]?.close },
+            weekly: { ...weeklyIndicators, price: weeklyPrices[weeklyPrices.length - 1]?.close },
+            pair
         };
         
         const finalResult = calculateSmartDScore(indicators, quoteData || null);
