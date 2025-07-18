@@ -106,12 +106,9 @@ function calculateIndicatorsEnhanced(historicalData: FMPHistoricalPrice[], optio
 
 // SMART SCORING FUNCTIONS
 
-function getTrendDirection(ema: number, currentPrice: number): 'up' | 'down' | 'neutral' {
-    if (!ema || !currentPrice) return 'neutral';
-    const diff = ((currentPrice - ema) / ema) * 100;
-    if (diff > 0.05) return 'up'; // Use a small tolerance
-    if (diff < -0.05) return 'down';
-    return 'neutral';
+function getTrendDirection(ema: number, currentPrice: number): 'up' | 'down' {
+    if (!ema || !currentPrice) return 'down'; // Default to prevent errors, 'down' is arbitrary
+    return currentPrice >= ema ? 'up' : 'down';
 }
 
 function calculateTrendAlignment(indicators: IndicatorValues): { score: number, direction: 'up' | 'down' | 'mixed', signal: 'Buy' | 'Sell' | 'Block' } {
@@ -135,10 +132,10 @@ function calculateTrendAlignment(indicators: IndicatorValues): { score: number, 
         return { score: 3.0, direction: 'down', signal: 'Sell' };
     }
     if (upTrends === 2 && downTrends === 0) {
-        return { score: 2.0, direction: 'up', signal: 'Buy' }; // "Buy weak" -> "Buy"
+        return { score: 2.0, direction: 'up', signal: 'Buy' };
     }
     if (downTrends === 2 && upTrends === 0) {
-        return { score: 2.0, direction: 'down', signal: 'Sell' }; // "Sell weak" -> "Sell"
+        return { score: 2.0, direction: 'down', signal: 'Sell' };
     }
     
     // All other cases are mixed

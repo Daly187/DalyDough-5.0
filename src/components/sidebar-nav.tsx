@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/market-detail', label: 'Market Detail', icon: Columns3 },
+  { href: '/market-detail', label: 'D-Score Detailed', icon: Columns3 },
   { href: '/bots', label: 'Bots', icon: Bot },
   { href: '/autobot', label: 'Auto Bot', icon: Scan },
   { href: '/strength', label: 'Strength Index', icon: TrendingUp },
