@@ -45,6 +45,8 @@ const signalConfig = {
     Buy: { label: "Buy" },
     Sell: { label: "Sell" },
     Block: { label: "Block" },
+    'Buy weak': { label: "Buy weak" },
+    'Sell weak': { label: "Sell weak" },
 };
 
 export default function MarketDetailTable({ data }: MarketDetailTableProps) {
@@ -128,7 +130,9 @@ export default function MarketDetailTable({ data }: MarketDetailTableProps) {
                             "text-xs",
                             item.signal === 'Buy' && 'bg-green-500/20 text-green-400 border-green-500/30',
                             item.signal === 'Sell' && 'bg-red-500/20 text-red-400 border-red-500/30',
-                            item.signal === 'Block' && 'bg-gray-500/20 text-gray-400 border-gray-500/30'
+                            item.signal === 'Block' && 'bg-gray-500/20 text-gray-400 border-gray-500/30',
+                            item.signal === 'Buy weak' && 'bg-green-500/10 text-green-400/70 border-green-500/20',
+                            item.signal === 'Sell weak' && 'bg-red-500/10 text-red-400/70 border-red-500/20',
                         )}
                     >
                         {signalConfig[item.signal].label}
