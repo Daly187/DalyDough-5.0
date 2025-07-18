@@ -6,9 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Link, Download, KeyRound, RefreshCw } from "lucide-react";
+import { Link, Download, KeyRound, RefreshCw, Server } from "lucide-react";
 
-export default function AccountManagement() {
+export default function LinkAccountForm() {
     const [apiKey, setApiKey] = React.useState('');
 
     const generateApiKey = () => {
@@ -29,12 +29,16 @@ export default function AccountManagement() {
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 font-headline">
-                        <Link className="h-5 w-5" />
+                        <Server className="h-5 w-5" />
                         Link Trading Account
                     </CardTitle>
                     <CardDescription>Connect your MT4 or MT5 account to start trading.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="nickname">Account Nickname</Label>
+                        <Input id="nickname" placeholder="e.g., Main Profit Account" />
+                    </div>
                     <div className="space-y-2">
                         <Label htmlFor="platform">Platform</Label>
                         <Select>

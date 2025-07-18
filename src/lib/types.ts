@@ -51,6 +51,20 @@ export type ApiKey = {
   key: string;
 };
 
+export type TradeAccount = {
+  id: string; // Unique Account Number for MT5
+  nickname: string;
+  broker: string;
+  balance: number;
+  equity: number;
+  status: 'Connected' | 'Disconnected' | 'Error';
+  isPrimary: boolean;
+  copySettings?: {
+    enabled: boolean;
+    weight: number;
+  };
+};
+
 export type BotConfigurationData = {
   botType: string;
   lotSize: number;
