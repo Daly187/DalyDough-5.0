@@ -13,12 +13,17 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ChevronsRight, HelpCircle } from 'lucide-react';
-import type { Bot, DScore } from '@/lib/types';
+import { ChevronDown, ChevronRight, Power, PowerOff, Target, XCircle } from 'lucide-react';
+import type { Bot, DScore, AIReentry } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import ManageBotSheet from './manage-bot-sheet';
 import { aiReentriesData } from '@/lib/data';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
+import { Separator } from '../ui/separator';
+import { Label } from '../ui/label';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
+import { Input } from '../ui/input';
+import AiOptimizedReentries from '../autobot/ai-optimized-reentries';
 
 interface ActiveBotsTableProps {
   data: Bot[];
@@ -55,19 +60,117 @@ const statusConfig: Record<Bot['status'] | 'unknown', { label: string; color: st
     }
 }
 
+const statusOptions = [
+    { value: 'active', label: 'Active', icon: <Power className="h-4 w-4" /> },
+    { value: 'close_at_tp', label: 'Close at TP', icon: <Target className="h-4 w-4" /> },
+    { value: 'paused', label: 'Pause', icon: <PowerOff className="h-4 w-4" /> },
+    { value: 'closed', label: 'Close Now', icon: <XCircle className="h-4 w-4" /> }
+];
+
+
+const BotRow = ({ bot, allPairs, isClosed }: { bot: Bot, allPairs: DScore[], isClosed: boolean }) => {
+    const [isOpen, setIsOpen] = React.useState(false);
+    const [stopLoss, setStopLoss] = React.useState(bot.stopLoss ?? 50);
+    const [takeProfit, setTakeProfit] = React.useState(bot.takeProfit ?? 100);
+    const [botStatus, setBotStatus] = React.useState(bot.status);
+
+    const getCurrentDScore = (pair: string) => {
+        return allPairs.find(p => p.pair === pair)?.dScore;
+    }
+    
+    const currentStatus = isClosed ? 'closed' : bot.status;
+    const config = statusConfig[currentStatus] || statusConfig.unknown;
+    const currentDScore = getCurrentDScore(bot.pair);
+
+    return (
+        <Collapsible asChild key={bot.id}>
+            <>
+                <TableRow className="align-middle">
+                    {!isClosed && (
+                         <TableCell>
+                            <CollapsibleTrigger asChild>
+                                <Button variant="ghost" size="sm" className="w-9 p-0 data-[state=open]:rotate-90">
+                                    <ChevronRight className="h-4 w-4" />
+                                    <span className="sr-only">Toggle</span>
+                                </Button>
+                            </CollapsibleTrigger>
+                        </TableCell>
+                    )}
+                    <TableCell className="font-medium">{bot.pair}</TableCell>
+                    <TableCell>{bot.strategy}</TableCell>
+                    <TableCell>
+                        <Badge variant="outline" className={cn("flex items-center gap-1.5 w-fit", config.color)}>
+                            {config.label}
+                        </Badge>
+                    </TableCell>
+                    <TableCell className={cn(bot.profit_loss >= 0 ? 'text-green-400' : 'text-red-400')}>
+                        {bot.profit_loss >= 0 ? '+' : ''}${bot.profit_loss.toFixed(2)}
+                    </TableCell>
+                    <TableCell className='text-yellow-400'>
+                        ${bot.drawdown.toFixed(2)}
+                    </TableCell>
+                    <TableCell>{bot.d_score_entry.toFixed(1)}</TableCell>
+                    <TableCell>{isClosed ? bot.d_score_exit?.toFixed(1) : currentDScore?.toFixed(1) ?? 'N/A'}</TableCell>
+                    {isClosed && <TableCell></TableCell>}
+                </TableRow>
+                <CollapsibleContent asChild>
+                    <TableRow>
+                        <TableCell colSpan={8} className="p-0">
+                            <div className="p-4 bg-muted/50">
+                                <h4 className="font-bold text-lg mb-4">Manage Bot: {bot.pair}</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-4">
+                                        <Label className="font-semibold">Status Control</Label>
+                                        <RadioGroup value={botStatus} onValueChange={(value) => setBotStatus(value as Bot['status'])} className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                                            {statusOptions.map((option) => (
+                                                <Label 
+                                                    key={option.value}
+                                                    htmlFor={`status-${bot.id}-${option.value}`}
+                                                    className={cn(
+                                                        "flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer",
+                                                        botStatus === option.value && "border-primary"
+                                                    )}
+                                                >
+                                                    <RadioGroupItem value={option.value} id={`status-${bot.id}-${option.value}`} className="sr-only" />
+                                                    {option.icon}
+                                                    <span className="mt-2 text-sm font-medium">{option.label}</span>
+                                                </Label>
+                                            ))}
+                                        </RadioGroup>
+                                        
+                                        <Separator className="my-4" />
+
+                                        <Label className="font-semibold">Trade Parameters</Label>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <Label htmlFor={`stopLoss-${bot.id}`}>Stop Loss ($)</Label>
+                                                <Input id={`stopLoss-${bot.id}`} type="number" value={stopLoss} onChange={(e) => setStopLoss(parseFloat(e.target.value))} />
+                                            </div>
+                                            <div>
+                                                <Label htmlFor={`takeProfit-${bot.id}`}>Take Profit ($)</Label>
+                                                <Input id={`takeProfit-${bot.id}`} type="number" value={takeProfit} onChange={(e) => setTakeProfit(parseFloat(e.target.value))} />
+                                            </div>
+                                        </div>
+                                         <Button className="w-full">Update Bot</Button>
+                                    </div>
+                                    <div className="space-y-4">
+                                        <Label className="font-semibold">AI Optimized Re-entries</Label>
+                                         <AiOptimizedReentries reentries={aiReentriesData} />
+                                    </div>
+                                </div>
+                            </div>
+                        </TableCell>
+                    </TableRow>
+                </CollapsibleContent>
+            </>
+        </Collapsible>
+    );
+}
+
+
 export default function ActiveBotsTable({ data, allPairs, title, description, isClosed = false }: ActiveBotsTableProps) {
-  const [selectedBot, setSelectedBot] = React.useState<Bot | null>(null);
-
-  const handleManageClick = (bot: Bot) => {
-    setSelectedBot(bot);
-  };
   
-  const getCurrentDScore = (pair: string) => {
-    return allPairs.find(p => p.pair === pair)?.dScore;
-  }
-
   return (
-    <>
       <Card>
           <CardHeader>
               <CardTitle className="font-headline">{title}</CardTitle>
@@ -78,6 +181,7 @@ export default function ActiveBotsTable({ data, allPairs, title, description, is
               <Table>
                 <TableHeader>
                   <TableRow>
+                    {!isClosed && <TableHead className="w-[50px]">Expand</TableHead>}
                     <TableHead>Pair</TableHead>
                     <TableHead>Strategy</TableHead>
                     <TableHead>Status</TableHead>
@@ -85,50 +189,17 @@ export default function ActiveBotsTable({ data, allPairs, title, description, is
                     <TableHead>Drawdown</TableHead>
                     <TableHead>Entry D-Score</TableHead>
                     <TableHead>{isClosed ? 'Exit D-Score' : 'Current D-Score'}</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    {isClosed && <TableHead></TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.map((bot) => {
-                    const currentStatus = isClosed ? 'closed' : bot.status;
-                    const config = statusConfig[currentStatus] || statusConfig.unknown;
-                    return (
-                      <TableRow key={bot.id}>
-                        <TableCell className="font-medium">{bot.pair}</TableCell>
-                        <TableCell>{bot.strategy}</TableCell>
-                        <TableCell>
-                            <Badge variant="outline" className={cn("flex items-center gap-1.5 w-fit", config.color)}>
-                                {config.label}
-                            </Badge>
-                        </TableCell>
-                        <TableCell className={cn(bot.profit_loss >= 0 ? 'text-green-400' : 'text-red-400')}>
-                            {bot.profit_loss >= 0 ? '+' : ''}${bot.profit_loss.toFixed(2)}
-                        </TableCell>
-                         <TableCell className='text-yellow-400'>
-                            ${bot.drawdown.toFixed(2)}
-                        </TableCell>
-                        <TableCell>{bot.d_score_entry.toFixed(1)}</TableCell>
-                        <TableCell>{isClosed ? bot.d_score_exit?.toFixed(1) : getCurrentDScore(bot.pair)?.toFixed(1) ?? 'N/A'}</TableCell>
-                        <TableCell className="text-right">
-                           <Button variant="ghost" size="sm" onClick={() => !isClosed && handleManageClick(bot)}>
-                              {isClosed ? 'Analyze' : 'Manage'} <ChevronsRight className="h-4 w-4 ml-2" />
-                           </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                  {data.map((bot) => (
+                    <BotRow key={bot.id} bot={bot} allPairs={allPairs} isClosed={isClosed} />
+                  ))}
                 </TableBody>
               </Table>
             </ScrollArea>
           </CardContent>
         </Card>
-        <ManageBotSheet
-          isOpen={!!selectedBot}
-          onOpenChange={(open) => !open && setSelectedBot(null)}
-          botData={selectedBot}
-          reentries={aiReentriesData}
-          currentDScore={getCurrentDScore(selectedBot?.pair || '')}
-        />
-    </>
   );
 }
