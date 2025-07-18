@@ -1,5 +1,5 @@
 
-import type { FMPHistoricalPrice, ForexData, CalculatedIndicators } from './types';
+import type { FMPHistoricalPrice, ForexData, CalculatedIndicators, FMPQuote } from './types';
 import { calculateIndicators } from './indicators';
 
 const BASE_URL = 'https://financialmodelingprep.com/api/v3';
@@ -31,28 +31,34 @@ export async function getForexData(pair: string): Promise<ForexData> {
     const symbol = pair.replace('/', '');
 
     try {
-        // 1. Fetch historical data for all required timeframes
-        const dailyPromise = fetchWithCache<{ historical: FMPHistoricalPrice[] }>(`${BASE_URL}/historical-price-full/${symbol}?timeseries=100&apikey=${API_KEY}`);
+        // Fetch historical data for daily and 4-hour timeframes
+        // We fetch a longer daily series to calculate weekly indicators from it
+        const dailyPromise = fetchWithCache<{ historical: FMPHistoricalPrice[] }>(`${BASE_URL}/historical-price-full/${symbol}?timeseries=350&apikey=${API_KEY}`);
         const fourHourPromise = fetchWithCache<FMPHistoricalPrice[]>(`${BASE_URL}/historical-chart/4hour/${symbol}?apikey=${API_KEY}`);
-        const weeklyPromise = fetchWithCache<FMPHistoricalPrice[]>(`${BASE_URL}/historical-chart/weekly/${symbol}?apikey=${API_KEY}`);
-        const quotePromise = fetchWithCache<any[]>(`${BASE_URL}/forex/${symbol}?apikey=${API_KEY}`);
+        const quotePromise = fetchWithCache<FMPQuote[]>(`${BASE_URL}/forex/${symbol}?apikey=${API_KEY}`);
 
-        const [dailyData, fourHourData, weeklyData, quoteData] = await Promise.all([
+        const [dailyData, fourHourData, quoteData] = await Promise.all([
             dailyPromise,
             fourHourPromise,
-            weeklyPromise,
             quotePromise
         ]);
 
         const dailyPrices = dailyData?.historical ?? [];
         const fourHourPrices = fourHourData ?? [];
-        const weeklyPrices = weeklyData ?? [];
         
-        // 2. Calculate indicators locally
+        // Calculate indicators locally from the fetched price data
+        const dailyIndicators = calculateIndicators(dailyPrices);
+        const fourHourIndicators = calculateIndicators(fourHourPrices);
+
+        // Simulate weekly indicators from daily data
+        // For EMA, we use a period of 50*5 (5 trading days) to approximate a 50-week EMA.
+        // For other indicators, we can use standard daily periods as a proxy.
+        const weeklyIndicators = calculateIndicators(dailyPrices, { emaPeriod: 250 });
+
         const indicators: CalculatedIndicators = {
-            daily: calculateIndicators(dailyPrices),
-            fourHour: calculateIndicators(fourHourPrices),
-            weekly: calculateIndicators(weeklyPrices),
+            daily: dailyIndicators,
+            fourHour: fourHourIndicators,
+            weekly: weeklyIndicators,
         };
 
         return {
