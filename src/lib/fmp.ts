@@ -22,11 +22,17 @@ async function fetchWithCache<T>(url: string, ttl: number = 3600): Promise<T | n
             return null;
         }
         
-        const data = await res.json();
+        let data = await res.json();
         
         if (!data || (data && (data['Error Message'] || data.error))) {
             console.warn(`FMP API Warning for ${url}: ${data?.['Error Message'] || data?.error || 'No data returned'}`);
             return null;
+        }
+
+        // FMP can return a single object for some symbols instead of an array.
+        // This ensures the return value is always an array if it's not already.
+        if (typeof data === 'object' && !Array.isArray(data) && data !== null) {
+            data = [data];
         }
 
         if (Array.isArray(data) && data.length === 0) {
