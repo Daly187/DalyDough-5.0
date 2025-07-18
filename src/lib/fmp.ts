@@ -251,7 +251,8 @@ export async function getForexData(pair: string): Promise<DScore> {
                 price: quoteData?.price || 0,
                 change: quoteData?.change || 0,
                 changesPercentage: quoteData?.changesPercentage || 0,
-                lastUpdated: quoteData?.timestamp || 0
+                lastUpdated: quoteData?.timestamp || 0,
+                signal: 'Block' // Ensure signal is block if not enough data
             };
         }
 
@@ -295,6 +296,7 @@ export async function getStrengthData(): Promise<StrengthData[]> {
             return { currency: `${currency} (${symbol.replace('^', '')})`, data: [] };
         }
         
+        // Reverse the array to have the oldest data first for trend calculation
         const data = historicalData.map(item => ({
             date: item.date,
             strength: item.close
