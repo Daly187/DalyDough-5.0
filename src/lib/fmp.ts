@@ -1,3 +1,4 @@
+
 import type { FMPHistoricalPrice, ForexData, CalculatedIndicators, FMPQuote, DScore, IndicatorSet } from './types';
 import { calculateIndicators } from './indicators';
 
@@ -113,46 +114,37 @@ function getTrendDirection(ema: number, currentPrice: number): 'up' | 'down' | '
     return 'neutral';
 }
 
-// UPDATED: Calculate trend alignment and return the overall trend direction
-function calculateTrendAlignment(indicators: IndicatorValues): { score: number, direction: 'up' | 'down' | 'mixed' } {
+function calculateTrendAlignment(indicators: IndicatorValues): { score: number, direction: 'up' | 'down' | 'mixed', signal: 'Buy' | 'Sell' | 'Block' } {
     const price4h = indicators.fourHour.price || 0;
     const price1d = indicators.daily.price || 0;
     const price1w = indicators.weekly.price || 0;
 
-    const trends = {
-        fourHour: getTrendDirection(indicators.fourHour.ema50 || 0, price4h),
-        daily: getTrendDirection(indicators.daily.ema50 || 0, price1d),
-        weekly: getTrendDirection(indicators.weekly.ema50 || 0, price1w)
-    };
+    const trends = [
+        getTrendDirection(indicators.fourHour.ema50 || 0, price4h),
+        getTrendDirection(indicators.daily.ema50 || 0, price1d),
+        getTrendDirection(indicators.weekly.ema50 || 0, price1w)
+    ];
 
-    // DEBUG LOGGING - Add this to see what's happening
-    console.log('=== TREND ANALYSIS DEBUG ===');
-    console.log('4H: Price =', price4h, 'EMA50 =', indicators.fourHour.ema50, 'Trend =', trends.fourHour);
-    console.log('Daily: Price =', price1d, 'EMA50 =', indicators.daily.ema50, 'Trend =', trends.daily);
-    console.log('Weekly: Price =', price1w, 'EMA50 =', indicators.weekly.ema50, 'Trend =', trends.weekly);
-
-    const upTrends = Object.values(trends).filter(t => t === 'up').length;
-    const downTrends = Object.values(trends).filter(t => t === 'down').length;
-
-    console.log('Up trends:', upTrends, 'Down trends:', downTrends);
+    const upTrends = trends.filter(t => t === 'up').length;
+    const downTrends = trends.filter(t => t === 'down').length;
 
     if (upTrends === 3) {
-        console.log('Result: ALL UP → Buy signal');
-        return { score: 3.0, direction: 'up' };
-    } else if (downTrends === 3) {
-        console.log('Result: ALL DOWN → Sell signal');
-        return { score: 3.0, direction: 'down' };
-    } else if ((upTrends === 2 && downTrends === 0)) {
-        console.log('Result: MOSTLY UP → Buy signal');
-        return { score: 2.0, direction: 'up' };
-    } else if ((downTrends === 2 && upTrends === 0)) {
-        console.log('Result: MOSTLY DOWN → Sell signal');
-        return { score: 2.0, direction: 'down' };
-    } else {
-        console.log('Result: MIXED → Block signal');
-        return { score: 1.0, direction: 'mixed' };
+        return { score: 3.0, direction: 'up', signal: 'Buy' };
     }
+    if (downTrends === 3) {
+        return { score: 3.0, direction: 'down', signal: 'Sell' };
+    }
+    if (upTrends === 2 && downTrends === 0) {
+        return { score: 2.0, direction: 'up', signal: 'Buy' }; // "Buy weak" -> "Buy"
+    }
+    if (downTrends === 2 && upTrends === 0) {
+        return { score: 2.0, direction: 'down', signal: 'Sell' }; // "Sell weak" -> "Sell"
+    }
+    
+    // All other cases are mixed
+    return { score: 1.0, direction: 'mixed', signal: 'Block' };
 }
+
 
 function calculateAdxStrengthScore(indicators: IndicatorValues): number {
     const adxValues = [
@@ -242,8 +234,9 @@ function calculateBollingerBandsScore(indicators: IndicatorValues): number {
 }
 
 function calculateOtherIndicatorScore(value: number, name: string, maxScore: number): number {
-    // Generic scoring for remaining indicators
-    if (isNaN(value)) return 0;
+    if (typeof value !== 'number' || isNaN(value)) {
+        return 0;
+    }
     let score = 0;
     if (value > 0.7) {
         score = maxScore;
@@ -257,12 +250,11 @@ function calculateOtherIndicatorScore(value: number, name: string, maxScore: num
     return score;
 }
 
-// UPDATED: Main scoring function with simplified signal logic based purely on trend direction
 function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMPQuote | null): DScore {
 
-    const stochValue = indicators.daily.stochastic?.k ?? 50;
     const trendAnalysis = calculateTrendAlignment(indicators);
-    
+    const stochValue = indicators.daily.stochastic?.k ?? 50;
+
     const scores: ScoreWeights = {
         trendAlignment: trendAnalysis.score,
         adxStrength: calculateAdxStrengthScore(indicators),
@@ -270,7 +262,7 @@ function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMP
         macdMomentum: calculateMacdMomentumScore(indicators),
         atrVolatility: calculateAtrVolatilityScore(indicators),
         bollingerBands: calculateBollingerBandsScore(indicators),
-        stochasticOscillator: calculateOtherIndicatorScore(stochValue / 100, 'Stochastic', 0.5), // Normalize to 0-1
+        stochasticOscillator: calculateOtherIndicatorScore(stochValue / 100, 'Stochastic', 0.5),
         parabolicSAR: calculateOtherIndicatorScore(indicators.daily.sar || 0.5, 'Parabolic SAR', 0.5),
         cci: calculateOtherIndicatorScore(indicators.daily.cci || 0.5, 'CCI', 0.5),
         obv: calculateOtherIndicatorScore(indicators.daily.obv || 0.5, 'OBV', 0.5)
@@ -282,16 +274,11 @@ function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMP
     if (totalScore >= 8.5) grade = 'A';
     else if (totalScore >= 7.0) grade = 'B';
     
-    // SIMPLIFIED SIGNAL LOGIC: Based purely on trend direction
-    let signal: 'Buy' | 'Sell' | 'Block' = 'Block';
-    
-    if (trendAnalysis.direction === 'up') {
-        signal = 'Buy';
-    } else if (trendAnalysis.direction === 'down') {
-        signal = 'Sell';
+    let signal: 'Buy' | 'Sell' | 'Block' = trendAnalysis.signal;
+    if (totalScore < 7.0) {
+        signal = 'Block';
     }
-    // If direction is 'mixed', signal stays 'Block'
-
+    
     return {
         id: indicators.daily.pair || '',
         pair: indicators.daily.pair || '',
@@ -315,6 +302,7 @@ function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMP
         obv: scores.obv
     };
 }
+
 
 export async function getForexData(pair: string): Promise<DScore> {
     const baseSymbol = pair.replace('/', '');
