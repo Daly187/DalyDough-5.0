@@ -16,7 +16,7 @@ function getTrendDirection(price?: number, ema?: number): Direction | 'mixed' {
     return price >= ema ? 'up' : 'down';
 }
 
-// --- IMPROVED TREND ALIGNMENT SCORING ---
+// --- NEW TREND ALIGNMENT SCORING (EMA STACK) ---
 function calculateTrendAlignment(indicators: IndicatorValues): { score: number, direction: Direction | 'mixed' } {
     const { daily } = indicators;
     const price = daily.price;
@@ -31,6 +31,7 @@ function calculateTrendAlignment(indicators: IndicatorValues): { score: number, 
     const downCount = trends.filter(t => t === 'down').length;
 
     let score = 0;
+    // Score based on how many EMAs the price is above or below
     if (upCount === 3) {
         score = 4.0; // Perfect bullish alignment
     } else if (downCount === 3) {
@@ -47,7 +48,6 @@ function calculateTrendAlignment(indicators: IndicatorValues): { score: number, 
     
     return { score, direction: finalDirection };
 }
-
 
 function calculateAdxStrengthScore(indicators: IndicatorValues, trendDirection: Direction | 'mixed'): number {
     const adx = indicators.daily.adx || 0;
@@ -74,13 +74,16 @@ function calculateMacdMomentumScore(indicators: IndicatorValues, trendDirection:
 
     if (!isAlignedUp && !isAlignedDown) return 0;
     
+    // Use a baseline from a major pair like EURUSD as a reference for histogram strength
+    const typicalHistogramThreshold = 0.0005;
     const histogramAbs = Math.abs(macdItem.histogram);
     let score = 0;
-    if (histogramAbs > 0.0005) { // Threshold for strong momentum, may need tuning per pair
-        score = 1.0;
+    if (histogramAbs > typicalHistogramThreshold) {
+        score = 1.0; // Strong momentum
     } else if (histogramAbs > 0) {
         score = 0.5; // Weaker but still aligned momentum
     }
+
     return isAlignedUp ? score : -score;
 }
 
@@ -94,11 +97,11 @@ function calculateAtrVolatilityScore(indicators: IndicatorValues, trendDirection
 
     let score = 0;
     // Tiered scoring: more points for healthy (but not extreme) volatility
-    if (atrPercent > 0.7) { // Very high volatility
+    if (atrPercent > 0.7) { // Very high volatility (might be risky)
       score = 1.0;
-    } else if (atrPercent > 0.35) { // Healthy volatility
+    } else if (atrPercent > 0.35) { // Healthy, trending volatility
       score = 1.5;
-    } else if (atrPercent > 0.15) { // Minimal volatility
+    } else if (atrPercent > 0.15) { // Minimal volatility (less ideal for trends)
       score = 0.5;
     }
 
@@ -116,17 +119,20 @@ function calculateConfirmationScore(indicators: IndicatorValues, trendDirection:
     if (price === undefined || stoch === undefined || sar === undefined || cci === undefined) return 0;
 
     let confirmations = 0;
+    // For buy signals, we don't want stochastics to be overbought yet
     if (trendDirection === 'up') {
-        if (stoch > 20) confirmations++;
+        if (stoch < 80) confirmations++;
         if (sar < price) confirmations++; 
         if (cci > 0) confirmations++;
     } else { // 'down'
-        if (stoch < 80) confirmations++;
+        // For sell signals, we don't want stochastics to be oversold yet
+        if (stoch > 20) confirmations++;
         if (sar > price) confirmations++;
         if (cci < 0) confirmations++;
     }
 
-    const score = (confirmations / 3) * 1.0; // Prorated score based on number of confirmations
+    // Prorated score based on number of confirmations (max 1.0)
+    const score = (confirmations / 3) * 1.0; 
     return trendDirection === 'up' ? score : -score;
 }
 
@@ -200,7 +206,7 @@ export async function getForexData(pair: string): Promise<DScore> {
 
     try {
         const quotePromise = fetchQuote(baseSymbol);
-        const dailyPromise = fetchHistorical(baseSymbol, 350);
+        const dailyPromise = fetchHistorical(baseSymbol, 350); // Fetch enough data for indicators
 
         const [quoteResult, dailyDataResult] = await Promise.all([quotePromise, dailyPromise]);
 
