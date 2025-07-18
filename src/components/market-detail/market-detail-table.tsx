@@ -23,7 +23,7 @@ interface MarketDetailTableProps {
 
 type ProcessedData = DScore;
 
-type SortKey = 'pair' | 'price' | 'change' | 'lastUpdated' | 'dScore';
+type SortKey = keyof DScore;
 
 const formatValue = (value: any, fixed: number = 2) => {
     if (typeof value === 'number') {
@@ -34,7 +34,7 @@ const formatValue = (value: any, fixed: number = 2) => {
 
 const formatTimestamp = (timestamp?: any) => {
     if (typeof timestamp === 'number' && timestamp > 0) {
-        return new Date(timestamp).toLocaleString();
+        return new Date(timestamp * 1000).toLocaleString();
     }
     return 'N/A';
 };
@@ -97,16 +97,16 @@ export default function MarketDetailTable({ data }: MarketDetailTableProps) {
               <SortableHeader tkey="change" label="Change" />
               <SortableHeader tkey="lastUpdated" label="Last Update" />
               <SortableHeader tkey="dScore" label="D-Score" />
-              <TableHead>Signal</TableHead>
-              <TableHead>Trend (3.0)</TableHead>
-              <TableHead>ADX (1.5)</TableHead>
-              <TableHead>RSI (1.0)</TableHead>
-              <TableHead>MACD (1.0)</TableHead>
-              <TableHead>ATR (1.0)</TableHead>
-              <TableHead>BB (0.5)</TableHead>
-              <TableHead>Stoch (0.5)</TableHead>
-              <TableHead>SAR (0.5)</TableHead>
-              <TableHead>CCI (0.5)</TableHead>
+              <SortableHeader tkey="signal" label="Signal" />
+              <SortableHeader tkey="trendAlignment" label="Trend (3.0)" />
+              <SortableHeader tkey="adxStrength" label="ADX (1.5)" />
+              <SortableHeader tkey="rsiMomentum" label="RSI (1.0)" />
+              <SortableHeader tkey="macdMomentum" label="MACD (1.0)" />
+              <SortableHeader tkey="atrVolatility" label="ATR (1.0)" />
+              <SortableHeader tkey="bollingerBands" label="BB (0.5)" />
+              <SortableHeader tkey="stochasticOscillator" label="Stoch (0.5)" />
+              <SortableHeader tkey="parabolicSAR" label="SAR (0.5)" />
+              <SortableHeader tkey="cci" label="CCI (0.5)" />
             </TableRow>
           </TableHeader>
           <TableBody>
