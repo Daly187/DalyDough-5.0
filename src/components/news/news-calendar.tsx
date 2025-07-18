@@ -87,7 +87,7 @@ export default function NewsCalendar({ events, currencies, impacts }: NewsCalend
                 </SelectContent>
             </Select>
         </div>
-        <ScrollArea className="h-[500px]">
+        <ScrollArea className="h-[75vh]">
             <Table>
                 <TableHeader>
                     <TableRow>
