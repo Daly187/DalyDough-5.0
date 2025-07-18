@@ -1,8 +1,8 @@
 
-import type { DScore, FMPQuote, StrengthData, NewsEvent } from './types';
+import type { DScore, FMPQuote, NewsEvent } from './types';
 import { calculateIndicators } from './indicators';
 import { fetchHistorical, fetchQuote, fetchEconomicCalendar } from './api/fmp-api';
-import { format, startOfWeek, endOfWeek, addDays } from 'date-fns';
+import { format, startOfWeek, endOfWeek } from 'date-fns';
 
 interface IndicatorValues {
   daily: ReturnType<typeof calculateIndicators>;
