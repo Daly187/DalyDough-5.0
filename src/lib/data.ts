@@ -126,7 +126,7 @@ export const calculateDScore = async (data: ForexData): Promise<DScore> => {
   if (totalScore >= 7.0 && daily.ema50 && price < daily.ema50) signal = 'Sell';
 
   const change = quote?.changes ?? 0;
-  const changesPercentage = quote.open !== 0 ? (change / quote.open) * 100 : 0;
+  const changesPercentage = (quote.open && quote.open !== 0) ? (change / quote.open) * 100 : 0;
 
   return {
     ...defaultScore,
