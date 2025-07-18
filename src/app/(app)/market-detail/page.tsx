@@ -1,4 +1,3 @@
-
 import { getForexData } from '@/lib/fmp';
 import { pairs } from '@/lib/data';
 import type { ForexData } from '@/lib/types';
@@ -15,9 +14,9 @@ export default async function MarketDetailPage() {
             </div>
             <Card>
                 <CardHeader>
-                    <CardTitle>FMP API Data</CardTitle>
+                    <CardTitle>Locally Calculated Indicators</CardTitle>
                     <CardDescription>
-                        The raw technical indicator data fetched from the Financial Modeling Prep API for each pair. Data is refreshed automatically every 5 minutes.
+                        Raw indicator values calculated from historical price data for each pair. Data is refreshed automatically every hour.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>

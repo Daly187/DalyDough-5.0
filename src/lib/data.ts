@@ -1,6 +1,4 @@
-
-
-import type { DScore, Bot, EquityData, RiskMetric, ApiKey, NewsEvent, BotConfigurationData, AIReentry, MarketRegime, ExposureData, ForexData, FMPHistoricalPrice } from './types';
+import type { DScore, Bot, EquityData, RiskMetric, ApiKey, NewsEvent, BotConfigurationData, AIReentry, MarketRegime, ExposureData, ForexData, IndicatorSet } from './types';
 
 const getGrade = (score: number): 'A' | 'B' | 'C' => {
   if (score >= 8.5) return 'A';
@@ -24,117 +22,106 @@ const WEIGHTS = {
     stochasticOscillator: 0.5,
     parabolicSAR: 0.5,
     cci: 0.5,
-    obv: 0.5, // Note: OBV is not typically available for Forex, so this will be 0.
+    obv: 0.5,
 };
 
-// Helper to calculate score for each factor
-const calculateTrendAlignment = (price: number, ema4h: number, emaD: number, emaW: number): number => {
-    const isUp = price > ema4h && price > emaD && price > emaW;
-    const isDown = price < ema4h && price < emaD && price < emaW;
+// Helper functions to calculate score for each factor
+const calculateTrendAlignment = (price: number, daily: IndicatorSet, fourHour: IndicatorSet, weekly: IndicatorSet): number => {
+    if (!daily.ema50 || !fourHour.ema50 || !weekly.ema50) return 0;
+    const isUp = price > fourHour.ema50 && price > daily.ema50 && price > weekly.ema50;
+    const isDown = price < fourHour.ema50 && price < daily.ema50 && price < weekly.ema50;
     return (isUp || isDown) ? WEIGHTS.trendAlignment : 0;
 };
 
-const calculateAdxStrength = (adx: number): number => {
-    return adx >= 20 ? WEIGHTS.adxStrength : 0;
+const calculateAdxStrength = (daily: IndicatorSet): number => {
+    return daily.adx && daily.adx >= 20 ? WEIGHTS.adxStrength : 0;
 };
 
-const calculateRsiMomentum = (rsi: number): number => {
-    return rsi > 30 && rsi < 70 ? WEIGHTS.rsiMomentum : 0;
+const calculateRsiMomentum = (daily: IndicatorSet): number => {
+    return daily.rsi && daily.rsi > 30 && daily.rsi < 70 ? WEIGHTS.rsiMomentum : 0;
 };
 
-const calculateMacdMomentum = (macd: number, histogram: number): number => {
-    // Buy signal: MACD line is above signal line (macd > 0) and histogram is rising
-    // Sell signal: MACD line is below signal line (macd < 0) and histogram is falling
-    // For simplicity, we just check if histogram is non-zero, indicating momentum.
-    // A more complex check could see if histogram has crossed zero recently.
+const calculateMacdMomentum = (daily: IndicatorSet): number => {
+    if (!daily.macd) return 0;
+    const { macd, histogram } = daily.macd;
     if ((macd > 0 && histogram > 0) || (macd < 0 && histogram < 0)) {
         return WEIGHTS.macdMomentum;
     }
     return 0;
 };
 
-const calculateAtrVolatility = (atr: number, historicalAtr: number[]): number => {
-    if (historicalAtr.length === 0) return 0;
-    const medianAtr = [...historicalAtr].sort((a,b) => a-b)[Math.floor(historicalAtr.length / 2)];
-    return atr >= medianAtr ? WEIGHTS.atrVolatility : 0;
+const calculateAtrVolatility = (daily: IndicatorSet): number => {
+    // This is a simplified check. A true median check would require more historical ATR values.
+    // For now, we'll assume any positive ATR indicates sufficient volatility.
+    return daily.atr && daily.atr > 0 ? WEIGHTS.atrVolatility : 0;
 };
 
-const calculateBollingerBands = (price: number, upperBand: number, lowerBand: number): number => {
-    // Simple check: is price near the bands? (within 1% of the band range)
-    const bandRange = upperBand - lowerBand;
-    if (Math.abs(price - upperBand) < bandRange * 0.01 || Math.abs(price - lowerBand) < bandRange * 0.01) {
+const calculateBollingerBands = (price: number, daily: IndicatorSet): number => {
+    if (!daily.bb) return 0;
+    const { upper, lower } = daily.bb;
+    const bandRange = upper - lower;
+    if (bandRange > 0 && (Math.abs(price - upper) < bandRange * 0.05 || Math.abs(price - lower) < bandRange * 0.05)) {
         return WEIGHTS.bollingerBands;
     }
     return 0;
 };
 
-const calculateStochastic = (k: number, d: number): number => {
-    // Avoid overbought/sold, but require a cross for signal
+const calculateStochastic = (daily: IndicatorSet): number => {
+    if (!daily.stochastic) return 0;
+    const { k, d } = daily.stochastic;
     const isBullishCross = k > d && k < 80 && d < 80;
     const isBearishCross = k < d && k > 20 && d > 20;
     return (isBullishCross || isBearishCross) ? WEIGHTS.stochasticOscillator : 0;
 };
 
-const calculateParabolicSar = (price: number, sar: number, isBullish: boolean): number => {
-    if (isBullish && price > sar) return WEIGHTS.parabolicSAR;
-    if (!isBullish && price < sar) return WEIGHTS.parabolicSAR;
+const calculateParabolicSar = (price: number, daily: IndicatorSet): number => {
+    if (!daily.ema50 || !daily.sar) return 0;
+    const isBullishTrend = price > daily.ema50;
+    if (isBullishTrend && price > daily.sar) return WEIGHTS.parabolicSAR;
+    if (!isBullishTrend && price < daily.sar) return WEIGHTS.parabolicSAR;
     return 0;
 };
 
-const calculateCci = (cci: number): number => {
-    return Math.abs(cci) < 100 ? WEIGHTS.cci : 0; // Check if not in extreme territory
+const calculateCci = (daily: IndicatorSet): number => {
+    return daily.cci && Math.abs(daily.cci) < 100 ? WEIGHTS.cci : 0;
 };
 
 export const calculateDScore = async (data: ForexData): Promise<DScore> => {
   const quote = data.quote?.[0];
   const price = quote?.bid ?? 0;
-  const change = quote?.changes ?? 0;
 
   const defaultScore: DScore = {
     id: data.pair, pair: data.pair, price: 0, change: 0, changesPercentage: 0, dScore: 0, grade: 'C',
-    signal: 'Block', positions: 0,
+    signal: 'Block', positions: 0, lastUpdated: Date.now(),
     trendAlignment: 0, adxStrength: 0, rsiMomentum: 0, macdMomentum: 0,
     atrVolatility: 0, bollingerBands: 0, stochasticOscillator: 0, parabolicSAR: 0, cci: 0, obv: 0,
   };
 
-  if (!price || !quote) {
+  if (!price || !quote || !data.indicators) {
     return defaultScore;
   }
   
-  // Extract latest indicator values
-  const ema50_4h = data.ema50_4h?.[0]?.ema ?? 0;
-  const ema50d = data.ema50d?.[0]?.ema ?? 0;
-  const ema50_w = data.ema50_w?.[0]?.ema ?? 0;
-  const adx = data.adx?.[0]?.adx ?? 0;
-  const rsi = data.rsi?.[0]?.rsi ?? 0;
-  const macd = data.macd?.[0];
-  const atr = data.atr?.[0]?.atr ?? 0;
-  const historicalAtr = data.historical?.map(h => h.high - h.low) ?? [];
-  const bb = data.bb?.[0];
-  const stochastic = data.stochastic?.[0];
-  const sar = data.sar?.[0]?.sar ?? 0;
-  const cci = data.cci?.[0]?.cci ?? 0;
+  const { daily, fourHour, weekly } = data.indicators;
   
-  // Calculate scores
-  const trendAlignment = calculateTrendAlignment(price, ema50_4h, ema50d, ema50_w);
-  const adxStrength = calculateAdxStrength(adx);
-  const rsiMomentum = calculateRsiMomentum(rsi);
-  const macdMomentum = calculateMacdMomentum(macd?.macd ?? 0, macd?.histogram ?? 0);
-  const atrVolatility = calculateAtrVolatility(atr, historicalAtr);
-  const bollingerBands = calculateBollingerBands(price, bb?.upperBand ?? 0, bb?.lowerBand ?? 0);
-  const stochasticOscillator = calculateStochastic(stochastic?.k ?? 0, stochastic?.d ?? 0);
-  const isBullishTrend = price > ema50d;
-  const parabolicSAR = calculateParabolicSar(price, sar, isBullishTrend);
-  const cciScore = calculateCci(cci);
+  const trendAlignment = calculateTrendAlignment(price, daily, fourHour, weekly);
+  const adxStrength = calculateAdxStrength(daily);
+  const rsiMomentum = calculateRsiMomentum(daily);
+  const macdMomentum = calculateMacdMomentum(daily);
+  const atrVolatility = calculateAtrVolatility(daily);
+  const bollingerBands = calculateBollingerBands(price, daily);
+  const stochasticOscillator = calculateStochastic(daily);
+  const parabolicSAR = calculateParabolicSar(price, daily);
+  const cciScore = calculateCci(daily);
 
   const totalScore = 
     trendAlignment + adxStrength + rsiMomentum + macdMomentum + atrVolatility +
     bollingerBands + stochasticOscillator + parabolicSAR + cciScore;
   
   let signal: 'Buy' | 'Sell' | 'Block' = 'Block';
-  if (totalScore >= 7.0 && price > ema50d) signal = 'Buy';
-  if (totalScore >= 7.0 && price < ema50d) signal = 'Sell';
+  if (totalScore >= 7.0 && daily.ema50 && price > daily.ema50) signal = 'Buy';
+  if (totalScore >= 7.0 && daily.ema50 && price < daily.ema50) signal = 'Sell';
 
+  const change = quote?.changes ?? 0;
   const changesPercentage = quote.open !== 0 ? (change / quote.open) * 100 : 0;
 
   return {
@@ -145,6 +132,7 @@ export const calculateDScore = async (data: ForexData): Promise<DScore> => {
     dScore: Math.min(totalScore, 10),
     grade: getGrade(totalScore),
     signal,
+    lastUpdated: quote.timestamp,
     trendAlignment,
     adxStrength,
     rsiMomentum,
@@ -154,9 +142,10 @@ export const calculateDScore = async (data: ForexData): Promise<DScore> => {
     stochasticOscillator,
     parabolicSAR,
     cci: cciScore,
-    obv: 0, // Not available for Forex
+    obv: 0,
   };
 };
+
 
 // --- Mock Data (to be phased out or used for dev) ---
 export const activeBotsData: Bot[] = [

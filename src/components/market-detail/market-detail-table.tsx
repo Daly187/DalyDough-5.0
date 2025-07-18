@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import * as React from 'react';
@@ -13,7 +11,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { ArrowUpDown } from 'lucide-react';
-import type { ForexData } from '@/lib/types';
+import type { ForexData, IndicatorSet } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 
@@ -26,37 +24,26 @@ type ProcessedData = {
     price?: number;
     change?: number;
     timestamp?: number;
-    ema50_4h?: number;
-    ema50d?: number;
-    ema50_w?: number;
-    adx?: number;
-    rsi?: number;
-    macd?: number;
-    macd_hist?: number;
-    atr?: number;
-    bb_upper?: number;
-    bb_lower?: number;
-    stoch_k?: number;
-    stoch_d?: number;
-    sar?: number;
-    cci?: number;
+    daily: IndicatorSet;
+    fourHour: IndicatorSet;
+    weekly: IndicatorSet;
 };
 
-type SortKey = keyof ProcessedData;
+type SortKey = 'pair' | 'price' | 'change' | 'timestamp';
 
 const formatValue = (value: any, fixed: number = 2) => {
     if (typeof value === 'number') {
         return value.toFixed(fixed);
     }
     return 'N/A';
-}
+};
 
-const formatTimestamp = (timestamp: any) => {
+const formatTimestamp = (timestamp?: any) => {
     if (typeof timestamp === 'number') {
         return new Date(timestamp * 1000).toLocaleString();
     }
     return 'N/A';
-}
+};
 
 export default function MarketDetailTable({ data }: MarketDetailTableProps) {
   const [sortKey, setSortKey] = React.useState<SortKey>('pair');
@@ -70,20 +57,9 @@ export default function MarketDetailTable({ data }: MarketDetailTableProps) {
         price: quote?.bid,
         change: quote?.changes,
         timestamp: quote?.timestamp,
-        ema50_4h: item.ema50_4h?.[0]?.ema,
-        ema50d: item.ema50d?.[0]?.ema,
-        ema50_w: item.ema50_w?.[0]?.ema,
-        adx: item.adx?.[0]?.adx,
-        rsi: item.rsi?.[0]?.rsi,
-        macd: item.macd?.[0]?.macd,
-        macd_hist: item.macd?.[0]?.histogram,
-        atr: item.atr?.[0]?.atr,
-        bb_upper: item.bb?.[0]?.upperBand,
-        bb_lower: item.bb?.[0]?.lowerBand,
-        stoch_k: item.stochastic?.[0]?.k,
-        stoch_d: item.stochastic?.[0]?.d,
-        sar: item.sar?.[0]?.sar,
-        cci: item.cci?.[0]?.cci,
+        daily: item.indicators.daily,
+        fourHour: item.indicators.fourHour,
+        weekly: item.indicators.weekly,
       };
     });
   }, [data]);
@@ -110,7 +86,7 @@ export default function MarketDetailTable({ data }: MarketDetailTableProps) {
     if (sortKey === key) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
-      setSortKey(key);
+      setSortKey(key as SortKey);
       setSortOrder('desc');
     }
   };
@@ -124,6 +100,27 @@ export default function MarketDetailTable({ data }: MarketDetailTableProps) {
     </TableHead>
   );
 
+  const IndicatorCell = ({ indicatorSet, field, toFixed = 2 }: { indicatorSet: IndicatorSet, field: keyof IndicatorSet, toFixed?: number }) => {
+    const value = indicatorSet[field];
+    if (field === 'macd' && typeof value === 'object' && value !== null) {
+      return (
+        <TableCell>
+          <div>H: {formatValue(value.histogram, 5)}</div>
+          <div>M: {formatValue(value.macd, 5)}</div>
+        </TableCell>
+      );
+    }
+     if (field === 'stochastic' && typeof value === 'object' && value !== null) {
+      return (
+        <TableCell>
+          <div>K: {formatValue(value.k, toFixed)}</div>
+          <div>D: {formatValue(value.d, toFixed)}</div>
+        </TableCell>
+      );
+    }
+    return <TableCell>{formatValue(value, toFixed)}</TableCell>;
+  };
+
   return (
       <ScrollArea className="h-[75vh] border rounded-md">
         <Table>
@@ -133,20 +130,16 @@ export default function MarketDetailTable({ data }: MarketDetailTableProps) {
               <SortableHeader tkey="price" label="Price" />
               <SortableHeader tkey="change" label="Change" />
               <SortableHeader tkey="timestamp" label="Last Update" />
-              <SortableHeader tkey="ema50_4h" label="EMA 4H" />
-              <SortableHeader tkey="ema50d" label="EMA 1D" />
-              <SortableHeader tkey="ema50_w" label="EMA 1W" />
-              <SortableHeader tkey="adx" label="ADX" />
-              <SortableHeader tkey="rsi" label="RSI" />
-              <SortableHeader tkey="macd" label="MACD" />
-              <SortableHeader tkey="macd_hist" label="MACD Hist" />
-              <SortableHeader tkey="atr" label="ATR" />
-              <SortableHeader tkey="bb_upper" label="BB Upper" />
-              <SortableHeader tkey="bb_lower" label="BB Lower" />
-              <SortableHeader tkey="stoch_k" label="Stoch %K" />
-              <SortableHeader tkey="stoch_d" label="Stoch %D" />
-              <SortableHeader tkey="sar" label="SAR" />
-              <SortableHeader tkey="cci" label="CCI" />
+              <TableHead>EMA (50) 1D</TableHead>
+              <TableHead>EMA (50) 4H</TableHead>
+              <TableHead>EMA (50) 1W</TableHead>
+              <TableHead>ADX (14) 1D</TableHead>
+              <TableHead>RSI (14) 1D</TableHead>
+              <TableHead>MACD 1D</TableHead>
+              <TableHead>ATR (14) 1D</TableHead>
+              <TableHead>Stoch (14,3) 1D</TableHead>
+              <TableHead>SAR 1D</TableHead>
+              <TableHead>CCI (20) 1D</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -155,23 +148,19 @@ export default function MarketDetailTable({ data }: MarketDetailTableProps) {
                 <TableCell className="font-medium">{item.pair}</TableCell>
                 <TableCell className="font-semibold text-primary">{formatValue(item.price, 5)}</TableCell>
                 <TableCell className={cn(item.change && item.change >= 0 ? 'text-green-400' : 'text-red-400')}>
-                    {formatValue(item.change)}
+                    {formatValue(item.change, 4)}
                 </TableCell>
                 <TableCell>{formatTimestamp(item.timestamp)}</TableCell>
-                <TableCell>{formatValue(item.ema50_4h, 5)}</TableCell>
-                <TableCell>{formatValue(item.ema50d, 5)}</TableCell>
-                <TableCell>{formatValue(item.ema50_w, 5)}</TableCell>
-                <TableCell>{formatValue(item.adx)}</TableCell>
-                <TableCell>{formatValue(item.rsi)}</TableCell>
-                <TableCell>{formatValue(item.macd, 5)}</TableCell>
-                <TableCell>{formatValue(item.macd_hist, 5)}</TableCell>
-                <TableCell>{formatValue(item.atr, 5)}</TableCell>
-                <TableCell>{formatValue(item.bb_upper, 5)}</TableCell>
-                <TableCell>{formatValue(item.bb_lower, 5)}</TableCell>
-                <TableCell>{formatValue(item.stoch_k)}</TableCell>
-                <TableCell>{formatValue(item.stoch_d)}</TableCell>
-                <TableCell>{formatValue(item.sar, 5)}</TableCell>
-                <TableCell>{formatValue(item.cci)}</TableCell>
+                <IndicatorCell indicatorSet={item.daily} field="ema50" toFixed={5} />
+                <IndicatorCell indicatorSet={item.fourHour} field="ema50" toFixed={5} />
+                <IndicatorCell indicatorSet={item.weekly} field="ema50" toFixed={5} />
+                <IndicatorCell indicatorSet={item.daily} field="adx" />
+                <IndicatorCell indicatorSet={item.daily} field="rsi" />
+                <IndicatorCell indicatorSet={item.daily} field="macd" />
+                <IndicatorCell indicatorSet={item.daily} field="atr" toFixed={5} />
+                <IndicatorCell indicatorSet={item.daily} field="stochastic" />
+                <IndicatorCell indicatorSet={item.daily} field="sar" toFixed={5} />
+                <IndicatorCell indicatorSet={item.daily} field="cci" />
               </TableRow>
             ))}
           </TableBody>

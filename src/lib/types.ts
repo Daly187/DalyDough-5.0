@@ -1,5 +1,3 @@
-
-
 export type DScore = {
   id: string;
   pair: string;
@@ -10,6 +8,7 @@ export type DScore = {
   grade: 'A' | 'B' | 'C';
   signal: 'Buy' | 'Sell' | 'Block';
   positions?: number;
+  lastUpdated: number;
   
   // Score components
   trendAlignment: number;
@@ -21,7 +20,7 @@ export type DScore = {
   stochasticOscillator: number;
   parabolicSAR: number;
   cci: number;
-  obv: number;
+  obv: number; // Will remain 0 for Forex
 };
 
 export type Bot = {
@@ -120,17 +119,7 @@ export type ExposureData = {
     type: 'long' | 'short';
 }
 
-// FMP Base Types
-type FMPBase = {
-    date: string;
-    open: number;
-    high: number;
-    low: number;
-    close: number;
-    volume: number;
-};
-
-// FMP Indicator Types
+// FMP Types
 export type FMPQuote = {
     ticker: string;
     bid: number;
@@ -142,31 +131,36 @@ export type FMPQuote = {
     timestamp: number;
 };
 
-export type FMPHistoricalPrice = FMPBase;
-export type FMPSMA = FMPBase & { sma: number };
-export type FMPEMA = FMPBase & { ema: number };
-export type FMPADX = FMPBase & { adx: number; pdi: number; mdi: number };
-export type FMPRSI = FMPBase & { rsi: number };
-export type FMPATR = FMPBase & { atr: number };
-export type FMPBB = FMPBase & { upperBand: number; middleBand: number; lowerBand: number };
-export type FMPMACD = FMPBase & { macd: number; signal: number; histogram: number };
-export type FMPStochastic = FMPBase & { k: number; d: number };
-export type FMPSAR = FMPBase & { sar: number };
-export type FMPCCI = FMPBase & { cci: number };
+export type FMPHistoricalPrice = {
+    date: string;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume: number;
+};
+
+// Locally Calculated Indicator Types
+export type IndicatorSet = {
+    ema50?: number;
+    adx?: number;
+    rsi?: number;
+    macd?: { macd: number; signal: number; histogram: number };
+    atr?: number;
+    bb?: { upper: number; middle: number; lower: number };
+    stochastic?: { k: number; d: number };
+    sar?: number;
+    cci?: number;
+};
+
+export type CalculatedIndicators = {
+    daily: IndicatorSet;
+    fourHour: IndicatorSet;
+    weekly: IndicatorSet;
+};
 
 export type ForexData = {
     pair: string;
     quote: FMPQuote[] | null;
-    historical: FMPHistoricalPrice[] | null;
-    ema50d: FMPEMA[] | null;
-    adx: FMPADX[] | null;
-    rsi: FMPRSI[] | null;
-    macd: FMPMACD[] | null;
-    atr: FMPATR[] | null;
-    bb: FMPBB[] | null;
-    stochastic: FMPStochastic[] | null;
-    sar: FMPSAR[] | null;
-    cci: FMPCCI[] | null;
-    ema50_4h: FMPEMA[] | null;
-    ema50_w: FMPEMA[] | null;
+    indicators: CalculatedIndicators;
 };
