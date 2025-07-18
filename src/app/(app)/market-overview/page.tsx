@@ -1,16 +1,14 @@
 
 import { getForexData } from '@/lib/fmp';
-import { calculateDScore, pairs } from '@/lib/data';
-import { DScore, ForexData } from '@/lib/types';
+import { pairs } from '@/lib/data';
+import { DScore } from '@/lib/types';
 import MarketOverviewDetailTable from '@/components/market-overview/market-overview-detail-table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default async function MarketOverviewPage() {
-    const forexData: ForexData[] = await Promise.all(pairs.map(p => getForexData(p)));
-
-    const dScoreData: DScore[] = await Promise.all(forexData.map(async (data) => 
-        calculateDScore(data)
-    ));
+    const dScoreData: DScore[] = await Promise.all(
+        pairs.map(p => getForexData(p) as unknown as Promise<DScore>)
+    );
 
     return (
         <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">

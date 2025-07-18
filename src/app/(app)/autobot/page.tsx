@@ -4,16 +4,14 @@ import MarketFilter from '@/components/autobot/market-filter';
 import MarketOpportunities from '@/components/autobot/market-opportunities';
 import BotConfiguration from '@/components/autobot/bot-configuration';
 import AiOptimizedReentries from '@/components/autobot/ai-optimized-reentries';
-import { dScoreData as mockDScoreData, botConfigurationData, aiReentriesData, activeBotsData, calculateDScore, pairs } from '@/lib/data';
+import { botConfigurationData, aiReentriesData, activeBotsData, pairs } from '@/lib/data';
 import { Rocket } from 'lucide-react';
 import { getForexData } from '@/lib/fmp';
-import type { DScore, ForexData } from '@/lib/types';
+import type { DScore } from '@/lib/types';
 
 export default async function AutoBotPage() {
-  const forexData: ForexData[] = await Promise.all(pairs.map(p => getForexData(p)));
-
   const dScoreData: DScore[] = await Promise.all(
-    forexData.map((data) => calculateDScore(data))
+    pairs.map(p => getForexData(p) as unknown as Promise<DScore>)
   );
 
   return (

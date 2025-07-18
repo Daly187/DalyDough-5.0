@@ -1,3 +1,4 @@
+
 export type DScore = {
   id: string;
   pair: string;
@@ -158,8 +159,8 @@ export type CalculatedIndicators = {
     weekly: IndicatorSet;
 };
 
+// This type represents the data structure before the D-Score is calculated
 export type ForexData = {
     pair: string;
-    quote: FMPQuote[] | null;
     indicators: CalculatedIndicators;
 };

@@ -1,16 +1,14 @@
 
 
 import ActiveBotsTable from '@/components/bots/active-bots-table';
-import { activeBotsData, closedBotsData, calculateDScore, pairs } from '@/lib/data';
+import { activeBotsData, closedBotsData, pairs } from '@/lib/data';
 import { getForexData } from '@/lib/fmp';
-import { DScore, ForexData } from '@/lib/types';
+import { DScore } from '@/lib/types';
 
 
 export default async function BotsPage() {
-  const forexData: ForexData[] = await Promise.all(pairs.map(p => getForexData(p)));
-
   const dScoreData: DScore[] = await Promise.all(
-    forexData.map((data) => calculateDScore(data))
+    pairs.map(p => getForexData(p) as unknown as Promise<DScore>)
   );
 
   return (

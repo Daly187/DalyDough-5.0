@@ -1,6 +1,7 @@
 
 import type { FMPHistoricalPrice, ForexData, CalculatedIndicators, FMPQuote } from './types';
 import { calculateIndicators } from './indicators';
+import { calculateDScore } from './data';
 
 const BASE_URL = 'https://financialmodelingprep.com/api/v3';
 const API_KEY = process.env.FMP_API_KEY || 'RUTyEslPzCs5tHMBZUUxCr2no36EV45Q';
@@ -36,10 +37,7 @@ export async function getForexData(pair: string): Promise<ForexData> {
     const symbol = pair.replace('/', '');
 
     try {
-        // Fetch quote data with a short cache time (10 seconds) for near real-time updates.
         const quotePromise = fetchWithCache<FMPQuote[]>(`${BASE_URL}/forex/${symbol}?apikey=${API_KEY}`, 10);
-
-        // Fetch historical data with a longer cache time (1 hour).
         const dailyPromise = fetchWithCache<{ historical: FMPHistoricalPrice[] }>(`${BASE_URL}/historical-price-full/${symbol}?timeseries=350&apikey=${API_KEY}`);
         
         const [quoteData, dailyDataResult] = await Promise.all([
@@ -62,17 +60,26 @@ export async function getForexData(pair: string): Promise<ForexData> {
             weekly: weeklyIndicators,
         };
 
-        return {
+        const forexData: ForexData = {
             pair,
-            quote: quoteData,
             indicators,
         };
+
+        const singleQuote = quoteData?.[0] ?? null;
+
+        // Directly call calculateDScore here, passing the quote data explicitly.
+        const dScoreData = await calculateDScore(forexData, singleQuote);
+
+        // The DScore object now contains everything, so we cast it.
+        // This is a bit of a trick, but it fits the existing structure.
+        return dScoreData as ForexData;
+
     } catch (error) {
         console.error(`Failed to process data for ${pair}:`, error);
+        // This return structure might need to be DScore compatible
         return {
             pair,
-            quote: null,
             indicators: { daily: {}, fourHour: {}, weekly: {} }
-        }
+        } as ForexData;
     }
 }

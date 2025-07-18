@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from 'react';
@@ -11,25 +12,18 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { ArrowUpDown } from 'lucide-react';
-import type { ForexData, IndicatorSet, FMPQuote } from '@/lib/types';
+import type { DScore, IndicatorSet } from '@/lib/types'; // Using DScore now
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 
 interface MarketDetailTableProps {
-  data: ForexData[];
+  data: DScore[];
 }
 
-type ProcessedData = {
-    pair: string;
-    price?: number;
-    change?: number;
-    timestamp?: number;
-    daily: IndicatorSet;
-    fourHour: IndicatorSet;
-    weekly: IndicatorSet;
-};
+// The data is already processed into DScore format, which includes what we need.
+type ProcessedData = DScore;
 
-type SortKey = 'pair' | 'price' | 'change' | 'timestamp';
+type SortKey = 'pair' | 'price' | 'change' | 'lastUpdated';
 
 const formatValue = (value: any, fixed: number = 2) => {
     if (typeof value === 'number') {
@@ -49,20 +43,8 @@ export default function MarketDetailTable({ data }: MarketDetailTableProps) {
   const [sortKey, setSortKey] = React.useState<SortKey>('pair');
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('asc');
 
-  const processedData = React.useMemo((): ProcessedData[] => {
-    return data.map(item => {
-      const quote: FMPQuote | null = item.quote?.[0] ?? null;
-      return {
-        pair: item.pair,
-        price: quote?.price,
-        change: quote?.change,
-        timestamp: quote?.timestamp,
-        daily: item.indicators.daily,
-        fourHour: item.indicators.fourHour,
-        weekly: item.indicators.weekly,
-      };
-    });
-  }, [data]);
+  // Data is already in the right format.
+  const processedData: ProcessedData[] = data;
 
   const sortedData = React.useMemo(() => {
     return [...processedData].sort((a, b) => {
@@ -100,27 +82,30 @@ export default function MarketDetailTable({ data }: MarketDetailTableProps) {
     </TableHead>
   );
 
-  const IndicatorCell = ({ indicatorSet, field, toFixed = 2 }: { indicatorSet: IndicatorSet, field: keyof IndicatorSet, toFixed?: number }) => {
-    const value = indicatorSet[field];
-    if (field === 'macd' && typeof value === 'object' && value !== null) {
-      return (
-        <TableCell>
-          <div>H: {formatValue(value.histogram, 5)}</div>
-          <div>M: {formatValue(value.macd, 5)}</div>
-        </TableCell>
-      );
+  const IndicatorCell = ({ indicatorValue, toFixed = 2 }: { indicatorValue: number | undefined | {macd?: any, histogram?: any} | {k?: any, d?: any}, toFixed?: number }) => {
+    if (typeof indicatorValue === 'object' && indicatorValue !== null) {
+      if ('macd' in indicatorValue) { // MACD object
+        return (
+          <TableCell>
+            <div>H: {formatValue(indicatorValue.histogram, 5)}</div>
+            <div>M: {formatValue(indicatorValue.macd, 5)}</div>
+          </TableCell>
+        );
+      }
+       if ('k' in indicatorValue) { // Stochastic object
+        return (
+          <TableCell>
+            <div>K: {formatValue(indicatorValue.k, toFixed)}</div>
+            <div>D: {formatValue(indicatorValue.d, toFixed)}</div>
+          </TableCell>
+        );
+      }
     }
-     if (field === 'stochastic' && typeof value === 'object' && value !== null) {
-      return (
-        <TableCell>
-          <div>K: {formatValue(value.k, toFixed)}</div>
-          <div>D: {formatValue(value.d, toFixed)}</div>
-        </TableCell>
-      );
-    }
-    return <TableCell>{formatValue(value, toFixed)}</TableCell>;
+    return <TableCell>{formatValue(indicatorValue, toFixed)}</TableCell>;
   };
-
+  
+  // NOTE: This table is showing component scores, not raw indicator values. This is a simplification
+  // to fit the new data structure. A future refactor could pass down the raw indicators if needed.
   return (
       <ScrollArea className="h-[75vh] border rounded-md">
         <Table>
@@ -129,17 +114,16 @@ export default function MarketDetailTable({ data }: MarketDetailTableProps) {
               <SortableHeader tkey="pair" label="Pair" />
               <SortableHeader tkey="price" label="Price" />
               <SortableHeader tkey="change" label="Change" />
-              <SortableHeader tkey="timestamp" label="Last Update" />
-              <TableHead>EMA (50) 1D</TableHead>
-              <TableHead>EMA (50) 4H</TableHead>
-              <TableHead>EMA (50) 1W</TableHead>
-              <TableHead>ADX (14) 1D</TableHead>
-              <TableHead>RSI (14) 1D</TableHead>
-              <TableHead>MACD 1D</TableHead>
-              <TableHead>ATR (14) 1D</TableHead>
-              <TableHead>Stoch (14,3) 1D</TableHead>
-              <TableHead>SAR 1D</TableHead>
-              <TableHead>CCI (20) 1D</TableHead>
+              <SortableHeader tkey="lastUpdated" label="Last Update" />
+              <TableHead>Trend (3.0)</TableHead>
+              <TableHead>ADX (1.5)</TableHead>
+              <TableHead>RSI (1.0)</TableHead>
+              <TableHead>MACD (1.0)</TableHead>
+              <TableHead>ATR (1.0)</TableHead>
+              <TableHead>BB (0.5)</TableHead>
+              <TableHead>Stoch (0.5)</TableHead>
+              <TableHead>SAR (0.5)</TableHead>
+              <TableHead>CCI (0.5)</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -150,17 +134,16 @@ export default function MarketDetailTable({ data }: MarketDetailTableProps) {
                 <TableCell className={cn(item.change && item.change >= 0 ? 'text-green-400' : 'text-red-400')}>
                     {formatValue(item.change, 4)}
                 </TableCell>
-                <TableCell>{formatTimestamp(item.timestamp)}</TableCell>
-                <IndicatorCell indicatorSet={item.daily} field="ema50" toFixed={5} />
-                <IndicatorCell indicatorSet={item.fourHour} field="ema50" toFixed={5} />
-                <IndicatorCell indicatorSet={item.weekly} field="ema50" toFixed={5} />
-                <IndicatorCell indicatorSet={item.daily} field="adx" />
-                <IndicatorCell indicatorSet={item.daily} field="rsi" />
-                <IndicatorCell indicatorSet={item.daily} field="macd" />
-                <IndicatorCell indicatorSet={item.daily} field="atr" toFixed={5} />
-                <IndicatorCell indicatorSet={item.daily} field="stochastic" />
-                <IndicatorCell indicatorSet={item.daily} field="sar" toFixed={5} />
-                <IndicatorCell indicatorSet={item.daily} field="cci" />
+                <TableCell>{formatTimestamp(item.lastUpdated)}</TableCell>
+                <TableCell>{formatValue(item.trendAlignment, 1)}</TableCell>
+                <TableCell>{formatValue(item.adxStrength, 1)}</TableCell>
+                <TableCell>{formatValue(item.rsiMomentum, 1)}</TableCell>
+                <TableCell>{formatValue(item.macdMomentum, 1)}</TableCell>
+                <TableCell>{formatValue(item.atrVolatility, 1)}</TableCell>
+                <TableCell>{formatValue(item.bollingerBands, 1)}</TableCell>
+                <TableCell>{formatValue(item.stochasticOscillator, 1)}</TableCell>
+                <TableCell>{formatValue(item.parabolicSAR, 1)}</TableCell>
+                <TableCell>{formatValue(item.cci, 1)}</TableCell>
               </TableRow>
             ))}
           </TableBody>

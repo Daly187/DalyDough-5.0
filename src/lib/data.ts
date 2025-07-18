@@ -89,7 +89,9 @@ const calculateCci = (daily: IndicatorSet): number => {
     return daily.cci && Math.abs(daily.cci) < 100 ? WEIGHTS.cci : 0;
 };
 
-const calculateDScoreFromData = (pair: string, quote: FMPQuote | null, indicators: ForexData['indicators']): DScore => {
+
+export const calculateDScore = async (data: ForexData, quote: FMPQuote | null): Promise<DScore> => {
+  const { pair, indicators } = data;
   const defaultScore: DScore = {
     id: pair, pair: pair, price: 0, change: 0, changesPercentage: 0, dScore: 0, grade: 'C',
     signal: 'Block', positions: 0, lastUpdated: 0,
@@ -146,11 +148,6 @@ const calculateDScoreFromData = (pair: string, quote: FMPQuote | null, indicator
     cci: cciScore,
     obv: 0,
   };
-};
-
-export const calculateDScore = async (data: ForexData): Promise<DScore> => {
-    const singleQuote = data.quote?.[0] ?? null;
-    return calculateDScoreFromData(data.pair, singleQuote, data.indicators);
 };
 
 
