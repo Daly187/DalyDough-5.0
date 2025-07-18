@@ -1,6 +1,18 @@
+
+"use client";
+
+import { useRouter } from 'next/navigation';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { Button } from './ui/button';
+import { RefreshCw } from 'lucide-react';
 
 export default function Header() {
+  const router = useRouter();
+
+  const handleRefresh = () => {
+    router.refresh();
+  };
+
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
       <SidebarTrigger className="flex md:hidden" />
@@ -24,7 +36,10 @@ export default function Header() {
             </div>
         </div>
         <div className="flex items-center gap-4">
-            {/* Global controls popover removed */}
+            <Button variant="outline" size="sm" onClick={handleRefresh}>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Refresh Data
+            </Button>
         </div>
       </div>
     </header>

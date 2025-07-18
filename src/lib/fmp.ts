@@ -4,7 +4,7 @@ import type { ForexData } from './types';
 const BASE_URL = 'https://financialmodelingprep.com/api/v3';
 const API_KEY = process.env.FMP_API_KEY || 'RUTyEslPzCs5tHMBZUUxCr2no36EV45Q';
 
-async function fetchWithCache<T>(url: string, ttl: number = 300): Promise<T | null> {
+async function fetchWithCache<T>(url: string, ttl: number = 3600): Promise<T | null> {
     try {
         const res = await fetch(url, { next: { revalidate: ttl } });
         if (!res.ok) {
@@ -47,7 +47,7 @@ export async function getForexData(pair: string): Promise<ForexData> {
     const atrPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=14&type=averageTrueRange&apikey=${API_KEY}`);
     const bbPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=20&standardDeviation=2&type=bollingerBands&apikey=${API_KEY}`);
     const stochasticPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=14&kPeriod=3&dPeriod=3&type=stochastic&apikey=${API_KEY}`);
-    const sarPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?acceleration=0.02&maximum=0.2&type=parabolicSAR&apikey=${API_KEY}`);
+    const sarPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?acceleration=0.02&maximum=0.2&type=parabolicsar&apikey=${API_KEY}`);
     const cciPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=20&type=cci&apikey=${API_KEY}`);
 
     // --- 4-Hour Indicators ---
