@@ -1,5 +1,5 @@
 
-import type { FMPHistoricalPrice, ForexData, CalculatedIndicators, FMPQuote } from './types';
+import type { FMPHistoricalPrice, ForexData, CalculatedIndicators, FMPQuote, DScore } from './types';
 import { calculateIndicators } from './indicators';
 import { calculateDScore } from './data';
 
@@ -33,8 +33,15 @@ async function fetchWithCache<T>(url: string, ttl: number = 3600): Promise<T | n
     }
 }
 
-export async function getForexData(pair: string): Promise<ForexData> {
+export async function getForexData(pair: string): Promise<DScore> {
     const symbol = pair.replace('/', '');
+    
+    const defaultScore: DScore = {
+        id: pair, pair: pair, price: 0, change: 0, changesPercentage: 0, dScore: 0, grade: 'C',
+        signal: 'Block', positions: 0, lastUpdated: 0,
+        trendAlignment: 0, adxStrength: 0, rsiMomentum: 0, macdMomentum: 0,
+        atrVolatility: 0, bollingerBands: 0, stochasticOscillator: 0, parabolicSAR: 0, cci: 0, obv: 0,
+    };
 
     try {
         const quotePromise = fetchWithCache<FMPQuote[]>(`${BASE_URL}/forex/${symbol}?apikey=${API_KEY}`, 10);
@@ -44,10 +51,13 @@ export async function getForexData(pair: string): Promise<ForexData> {
             quotePromise,
             dailyPromise
         ]);
-        
-        const dailyPrices = dailyDataResult?.historical || [];
 
-        // Use daily prices for all timeframes as a robust solution
+        if (!dailyDataResult || !dailyDataResult.historical || dailyDataResult.historical.length === 0) {
+            console.warn(`No historical data for ${pair}, returning default score.`);
+            return defaultScore;
+        }
+        
+        const dailyPrices = dailyDataResult.historical;
         const fourHourPrices = dailyPrices;
         
         const dailyIndicators = calculateIndicators(dailyPrices);
@@ -64,22 +74,15 @@ export async function getForexData(pair: string): Promise<ForexData> {
             pair,
             indicators,
         };
-
+        
         const singleQuote = quoteData?.[0] ?? null;
 
-        // Directly call calculateDScore here, passing the quote data explicitly.
         const dScoreData = await calculateDScore(forexData, singleQuote);
 
-        // The DScore object now contains everything, so we cast it.
-        // This is a bit of a trick, but it fits the existing structure.
-        return dScoreData as ForexData;
+        return dScoreData;
 
     } catch (error) {
         console.error(`Failed to process data for ${pair}:`, error);
-        // This return structure might need to be DScore compatible
-        return {
-            pair,
-            indicators: { daily: {}, fourHour: {}, weekly: {} }
-        } as ForexData;
+        return defaultScore;
     }
 }
