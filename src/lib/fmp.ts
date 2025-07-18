@@ -32,7 +32,7 @@ export async function getForexData(pair: string): Promise<ForexData> {
 
     try {
         // Fetch quote data with a short cache time (10 seconds) for near real-time updates.
-        const quotePromise = fetchWithCache<FMPQuote>(`${BASE_URL}/forex/${symbol}?apikey=${API_KEY}`, 10);
+        const quotePromise = fetchWithCache<FMPQuote[]>(`${BASE_URL}/forex/${symbol}?apikey=${API_KEY}`, 10);
 
         // Fetch historical data with a longer cache time (1 hour).
         const dailyPromise = fetchWithCache<{ historical: FMPHistoricalPrice[] }>(`${BASE_URL}/historical-price-full/${symbol}?timeseries=350&apikey=${API_KEY}`);

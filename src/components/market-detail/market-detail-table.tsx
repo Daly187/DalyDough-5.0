@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { ArrowUpDown } from 'lucide-react';
-import type { ForexData, IndicatorSet } from '@/lib/types';
+import type { ForexData, IndicatorSet, FMPQuote } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 
@@ -51,7 +51,7 @@ export default function MarketDetailTable({ data }: MarketDetailTableProps) {
 
   const processedData = React.useMemo((): ProcessedData[] => {
     return data.map(item => {
-      const quote = item.quote?.[0];
+      const quote: FMPQuote | null = item.quote?.[0] ?? null;
       return {
         pair: item.pair,
         price: quote?.bid,

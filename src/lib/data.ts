@@ -1,5 +1,5 @@
 
-import type { DScore, Bot, EquityData, RiskMetric, ApiKey, NewsEvent, BotConfigurationData, AIReentry, MarketRegime, ExposureData, ForexData, IndicatorSet } from './types';
+import type { DScore, Bot, EquityData, RiskMetric, ApiKey, NewsEvent, BotConfigurationData, AIReentry, MarketRegime, ExposureData, ForexData, IndicatorSet, FMPQuote } from './types';
 
 const getGrade = (score: number): 'A' | 'B' | 'C' => {
   if (score >= 8.5) return 'A';
@@ -89,23 +89,21 @@ const calculateCci = (daily: IndicatorSet): number => {
     return daily.cci && Math.abs(daily.cci) < 100 ? WEIGHTS.cci : 0;
 };
 
-export const calculateDScore = async (data: ForexData): Promise<DScore> => {
+const calculateDScoreFromData = (pair: string, quote: FMPQuote | null, indicators: ForexData['indicators']): DScore => {
   const defaultScore: DScore = {
-    id: data.pair, pair: data.pair, price: 0, change: 0, changesPercentage: 0, dScore: 0, grade: 'C',
+    id: pair, pair: pair, price: 0, change: 0, changesPercentage: 0, dScore: 0, grade: 'C',
     signal: 'Block', positions: 0, lastUpdated: 0,
     trendAlignment: 0, adxStrength: 0, rsiMomentum: 0, macdMomentum: 0,
     atrVolatility: 0, bollingerBands: 0, stochasticOscillator: 0, parabolicSAR: 0, cci: 0, obv: 0,
   };
-  
-  const quote = data.quote;
 
-  if (!quote || !data.indicators) {
+  if (!quote || !indicators) {
     return defaultScore;
   }
 
   const price = quote?.bid ?? 0;
   
-  const { daily, fourHour, weekly } = data.indicators;
+  const { daily, fourHour, weekly } = indicators;
   
   const trendAlignment = calculateTrendAlignment(price, daily, fourHour, weekly);
   const adxStrength = calculateAdxStrength(daily);
@@ -148,6 +146,11 @@ export const calculateDScore = async (data: ForexData): Promise<DScore> => {
     cci: cciScore,
     obv: 0,
   };
+};
+
+export const calculateDScore = async (data: ForexData): Promise<DScore> => {
+    const singleQuote = data.quote?.[0] ?? null;
+    return calculateDScoreFromData(data.pair, singleQuote, data.indicators);
 };
 
 
