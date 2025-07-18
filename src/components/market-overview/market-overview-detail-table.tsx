@@ -65,13 +65,15 @@ export default function MarketOverviewDetailTable({ data }: MarketOverviewDetail
             <TableRow>
               <SortableHeader tkey="pair" label="Pair" />
               <SortableHeader tkey="dScore" label="D-Score" />
-              <SortableHeader tkey="adxStrength" label="ADX" />
-              <SortableHeader tkey="bollingerBandVolatility" label="BB Vol" />
-              <SortableHeader tkey="trendAlignment" label="Trend" />
-              <SortableHeader tkey="srRetest" label="S/R" />
-              <SortableHeader tkey="priceStructure" label="Structure" />
-              <SortableHeader tkey="marketRegimeFit" label="Regime" />
-              <SortableHeader tkey="currencyStrengthIndex" label="CSI" />
+              <SortableHeader tkey="trendAlignment" label="Trend (3.0)" />
+              <SortableHeader tkey="adxStrength" label="ADX (1.5)" />
+              <SortableHeader tkey="rsiMomentum" label="RSI (1.0)" />
+              <SortableHeader tkey="macdMomentum" label="MACD (1.0)" />
+              <SortableHeader tkey="atrVolatility" label="ATR (1.0)" />
+              <SortableHeader tkey="bollingerBands" label="BB (0.5)" />
+              <SortableHeader tkey="stochasticOscillator" label="Stoch (0.5)" />
+              <SortableHeader tkey="parabolicSAR" label="SAR (0.5)" />
+              <SortableHeader tkey="cci" label="CCI (0.5)" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -79,13 +81,15 @@ export default function MarketOverviewDetailTable({ data }: MarketOverviewDetail
               <TableRow key={item.id}>
                 <TableCell className="font-medium">{item.pair}</TableCell>
                 <TableCell className="font-semibold text-lg text-primary">{item.dScore.toFixed(1)}</TableCell>
-                <TableCell>{item.adxStrength.toFixed(1)}</TableCell>
-                <TableCell>{item.bollingerBandVolatility.toFixed(1)}</TableCell>
                 <TableCell>{item.trendAlignment.toFixed(1)}</TableCell>
-                <TableCell>{item.srRetest.toFixed(1)}</TableCell>
-                <TableCell>{item.priceStructure.toFixed(1)}</TableCell>
-                <TableCell>{item.marketRegimeFit.toFixed(1)}</TableCell>
-                <TableCell>{item.currencyStrengthIndex.toFixed(1)}</TableCell>
+                <TableCell>{item.adxStrength.toFixed(1)}</TableCell>
+                <TableCell>{item.rsiMomentum.toFixed(1)}</TableCell>
+                <TableCell>{item.macdMomentum.toFixed(1)}</TableCell>
+                <TableCell>{item.atrVolatility.toFixed(1)}</TableCell>
+                <TableCell>{item.bollingerBands.toFixed(1)}</TableCell>
+                <TableCell>{item.stochasticOscillator.toFixed(1)}</TableCell>
+                <TableCell>{item.parabolicSAR.toFixed(1)}</TableCell>
+                <TableCell>{item.cci.toFixed(1)}</TableCell>
               </TableRow>
             ))}
           </TableBody>

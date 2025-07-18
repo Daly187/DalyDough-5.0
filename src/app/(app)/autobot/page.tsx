@@ -13,7 +13,7 @@ export default async function AutoBotPage() {
   const forexData: ForexData[] = await Promise.all(pairs.map(p => getForexData(p)));
 
   const dScoreData: DScore[] = await Promise.all(
-    forexData.map((data, index) => calculateDScore(data, index, forexData))
+    forexData.map((data) => calculateDScore(data))
   );
 
   return (
@@ -38,5 +38,3 @@ export default async function AutoBotPage() {
     </main>
   );
 }
-
-    

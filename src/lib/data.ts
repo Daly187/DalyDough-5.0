@@ -9,183 +9,152 @@ const getGrade = (score: number): 'A' | 'B' | 'C' => {
 
 export const pairs = ['AUD/CAD', 'AUD/CHF', 'AUD/JPY', 'AUD/NZD', 'AUD/USD', 'CAD/JPY', 'CHF/JPY', 'EUR/CAD', 'EUR/CHF', 'EUR/GBP', 'EUR/JPY', 'EUR/NZD', 'EUR/TRY', 'EUR/USD', 'GBP/AUD', 'GBP/CAD', 'GBP/CHF', 'GBP/JPY', 'GBP/USD', 'NZD/CAD', 'NZD/CHF', 'NZD/JPY', 'NZD/USD', 'USD/CAD', 'USD/CHF', 'USD/JPY', 'USD/TRY', 'USD/ZAR', 'XAU/USD'];
 
-export let strengthData: StrengthData[] = [
-    { currency: 'EUR', data: [] },
-    { currency: 'GBP', data: [] },
-    { currency: 'JPY', data: [] },
-    { currency: 'USD', data: [] },
-    { currency: 'CAD', data: [] },
-    { currency: 'AUD', data: [] },
-    { currency: 'NZD', data: [] },
-    { currency: 'CHF', data: [] },
-];
+export let strengthData: any[] = []; // This is now unused, can be removed later.
 
-const updateStrengthData = (allForexData: ForexData[]) => {
-    const changes: Record<string, number[]> = {
-        'EUR': [], 'GBP': [], 'JPY': [], 'USD': [], 'CAD': [], 'AUD': [], 'NZD': [], 'CHF': []
-    };
+// --- D-Score Calculation ---
 
-    allForexData.forEach(d => {
-        if (d.pair.length === 7 && d.quote?.[0]?.changesPercentage) {
-            const base = d.pair.substring(0, 3);
-            const quote = d.pair.substring(4, 7);
-            const change = d.quote[0].changesPercentage;
-
-            if (changes[base]) changes[base].push(change);
-            if (changes[quote]) changes[quote].push(-change);
-        }
-    });
-
-    strengthData = strengthData.map(s => {
-        const avgChange = changes[s.currency].length > 0
-            ? changes[s.currency].reduce((a, b) => a + b, 0) / changes[s.currency].length
-            : 0;
-        
-        const strengthValue = 5 + (avgChange * 2);
-        
-        return {
-            ...s,
-            data: [{ date: new Date().toISOString().split('T')[0], strength: Math.max(0, Math.min(10, strengthValue)) }]
-        };
-    });
+const WEIGHTS = {
+    trendAlignment: 3.0,
+    adxStrength: 1.5,
+    rsiMomentum: 1.0,
+    macdMomentum: 1.0,
+    atrVolatility: 1.0,
+    bollingerBands: 0.5,
+    stochasticOscillator: 0.5,
+    parabolicSAR: 0.5,
+    cci: 0.5,
+    obv: 0.5, // Note: OBV is not typically available for Forex, so this will be 0.
 };
 
+// Helper to calculate score for each factor
+const calculateTrendAlignment = (price: number, ema4h: number, emaD: number, emaW: number): number => {
+    const isUp = price > ema4h && price > emaD && price > emaW;
+    const isDown = price < ema4h && price < emaD && price < emaW;
+    return (isUp || isDown) ? WEIGHTS.trendAlignment : 0;
+};
 
-const getCurrencyStrength = (currency: string): number => {
-    const data = strengthData.find(s => s.currency === currency);
-    return data?.data[data.data.length - 1]?.strength ?? 5; 
-}
+const calculateAdxStrength = (adx: number): number => {
+    return adx >= 20 ? WEIGHTS.adxStrength : 0;
+};
 
-const calculateSRRetest = (historicalData: FMPHistoricalPrice[]): number => {
-    if (!historicalData || historicalData.length < 21) return 0;
+const calculateRsiMomentum = (rsi: number): number => {
+    return rsi > 30 && rsi < 70 ? WEIGHTS.rsiMomentum : 0;
+};
 
-    const recentData = historicalData.slice(0, 21);
-    const lastClose = recentData[0].close;
-    const previous20 = recentData.slice(1);
-
-    const minClose = Math.min(...previous20.map(d => d.close));
-    const maxClose = Math.max(...previous20.map(d => d.close));
-
-    const proximity = 0.003; // 0.3%
-
-    if (Math.abs(lastClose - minClose) / minClose < proximity || Math.abs(lastClose - maxClose) / maxClose < proximity) {
-        return 1.5; // Score * weight (1 * 1.5)
+const calculateMacdMomentum = (macd: number, histogram: number): number => {
+    // Buy signal: MACD line is above signal line (macd > 0) and histogram is rising
+    // Sell signal: MACD line is below signal line (macd < 0) and histogram is falling
+    // For simplicity, we just check if histogram is non-zero, indicating momentum.
+    // A more complex check could see if histogram has crossed zero recently.
+    if ((macd > 0 && histogram > 0) || (macd < 0 && histogram < 0)) {
+        return WEIGHTS.macdMomentum;
     }
     return 0;
 };
 
-const calculatePriceStructure = (historicalData: FMPHistoricalPrice[]): number => {
-    if (!historicalData || historicalData.length < 5) return 0;
+const calculateAtrVolatility = (atr: number, historicalAtr: number[]): number => {
+    if (historicalAtr.length === 0) return 0;
+    const medianAtr = [...historicalAtr].sort((a,b) => a-b)[Math.floor(historicalAtr.length / 2)];
+    return atr >= medianAtr ? WEIGHTS.atrVolatility : 0;
+};
 
-    const last5 = historicalData.slice(0, 5);
-    const closes = last5.map(d => d.close);
-    const highs = last5.map(d => d.high);
-    const lows = last5.map(d => d.low);
-
-    const isHigherHighHigherLow = 
-        highs[0] > highs[1] && lows[0] > lows[1] &&
-        highs[1] > highs[2] && lows[1] > lows[2];
-
-    const isLowerHighLowerLow = 
-        highs[0] < highs[1] && lows[0] < lows[1] &&
-        highs[1] < highs[2] && lows[1] < lows[2];
-
-    if (isHigherHighHigherLow || isLowerHighLowerLow) {
-        return 1.5; // Score * weight (1 * 1.5)
+const calculateBollingerBands = (price: number, upperBand: number, lowerBand: number): number => {
+    // Simple check: is price near the bands? (within 1% of the band range)
+    const bandRange = upperBand - lowerBand;
+    if (Math.abs(price - upperBand) < bandRange * 0.01 || Math.abs(price - lowerBand) < bandRange * 0.01) {
+        return WEIGHTS.bollingerBands;
     }
     return 0;
 };
 
-const calculateRegimeFit = (adx: number | undefined): number => {
-    if (adx && adx > 25) {
-        return 2.0; // Score * weight (1 * 2.0)
-    }
+const calculateStochastic = (k: number, d: number): number => {
+    // Avoid overbought/sold, but require a cross for signal
+    const isBullishCross = k > d && k < 80 && d < 80;
+    const isBearishCross = k < d && k > 20 && d > 20;
+    return (isBullishCross || isBearishCross) ? WEIGHTS.stochasticOscillator : 0;
+};
+
+const calculateParabolicSar = (price: number, sar: number, isBullish: boolean): number => {
+    if (isBullish && price > sar) return WEIGHTS.parabolicSAR;
+    if (!isBullish && price < sar) return WEIGHTS.parabolicSAR;
     return 0;
 };
 
-export const calculateDScore = async (data: ForexData, index: number, allForexData: ForexData[]): Promise<DScore> => {
-  // Update strength data once per calculation batch
-  if (index === 0) {
-    updateStrengthData(allForexData);
-  }
+const calculateCci = (cci: number): number => {
+    return Math.abs(cci) < 100 ? WEIGHTS.cci : 0; // Check if not in extreme territory
+};
 
+export const calculateDScore = async (data: ForexData): Promise<DScore> => {
   const quote = data.quote?.[0];
-  const price = quote?.price;
-  const adxData = data.adx?.[0];
+  const price = quote?.price ?? 0;
 
   const defaultScore: DScore = {
-    id: `${index + 1}`, pair: data.pair, price: 0, change: 0, changesPercentage: 0, dScore: 0, grade: 'C',
-    adxStrength: 0, bollingerBandVolatility: 0, trendAlignment: 0, srRetest: 0, priceStructure: 0,
-    marketRegimeFit: 0, currencyStrengthIndex: 0, signal: 'Block', positions: 0,
-    trends: { d1: 'neutral', w1: 'neutral' },
+    id: data.pair, pair: data.pair, price: 0, change: 0, changesPercentage: 0, dScore: 0, grade: 'C',
+    signal: 'Block', positions: 0,
+    trendAlignment: 0, adxStrength: 0, rsiMomentum: 0, macdMomentum: 0,
+    atrVolatility: 0, bollingerBands: 0, stochasticOscillator: 0, parabolicSAR: 0, cci: 0, obv: 0,
   };
 
   if (!price || !quote) {
     return defaultScore;
   }
-
-  // 1. ADX Strength - Max 2.0 (LIVE)
-  const adxStrength = (adxData && adxData.adx > 25) ? 2.0 : (adxData && adxData.adx > 20 ? 1.0 : 0);
-
-  // 2. Bollinger Band Volatility - Max 1.5 (LIVE)
+  
+  // Extract latest indicator values
+  const ema50_4h = data.ema50_4h?.[0]?.ema ?? 0;
+  const ema50d = data.ema50d?.[0]?.ema ?? 0;
+  const ema50_w = data.ema50_w?.[0]?.ema ?? 0;
+  const adx = data.adx?.[0]?.adx ?? 0;
+  const rsi = data.rsi?.[0]?.rsi ?? 0;
+  const macd = data.macd?.[0];
+  const atr = data.atr?.[0]?.atr ?? 0;
+  const historicalAtr = data.historical?.map(h => h.high - h.low) ?? [];
   const bb = data.bb?.[0];
-  let bollingerBandVolatility = 0;
-  if (bb && bb.middleBand > 0) {
-      const bbWidth = (bb.upperBand - bb.lowerBand) / bb.middleBand;
-      // Ideal width between 0.5% and 4% for most pairs, this can be refined
-      if (bbWidth > 0.005 && bbWidth < 0.04) {
-          bollingerBandVolatility = 1.5;
-      } else if (bbWidth > 0.002 && bbWidth < 0.06) {
-          bollingerBandVolatility = 0.75;
-      }
-  }
-
-  // 3. S/R Retest - Max 1.5 (LIVE - from formula)
-  const srRetest = calculateSRRetest(data.historical || []);
-
-  // 4. Price Structure - Max 1.5 (LIVE - from formula)
-  const priceStructure = calculatePriceStructure(data.historical || []);
-
-  // 5. Regime Fit - Max 2.0 (LIVE - from formula)
-  const marketRegimeFit = calculateRegimeFit(adxData?.adx);
-
-  // Set unimplemented factors to 0
-  const trendAlignment = 0;
-  const currencyStrengthIndex = 0;
+  const stochastic = data.stochastic?.[0];
+  const sar = data.sar?.[0]?.sar ?? 0;
+  const cci = data.cci?.[0]?.cci ?? 0;
+  
+  // Calculate scores
+  const trendAlignment = calculateTrendAlignment(price, ema50_4h, ema50d, ema50_w);
+  const adxStrength = calculateAdxStrength(adx);
+  const rsiMomentum = calculateRsiMomentum(rsi);
+  const macdMomentum = calculateMacdMomentum(macd?.macd ?? 0, macd?.histogram ?? 0);
+  const atrVolatility = calculateAtrVolatility(atr, historicalAtr);
+  const bollingerBands = calculateBollingerBands(price, bb?.upperBand ?? 0, bb?.lowerBand ?? 0);
+  const stochasticOscillator = calculateStochastic(stochastic?.k ?? 0, stochastic?.d ?? 0);
+  const isBullishTrend = price > ema50d;
+  const parabolicSAR = calculateParabolicSar(price, sar, isBullishTrend);
+  const cciScore = calculateCci(cci);
 
   const totalScore = 
-    adxStrength + 
-    bollingerBandVolatility + 
-    trendAlignment +
-    srRetest + 
-    priceStructure + 
-    marketRegimeFit + 
-    currencyStrengthIndex;
+    trendAlignment + adxStrength + rsiMomentum + macdMomentum + atrVolatility +
+    bollingerBands + stochasticOscillator + parabolicSAR + cciScore;
   
   let signal: 'Buy' | 'Sell' | 'Block' = 'Block';
-  if (totalScore >= 7.0 && quote.price && data.sma50?.[0]?.sma) {
-    if (quote.price > data.sma50[0].sma) signal = 'Buy';
-    else signal = 'Sell';
-  }
+  if (totalScore >= 7.0 && price > ema50d) signal = 'Buy';
+  if (totalScore >= 7.0 && price < ema50d) signal = 'Sell';
 
   return {
     ...defaultScore,
-    price: price,
+    price,
     change: quote?.change ?? 0,
     changesPercentage: quote?.changesPercentage ?? 0,
     dScore: Math.min(totalScore, 10),
     grade: getGrade(totalScore),
-    adxStrength,
-    bollingerBandVolatility,
-    srRetest,
-    priceStructure,
-    marketRegimeFit,
-    trendAlignment,
-    currencyStrengthIndex,
     signal,
+    trendAlignment,
+    adxStrength,
+    rsiMomentum,
+    macdMomentum,
+    atrVolatility,
+    bollingerBands,
+    stochasticOscillator,
+    parabolicSAR,
+    cci: cciScore,
+    obv: 0, // Not available for Forex
   };
 };
 
+// --- Mock Data (to be phased out or used for dev) ---
 export const activeBotsData: Bot[] = [
   { id: 'bot1', pair: 'EUR/USD', strategy: 'DCA Grid', status: 'active', profit_loss: 152.3, drawdown: 25.5, entry_time: '2024-05-20T10:30:00Z', d_score_entry: 8.2, stopLoss: 50, takeProfit: 100 },
   { id: 'bot2', pair: 'GBP/USD', strategy: 'Trend Rider', status: 'active', profit_loss: -45.1, drawdown: 78.2, entry_time: '2024-05-20T11:05:00Z', d_score_entry: 7.5, stopLoss: 50, takeProfit: 100 },

@@ -1,5 +1,4 @@
 
-
 export type DScore = {
   id: string;
   pair: string;
@@ -8,19 +7,20 @@ export type DScore = {
   changesPercentage: number;
   dScore: number;
   grade: 'A' | 'B' | 'C';
-  adxStrength: number; // 0-2.0
-  bollingerBandVolatility: number; // 0-1.5
-  trendAlignment: number; // 0-2.0
-  srRetest: number; // 0-1.5
-  priceStructure: number; // 0-1.5
-  marketRegimeFit: number; // 0-2.0
-  currencyStrengthIndex: number; // 0-1.0
   signal: 'Buy' | 'Sell' | 'Block';
   positions?: number;
-  trends: {
-    d1: 'buy' | 'sell' | 'neutral';
-    w1: 'buy' | 'sell' | 'neutral';
-  };
+  
+  // Score components
+  trendAlignment: number;
+  adxStrength: number;
+  rsiMomentum: number;
+  macdMomentum: number;
+  atrVolatility: number;
+  bollingerBands: number;
+  stochasticOscillator: number;
+  parabolicSAR: number;
+  cci: number;
+  obv: number;
 };
 
 export type Bot = {
@@ -49,7 +49,7 @@ export type RiskMetric = {
 };
 
 export type ApiKey = {
-  id: string;
+  id:string;
   name: string;
   key: string;
 };
@@ -119,8 +119,18 @@ export type ExposureData = {
     type: 'long' | 'short';
 }
 
-// FMP Types
-type FMPQuote = {
+// FMP Base Types
+type FMPBase = {
+    date: string;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume: number;
+};
+
+// FMP Indicator Types
+export type FMPQuote = FMPBase & {
     symbol: string;
     name: string;
     price: number;
@@ -134,9 +144,7 @@ type FMPQuote = {
     priceAvg50: number;
     priceAvg200: number;
     exchange: string;
-    volume: number;
     avgVolume: number;
-    open: number;
     previousClose: number;
     eps: number | null;
     pe: number | null;
@@ -145,77 +153,31 @@ type FMPQuote = {
     timestamp: number;
 };
 
-type FMPADX = {
-    date: string;
-    open: number;
-    high: number;
-    low: number;
-    close: number;
-    volume: number;
-    adx: number;
-    pdi: number;
-    mdi: number;
-};
-
-type FMPBB = {
-    date: string;
-    open: number;
-    high: number;
-    low: number;
-    close: number;
-    volume: number;
-    upperBand: number;
-    middleBand: number;
-    lowerBand: number;
-}
-
-type FMPATR = {
-    date: string;
-    open: number;
-    high: number;
-    low: number;
-    close: number;
-    volume: number;
-    atr: number;
-};
-
-type FMPSMA = {
-    date: string;
-    open: number;
-    high: number;
-    low: number;
-    close: number;
-    volume: number;
-    sma: number;
-};
-
-export type FMPHistoricalPrice = {
-    date: string;
-    open: number;
-    high: number;
-    low: number;
-    close: number;
-    adjClose: number;
-    volume: number;
-    unadjustedVolume: number;
-    change: number;
-    changePercent: number;
-    vwap: number;
-    label: string;
-    changeOverTime: number;
-};
-
+export type FMPHistoricalPrice = FMPBase;
+export type FMPSMA = FMPBase & { sma: number };
+export type FMPEMA = FMPBase & { ema: number };
+export type FMPADX = FMPBase & { adx: number; pdi: number; mdi: number };
+export type FMPRSI = FMPBase & { rsi: number };
+export type FMPATR = FMPBase & { atr: number };
+export type FMPBB = FMPBase & { upperBand: number; middleBand: number; lowerBand: number };
+export type FMPMACD = FMPBase & { macd: number; signal: number; histogram: number };
+export type FMPStochastic = FMPBase & { k: number; d: number };
+export type FMPSAR = FMPBase & { sar: number };
+export type FMPCCI = FMPBase & { cci: number };
 
 export type ForexData = {
     pair: string;
     quote: FMPQuote[] | null;
+    historical: FMPHistoricalPrice[] | null;
+    ema50d: FMPEMA[] | null;
     adx: FMPADX[] | null;
+    rsi: FMPRSI[] | null;
+    macd: FMPMACD[] | null;
     atr: FMPATR[] | null;
     bb: FMPBB[] | null;
-    sma50: FMPSMA[] | null;
-    sma100: FMPSMA[] | null;
-    sma200: FMPSMA[] | null;
-    sma50_weekly: FMPSMA[] | null;
-    adx_weekly: FMPADX[] | null;
-    historical: FMPHistoricalPrice[] | null;
+    stochastic: FMPStochastic[] | null;
+    sar: FMPSAR[] | null;
+    cci: FMPCCI[] | null;
+    ema50_4h: FMPEMA[] | null;
+    ema50_w: FMPEMA[] | null;
 };

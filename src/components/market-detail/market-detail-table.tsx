@@ -25,17 +25,20 @@ type ProcessedData = {
     price?: number;
     change?: number;
     timestamp?: number;
+    ema50_4h?: number;
+    ema50d?: number;
+    ema50_w?: number;
     adx?: number;
-    pdi?: number;
-    mdi?: number;
+    rsi?: number;
+    macd?: number;
+    macd_hist?: number;
     atr?: number;
     bb_upper?: number;
-    bb_middle?: number;
     bb_lower?: number;
-    sma50d?: number;
-    sma100d?: number;
-    sma200d?: number;
-    sma50w?: number;
+    stoch_k?: number;
+    stoch_d?: number;
+    sar?: number;
+    cci?: number;
 };
 
 type SortKey = keyof ProcessedData;
@@ -61,30 +64,25 @@ export default function MarketDetailTable({ data }: MarketDetailTableProps) {
   const processedData = React.useMemo((): ProcessedData[] => {
     return data.map(item => {
       const quote = item.quote?.[0];
-      const adx = item.adx?.[0];
-      const atr = item.atr?.[0];
-      const bb = item.bb?.[0];
-      const sma50d = item.sma50?.[0];
-      const sma100d = item.sma100?.[0];
-      const sma200d = item.sma200?.[0];
-      const sma50w = item.sma50_weekly?.[0];
-      
       return {
         pair: item.pair,
         price: quote?.price,
         change: quote?.changesPercentage,
         timestamp: quote?.timestamp,
-        adx: adx?.adx,
-        pdi: adx?.pdi,
-        mdi: adx?.mdi,
-        atr: atr?.atr,
-        bb_upper: bb?.upperBand,
-        bb_middle: bb?.middleBand,
-        bb_lower: bb?.lowerBand,
-        sma50d: sma50d?.sma,
-        sma100d: sma100d?.sma,
-        sma200d: sma200d?.sma,
-        sma50w: sma50w?.sma,
+        ema50_4h: item.ema50_4h?.[0]?.ema,
+        ema50d: item.ema50d?.[0]?.ema,
+        ema50_w: item.ema50_w?.[0]?.ema,
+        adx: item.adx?.[0]?.adx,
+        rsi: item.rsi?.[0]?.rsi,
+        macd: item.macd?.[0]?.macd,
+        macd_hist: item.macd?.[0]?.histogram,
+        atr: item.atr?.[0]?.atr,
+        bb_upper: item.bb?.[0]?.upperBand,
+        bb_lower: item.bb?.[0]?.lowerBand,
+        stoch_k: item.stochastic?.[0]?.k,
+        stoch_d: item.stochastic?.[0]?.d,
+        sar: item.sar?.[0]?.sar,
+        cci: item.cci?.[0]?.cci,
       };
     });
   }, [data]);
@@ -134,15 +132,20 @@ export default function MarketDetailTable({ data }: MarketDetailTableProps) {
               <SortableHeader tkey="price" label="Price" />
               <SortableHeader tkey="change" label="Change %" />
               <SortableHeader tkey="timestamp" label="Last Update" />
+              <SortableHeader tkey="ema50_4h" label="EMA 4H" />
+              <SortableHeader tkey="ema50d" label="EMA 1D" />
+              <SortableHeader tkey="ema50_w" label="EMA 1W" />
               <SortableHeader tkey="adx" label="ADX" />
+              <SortableHeader tkey="rsi" label="RSI" />
+              <SortableHeader tkey="macd" label="MACD" />
+              <SortableHeader tkey="macd_hist" label="MACD Hist" />
               <SortableHeader tkey="atr" label="ATR" />
-              <SortableHeader tkey="sma50d" label="SMA 50D" />
-              <SortableHeader tkey="sma100d" label="SMA 100D" />
-              <SortableHeader tkey="sma200d" label="SMA 200D" />
-              <SortableHeader tkey="sma50w" label="SMA 50W" />
               <SortableHeader tkey="bb_upper" label="BB Upper" />
-              <SortableHeader tkey="bb_middle" label="BB Middle" />
               <SortableHeader tkey="bb_lower" label="BB Lower" />
+              <SortableHeader tkey="stoch_k" label="Stoch %K" />
+              <SortableHeader tkey="stoch_d" label="Stoch %D" />
+              <SortableHeader tkey="sar" label="SAR" />
+              <SortableHeader tkey="cci" label="CCI" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -154,15 +157,20 @@ export default function MarketDetailTable({ data }: MarketDetailTableProps) {
                     {formatValue(item.change)}%
                 </TableCell>
                 <TableCell>{formatTimestamp(item.timestamp)}</TableCell>
+                <TableCell>{formatValue(item.ema50_4h, 5)}</TableCell>
+                <TableCell>{formatValue(item.ema50d, 5)}</TableCell>
+                <TableCell>{formatValue(item.ema50_w, 5)}</TableCell>
                 <TableCell>{formatValue(item.adx)}</TableCell>
+                <TableCell>{formatValue(item.rsi)}</TableCell>
+                <TableCell>{formatValue(item.macd, 5)}</TableCell>
+                <TableCell>{formatValue(item.macd_hist, 5)}</TableCell>
                 <TableCell>{formatValue(item.atr, 5)}</TableCell>
-                <TableCell>{formatValue(item.sma50d, 5)}</TableCell>
-                <TableCell>{formatValue(item.sma100d, 5)}</TableCell>
-                <TableCell>{formatValue(item.sma200d, 5)}</TableCell>
-                <TableCell>{formatValue(item.sma50w, 5)}</TableCell>
                 <TableCell>{formatValue(item.bb_upper, 5)}</TableCell>
-                <TableCell>{formatValue(item.bb_middle, 5)}</TableCell>
                 <TableCell>{formatValue(item.bb_lower, 5)}</TableCell>
+                <TableCell>{formatValue(item.stoch_k)}</TableCell>
+                <TableCell>{formatValue(item.stoch_d)}</TableCell>
+                <TableCell>{formatValue(item.sar, 5)}</TableCell>
+                <TableCell>{formatValue(item.cci)}</TableCell>
               </TableRow>
             ))}
           </TableBody>

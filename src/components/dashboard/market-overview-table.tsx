@@ -82,9 +82,9 @@ export default function MarketOverviewTable({ data, isLoading }: MarketOverviewT
                 <TableRow>
                   <SortableHeader tkey="pair" label="Pair" />
                   <SortableHeader tkey="dScore" label="D-Score" />
+                  <SortableHeader tkey="trendAlignment" label="Trend" />
                   <SortableHeader tkey="adxStrength" label="ADX" />
-                  <SortableHeader tkey="bollingerBandVolatility" label="BB Vol" />
-                  <SortableHeader tkey="marketRegimeFit" label="Regime" />
+                  <SortableHeader tkey="rsiMomentum" label="RSI" />
                   <TableHead className="text-right">Entry Signal</TableHead>
                 </TableRow>
               </TableHeader>
@@ -115,9 +115,9 @@ export default function MarketOverviewTable({ data, isLoading }: MarketOverviewT
                           </div>
                         </TableCell>
                         <TableCell className="font-semibold text-lg text-primary">{item.dScore.toFixed(1)}</TableCell>
+                        <TableCell>{item.trendAlignment.toFixed(1)}</TableCell>
                         <TableCell>{item.adxStrength.toFixed(1)}</TableCell>
-                        <TableCell>{item.bollingerBandVolatility.toFixed(1)}</TableCell>
-                        <TableCell>{item.marketRegimeFit.toFixed(1)}</TableCell>
+                        <TableCell>{item.rsiMomentum.toFixed(1)}</TableCell>
                         <TableCell className="text-right">
                           <div className={cn("flex items-center justify-end gap-2 font-medium", signal.color)}>
                               {signal.icon}
