@@ -1,29 +1,16 @@
 
-import type { FMPHistoricalPrice, ForexData, CalculatedIndicators, FMPQuote, DScore, IndicatorSet, StrengthData } from './types';
+import type { FMPHistoricalPrice, DScore, FMPQuote, StrengthData } from './types';
 import { calculateIndicators } from './indicators';
 
 const BASE_URL = 'https://financialmodelingprep.com/api/v3';
 const API_KEY = process.env.FMP_API_KEY || 'RUTyEslPzCs5tHMBZUUxCr2no36EV45Q';
 
 interface IndicatorValues {
-  daily: any;
-  fourHour: any;
-  weekly: any;
+  daily: ReturnType<typeof calculateIndicators>;
+  fourHour: ReturnType<typeof calculateIndicators>;
+  weekly: ReturnType<typeof calculateIndicators>;
   pair: string;
 }
-
-const WEIGHTS = {
-    trendAlignment: 3.0,
-    adxStrength: 1.5,
-    rsiMomentum: 1.0,
-    macdMomentum: 1.0,
-    atrVolatility: 1.0,
-    bollingerBands: 0.5,
-    stochasticOscillator: 0.5,
-    parabolicSAR: 0.5,
-    cci: 0.5,
-};
-
 
 async function fetchWithCache<T>(url: string, ttl: number = 3600): Promise<T | null> {
     try {
@@ -54,10 +41,9 @@ async function fetchWithCache<T>(url: string, ttl: number = 3600): Promise<T | n
     }
 }
 
-
 // SMART SCORING FUNCTIONS
 function getTrendDirection(price?: number, ema?: number): 'up' | 'down' {
-    if (!price || !ema) return 'down'; // Default to down if data is missing
+    if (price === undefined || ema === undefined) return 'down';
     return price >= ema ? 'up' : 'down';
 }
 
@@ -183,19 +169,23 @@ function calculateOtherIndicatorScore(value: number | undefined, name: string, m
         return 0;
     }
 
-    let normalizedValue = value;
+    let normalizedValue = 0;
     if (name === 'stochastic') normalizedValue = value / 100;
-    if (name === 'cci') normalizedValue = (value + 100) / 200; // Normalize from [-100, 100] to [0, 1]
+    if (name === 'cci') normalizedValue = (value + 100) / 200;
 
+    let score = 0;
     if (normalizedValue > 0.7) {
-        return maxScore;
+        score = maxScore;
     } else if (normalizedValue > 0.5) {
-        return maxScore * 0.6;
+        score = maxScore * 0.6;
     } else if (normalizedValue > 0.3) {
-        return maxScore * 0.3;
+        score = maxScore * 0.3;
+    } else {
+        score = maxScore * 0.1;
     }
-    return maxScore * 0.1;
+    return score;
 }
+
 
 function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMPQuote | null): DScore {
 
@@ -210,7 +200,7 @@ function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMP
         atrVolatility: calculateAtrVolatilityScore(indicators),
         bollingerBands: calculateBollingerBandsScore(indicators),
         stochasticOscillator: calculateOtherIndicatorScore(stochValue, 'stochastic', 0.5),
-        parabolicSAR: 0, // Placeholder, SAR logic needs context
+        parabolicSAR: 0, 
         cci: calculateOtherIndicatorScore(indicators.daily.cci, 'cci', 0.5),
     };
 
@@ -293,14 +283,10 @@ export async function getForexData(pair: string): Promise<DScore> {
         const fourHourPrices = dailyPrices.slice(-100); 
         const weeklyPrices = dailyPrices.filter((_, idx) => idx % 5 === 0);
 
-        const dailyIndicators = calculateIndicators(dailyPrices);
-        const fourHourIndicators = calculateIndicators(fourHourPrices); 
-        const weeklyIndicators = calculateIndicators(weeklyPrices);
-
         const indicators: IndicatorValues = {
-            daily: { ...dailyIndicators, price: dailyPrices[dailyPrices.length - 1]?.close },
-            fourHour: { ...fourHourIndicators, price: fourHourPrices[fourHourPrices.length - 1]?.close },
-            weekly: { ...weeklyIndicators, price: weeklyPrices[weeklyPrices.length - 1]?.close },
+            daily: calculateIndicators(dailyPrices),
+            fourHour: calculateIndicators(fourHourPrices),
+            weekly: calculateIndicators(weeklyPrices),
             pair
         };
         
@@ -319,11 +305,11 @@ export async function getStrengthData(): Promise<StrengthData[]> {
     const currencies = {
         'USD': '^DXY',
         'EUR': 'EURUSD',
-        'JPY': 'USDJPY', // Inverted
+        'JPY': 'USDJPY', 
         'GBP': 'GBPUSD',
         'AUD': 'AUDUSD',
-        'CAD': 'USDCAD', // Inverted
-        'CHF': 'USDCHF', // Inverted
+        'CAD': 'USDCAD', 
+        'CHF': 'USDCHF', 
         'NZD': 'NZDUSD'
     };
 
@@ -340,7 +326,7 @@ export async function getStrengthData(): Promise<StrengthData[]> {
         const data = historicalData.map(item => ({
             date: item.date,
             strength: isInverted ? 1 / item.close : item.close
-        })).reverse(); // FMP returns newest first, we want oldest first for trend calculation
+        })).reverse(); 
 
         return { currency, data };
     });

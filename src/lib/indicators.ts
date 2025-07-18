@@ -19,16 +19,9 @@ const preparePriceData = (prices: FMPHistoricalPrice[]) => {
     };
 };
 
-interface CalculationOptions {
-    emaPeriod?: number;
-    adxPeriod?: number;
-    rsiPeriod?: number;
-    // Add other periods if needed
-}
-
-export function calculateIndicators(prices: FMPHistoricalPrice[], options?: CalculationOptions): IndicatorSet {
-    const emaPeriod = options?.emaPeriod ?? 50;
-    if (prices.length < emaPeriod) { // Need enough data for the longest period EMA
+export function calculateIndicators(prices: FMPHistoricalPrice[]): IndicatorSet {
+    const emaPeriod = 50;
+    if (prices.length < emaPeriod) {
         return {};
     }
 
@@ -71,6 +64,7 @@ export function calculateIndicators(prices: FMPHistoricalPrice[], options?: Calc
         const cci = last(CCI.calculate({ open: input.open, high: input.high, low: input.low, close: input.close, period: 20 }));
 
         return {
+            price: last(input.close),
             ema50,
             adx,
             rsi,

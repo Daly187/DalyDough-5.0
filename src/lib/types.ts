@@ -1,5 +1,4 @@
 
-
 export type DScore = {
   id: string;
   pair: string;
@@ -24,7 +23,7 @@ export type DScore = {
   cci: number;
   obv: number; // Will remain 0 for Forex
 
-  rawIndicators: IndicatorSet;
+  rawIndicators: Partial<IndicatorSet>;
 };
 
 export type Bot = {
@@ -83,14 +82,14 @@ export type AIReentry = {
   level: number;
   priceOffset: string;
   lotSize: number;
-  condition: string;
+  condition:string;
 }
 
 export type StrengthData = {
   currency: string;
   data: {
     date: string;
-    strength: number; // This is the closing price
+    strength: number; 
   }[];
 };
 
@@ -125,7 +124,7 @@ export type ExposureData = {
 // FMP Types
 export type FMPQuote = {
     symbol: string;
-    name?: string; // name is sometimes included
+    name?: string;
     bid?: number;
     ask?: number;
     price: number;
@@ -155,16 +154,4 @@ export type IndicatorSet = {
     stochastic?: { k: number; d: number };
     sar?: number;
     cci?: number;
-};
-
-export type CalculatedIndicators = {
-    daily: IndicatorSet;
-    fourHour: IndicatorSet;
-    weekly: IndicatorSet;
-};
-
-// This type represents the data structure before the D-Score is calculated
-export type ForexData = {
-    pair: string;
-    indicators: CalculatedIndicators;
 };
