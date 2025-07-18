@@ -30,6 +30,8 @@ const signalConfig = {
     Buy: { color: "text-green-400", icon: <ArrowUp className="h-4 w-4" />, label: "Allow Buy" },
     Sell: { color: "text-red-400", icon: <ArrowDown className="h-4 w-4" />, label: "Allow Sell" },
     Block: { color: "text-muted-foreground", icon: <Minus className="h-4 w-4" />, label: "Block" },
+    'Buy weak': { color: "text-green-400/70", icon: <ArrowUp className="h-4 w-4" />, label: "Allow Buy" },
+    'Sell weak': { color: "text-red-400/70", icon: <ArrowDown className="h-4 w-4" />, label: "Allow Sell" },
 }
 
 export default function MarketOverviewTable({ data, isLoading }: MarketOverviewTableProps) {
@@ -101,7 +103,7 @@ export default function MarketOverviewTable({ data, isLoading }: MarketOverviewT
                 ) : (
                   sortedData.map((item) => {
                     const signal = signalConfig[item.signal];
-                    const isPriceValid = typeof item.price === 'number';
+                    const isPriceValid = typeof item.price === 'number' && item.price > 0;
                     const isChangeValid = typeof item.changesPercentage === 'number';
 
                     return (
@@ -109,8 +111,8 @@ export default function MarketOverviewTable({ data, isLoading }: MarketOverviewT
                         <TableCell>
                           <div className="font-medium">{item.pair}</div>
                           <div className={cn("text-xs", item.change >= 0 ? 'text-green-400' : 'text-red-400')}>
-                            {isPriceValid && item.price > 0 ? item.price.toFixed(item.pair.includes('JPY') ? 3 : 5) : 'N/A'}
-                            {isChangeValid && (
+                            {isPriceValid ? item.price.toFixed(item.pair.includes('JPY') ? 3 : 5) : 'N/A'}
+                            {isPriceValid && isChangeValid && (
                               <span className="ml-1">({item.changesPercentage.toFixed(2)}%)</span>
                             )}
                           </div>

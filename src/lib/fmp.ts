@@ -1,50 +1,13 @@
 
-import type { FMPHistoricalPrice, DScore, FMPQuote, StrengthData } from './types';
+import type { DScore, FMPQuote, StrengthData } from './types';
 import { calculateIndicators } from './indicators';
-
-const BASE_URL = 'https://financialmodelingprep.com/api/v3';
-const API_KEY = process.env.FMP_API_KEY || 'RUTyEslPzCs5tHMBZUUxCr2no36EV45Q';
+import { fetchHistorical, fetchQuote } from './api/fmp-api';
 
 interface IndicatorValues {
   daily: ReturnType<typeof calculateIndicators>;
   fourHour: ReturnType<typeof calculateIndicators>;
   weekly: ReturnType<typeof calculateIndicators>;
   pair: string;
-}
-
-async function fetchWithCache<T>(url: string, ttl: number = 3600): Promise<T | null> {
-    try {
-        const res = await fetch(url, { next: { revalidate: ttl } });
-        
-        if (!res.ok) {
-            const errorText = await res.text();
-            console.error(`FMP API Error for ${url}: ${res.status} ${res.statusText} - ${errorText}`);
-            return null;
-        }
-        
-        let data = await res.json();
-        
-        if (!data || (data && (data['Error Message'] || data.error))) {
-            console.warn(`FMP API Warning for ${url}: ${data?.['Error Message'] || data?.error || 'No data returned'}`);
-            return null;
-        }
-
-        // FMP can return a single object for some symbols instead of an array.
-        // This ensures the return value is always an array if it's not already.
-        if (typeof data === 'object' && !Array.isArray(data) && data !== null) {
-            data = [data];
-        }
-
-        if (Array.isArray(data) && data.length === 0) {
-            console.warn(`FMP API Warning for ${url}: Empty array returned.`);
-            return null;
-        }
-        
-        return data as T;
-    } catch (error) {
-        console.error(`Error fetching ${url}:`, error);
-        return null;
-    }
 }
 
 // SMART SCORING FUNCTIONS
@@ -221,17 +184,23 @@ function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMP
         finalSignal = 'Block';
     }
     
+    // Prioritize live data, but if unavailable, explicitly mark it as such.
+    const price = currentPriceData?.price ?? 0;
+    const change = currentPriceData?.change ?? 0;
+    const changesPercentage = currentPriceData?.changesPercentage ?? 0;
+    const lastUpdated = currentPriceData?.timestamp ?? 0;
+
     return {
         id: indicators.pair,
         pair: indicators.pair,
-        price: currentPriceData?.price ?? indicators.daily.price ?? 0,
-        change: currentPriceData?.change ?? 0,
-        changesPercentage: currentPriceData?.changesPercentage ?? 0,
+        price,
+        change,
+        changesPercentage,
         dScore: parseFloat(totalScore.toFixed(1)),
         grade,
         signal: finalSignal,
         positions: 0,
-        lastUpdated: currentPriceData?.timestamp ?? Math.floor(Date.now() / 1000),
+        lastUpdated,
         trendAlignment: scores.trendAlignment,
         adxStrength: scores.adxStrength,
         rsiMomentum: scores.rsiMomentum,
@@ -241,7 +210,7 @@ function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMP
         stochasticOscillator: scores.stochasticOscillator,
         parabolicSAR: scores.parabolicSAR,
         cci: scores.cci,
-        obv: 0,
+        obv: 0, // Will remain 0 for Forex
         rawIndicators: {
             ema50: indicators.daily.ema50,
             adx: indicators.daily.adx,
@@ -268,12 +237,12 @@ export async function getForexData(pair: string): Promise<DScore> {
     };
 
     try {
-        const quotePromise = fetchWithCache<FMPQuote[]>(`${BASE_URL}/quote/${baseSymbol}?apikey=${API_KEY}`, 10);
-        const dailyPromise = fetchWithCache<FMPHistoricalPrice[]>(`${BASE_URL}/historical-price-full/${baseSymbol}?timeseries=350&apikey=${API_KEY}`, 3600);
+        const quotePromise = fetchQuote(baseSymbol);
+        const dailyPromise = fetchHistorical(baseSymbol, 350);
         
         const [quoteResult, dailyDataResult] = await Promise.all([quotePromise, dailyPromise]);
         
-        const quoteData = quoteResult?.[0];
+        const quoteData = quoteResult?.[0] || null; // Ensure quoteData is null if not found
         const dailyPrices = dailyDataResult;
 
         if (!dailyPrices || dailyPrices.length < 200) { 
@@ -296,7 +265,7 @@ export async function getForexData(pair: string): Promise<DScore> {
             pair
         };
         
-        const finalResult = calculateSmartDScore(indicators, quoteData || null);
+        const finalResult = calculateSmartDScore(indicators, quoteData);
         
         return finalResult;
 
@@ -320,8 +289,7 @@ export async function getStrengthData(): Promise<StrengthData[]> {
     };
 
     const promises = Object.entries(currencies).map(async ([currency, symbol]) => {
-        const url = `${BASE_URL}/historical-price-full/${symbol}?timeseries=11&apikey=${API_KEY}`;
-        const historicalData = await fetchWithCache<FMPHistoricalPrice[]>(url, 3600);
+        const historicalData = await fetchHistorical(symbol, 11);
 
         if (!historicalData) {
             return { currency, data: [] };
