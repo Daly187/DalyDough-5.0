@@ -33,28 +33,27 @@ async function fetchWithCache<T>(url: string, ttl: number = 3600): Promise<T | n
 
 export async function getForexData(pair: string): Promise<ForexData> {
     const symbol = pair.replace('/', '');
-    const apiSymbol = symbol === 'XAUUSD' ? symbol : symbol;
     
     // --- Common ---
-    const quotePromise = fetchWithCache<any[]>(`${BASE_URL}/quote/${apiSymbol}?apikey=${API_KEY}`);
-    const historicalPromise = fetchWithCache<any[]>(`${BASE_URL}/historical-chart/daily/${apiSymbol}?limit=21&apikey=${API_KEY}`);
+    const quotePromise = fetchWithCache<any[]>(`${BASE_URL}/quote/${symbol}?apikey=${API_KEY}`);
+    const historicalPromise = fetchWithCache<any[]>(`${BASE_URL}/historical-chart/daily/${symbol}?limit=21&apikey=${API_KEY}`);
 
     // --- Daily Indicators ---
-    const ema50dPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=50&type=ema&apikey=${API_KEY}`);
-    const adxPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=14&type=adx&apikey=${API_KEY}`);
-    const rsiPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=14&type=rsi&apikey=${API_KEY}`);
-    const macdPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?fastPeriod=12&slowPeriod=26&signalPeriod=9&type=macd&apikey=${API_KEY}`);
-    const atrPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=14&type=averageTrueRange&apikey=${API_KEY}`);
-    const bbPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=20&standardDeviation=2&type=bollingerBands&apikey=${API_KEY}`);
-    const stochasticPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=14&kPeriod=3&dPeriod=3&type=stochastic&apikey=${API_KEY}`);
-    const sarPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?acceleration=0.02&maximum=0.2&type=parabolicsar&apikey=${API_KEY}`);
-    const cciPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${apiSymbol}?period=20&type=cci&apikey=${API_KEY}`);
+    const ema50dPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${symbol}?period=50&type=ema&apikey=${API_KEY}`);
+    const adxPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${symbol}?period=14&type=adx&apikey=${API_KEY}`);
+    const rsiPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${symbol}?period=14&type=rsi&apikey=${API_KEY}`);
+    const macdPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${symbol}?fastPeriod=12&slowPeriod=26&signalPeriod=9&type=macd&apikey=${API_KEY}`);
+    const atrPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${symbol}?period=14&type=averageTrueRange&apikey=${API_KEY}`);
+    const bbPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${symbol}?period=20&standardDeviation=2&type=bollingerBands&apikey=${API_KEY}`);
+    const stochasticPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${symbol}?period=14&kPeriod=3&dPeriod=3&type=stochastic&apikey=${API_KEY}`);
+    const sarPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${symbol}?acceleration=0.02&maximum=0.2&type=parabolicsar&apikey=${API_KEY}`);
+    const cciPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/daily/${symbol}?period=20&type=cci&apikey=${API_KEY}`);
 
     // --- 4-Hour Indicators ---
-    const ema50_4hPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/4hour/${apiSymbol}?period=50&type=ema&apikey=${API_KEY}`);
+    const ema50_4hPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/4hour/${symbol}?period=50&type=ema&apikey=${API_KEY}`);
 
     // --- Weekly Indicators ---
-    const ema50_wPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/weekly/${apiSymbol}?period=50&type=ema&apikey=${API_KEY}`);
+    const ema50_wPromise = fetchWithCache<any[]>(`${BASE_URL}/technical_indicator/weekly/${symbol}?period=50&type=ema&apikey=${API_KEY}`);
 
     const [
         quote, historical,
