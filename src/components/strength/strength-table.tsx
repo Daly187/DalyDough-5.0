@@ -13,7 +13,8 @@ interface StrengthTableProps {
 
 export default function StrengthTable({ strengthData }: StrengthTableProps) {
   const getLastFiveDaysData = (data: { date: string; strength: number }[]) => {
-    return data.slice(-5);
+    // We need 6 items to compare 5 days
+    return data.slice(-6);
   };
 
   return (
@@ -30,15 +31,13 @@ export default function StrengthTable({ strengthData }: StrengthTableProps) {
       </TableHeader>
       <TableBody>
         {strengthData.map((currency) => {
-          const fiveDays = getLastFiveDaysData(currency.data);
-          let prevStrength = currency.data[currency.data.length - 6]?.strength ?? fiveDays[0].strength;
-
+          const sixDays = getLastFiveDaysData(currency.data);
           return (
             <TableRow key={currency.currency}>
               <TableCell className="font-medium">{currency.currency}</TableCell>
-              {fiveDays.map((day, index) => {
+              {sixDays.slice(1).map((day, index) => {
+                const prevStrength = sixDays[index].strength; // Compare with the previous day in the 6-day slice
                 const isUp = day.strength >= prevStrength;
-                prevStrength = day.strength;
                 return (
                   <TableCell key={index} className="text-center">
                     <div className="flex justify-center">

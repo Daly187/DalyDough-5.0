@@ -8,7 +8,7 @@ export type DScore = {
   changesPercentage: number;
   dScore: number;
   grade: 'A' | 'B' | 'C';
-  signal: 'Buy' | 'Sell' | 'Block';
+  signal: 'Buy' | 'Sell' | 'Block' | 'Buy weak' | 'Sell weak';
   positions?: number;
   lastUpdated: number;
   

@@ -1,5 +1,5 @@
 
-import type { DScore, Bot, EquityData, RiskMetric, ApiKey, NewsEvent, BotConfigurationData, AIReentry, MarketRegime, ExposureData, ForexData, IndicatorSet, FMPQuote } from './types';
+import type { DScore, Bot, EquityData, RiskMetric, ApiKey, NewsEvent, BotConfigurationData, AIReentry, MarketRegime, ExposureData, ForexData, IndicatorSet, FMPQuote, StrengthData } from './types';
 
 const getGrade = (score: number): 'A' | 'B' | 'C' => {
   if (score >= 8.5) return 'A';
@@ -9,7 +9,96 @@ const getGrade = (score: number): 'A' | 'B' | 'C' => {
 
 export const pairs = ['AUD/CAD', 'AUD/CHF', 'AUD/JPY', 'AUD/NZD', 'AUD/USD', 'CAD/JPY', 'CHF/JPY', 'EUR/CAD', 'EUR/CHF', 'EUR/GBP', 'EUR/JPY', 'EUR/NZD', 'EUR/TRY', 'EUR/USD', 'GBP/AUD', 'GBP/CAD', 'GBP/CHF', 'GBP/JPY', 'GBP/USD', 'NZD/CAD', 'NZD/CHF', 'NZD/JPY', 'NZD/USD', 'USD/CAD', 'USD/CHF', 'USD/JPY', 'USD/TRY', 'USD/ZAR', 'XAU/USD'];
 
-export let strengthData: any[] = []; // This is now unused, can be removed later.
+export const strengthData: StrengthData[] = [
+    {
+        currency: 'USD',
+        data: [
+            { date: '2024-07-15', strength: 105.5 },
+            { date: '2024-07-16', strength: 105.7 },
+            { date: '2024-07-17', strength: 105.6 },
+            { date: '2024-07-18', strength: 105.9 },
+            { date: '2024-07-19', strength: 106.1 },
+            { date: '2024-07-20', strength: 106.0 },
+        ]
+    },
+    {
+        currency: 'EUR',
+        data: [
+            { date: '2024-07-15', strength: 95.2 },
+            { date: '2024-07-16', strength: 95.1 },
+            { date: '2024-07-17', strength: 95.4 },
+            { date: '2024-07-18', strength: 95.3 },
+            { date: '2024-07-19', strength: 95.6 },
+            { date: '2024-07-20', strength: 95.8 },
+        ]
+    },
+    {
+        currency: 'JPY',
+        data: [
+            { date: '2024-07-15', strength: 70.8 },
+            { date: '2024-07-16', strength: 70.5 },
+            { date: '2024-07-17', strength: 70.4 },
+            { date: '2024-07-18', strength: 70.9 },
+            { date: '2024-07-19', strength: 70.7 },
+            { date: '2024-07-20', strength: 70.6 },
+        ]
+    },
+    {
+        currency: 'GBP',
+        data: [
+            { date: '2024-07-15', strength: 88.3 },
+            { date: '2024-07-16', strength: 88.5 },
+            { date: '2024-07-17', strength: 88.7 },
+            { date: '2024-07-18', strength: 88.6 },
+            { date: '2024-07-19', strength: 88.9 },
+            { date: '2024-07-20', strength: 89.1 },
+        ]
+    },
+    {
+        currency: 'AUD',
+        data: [
+            { date: '2024-07-15', strength: 78.1 },
+            { date: '2024-07-16', strength: 78.3 },
+            { date: '2024-07-17', strength: 78.0 },
+            { date: '2024-07-18', strength: 77.8 },
+            { date: '2024-07-19', strength: 78.2 },
+            { date: '2024-07-20', strength: 78.5 },
+        ]
+    },
+    {
+        currency: 'CAD',
+        data: [
+            { date: '2024-07-15', strength: 82.5 },
+            { date: '2024-07-16', strength: 82.4 },
+            { date: '2024-07-17', strength: 82.7 },
+            { date: '2024-07-18', strength: 82.9 },
+            { date: '2024-07-19', strength: 82.8 },
+            { date: '2024-07-20', strength: 83.0 },
+        ]
+    },
+    {
+        currency: 'CHF',
+        data: [
+            { date: '2024-07-15', strength: 99.0 },
+            { date: '2024-07-16', strength: 99.2 },
+            { date: '2024-07-17', strength: 99.1 },
+            { date: '2024-07-18', strength: 98.9 },
+            { date: '2024-07-19', strength: 99.3 },
+            { date: '2024-07-20', strength: 99.5 },
+        ]
+    },
+    {
+        currency: 'NZD',
+        data: [
+            { date: '2024-07-15', strength: 76.2 },
+            { date: '2024-07-16', strength: 76.0 },
+            { date: '2024-07-17', strength: 76.3 },
+            { date: '2024-07-18', strength: 76.5 },
+            { date: '2024-07-19', strength: 76.4 },
+            { date: '2024-07-20', strength: 76.1 },
+        ]
+    },
+];
 
 
 // --- Mock Data (to be phased out or used for dev) ---
@@ -18,7 +107,7 @@ export const activeBotsData: Bot[] = [
   { id: 'bot2', pair: 'GBP/USD', strategy: 'Trend Rider', status: 'active', profit_loss: -45.1, drawdown: 78.2, entry_time: '2024-05-20T11:05:00Z', d_score_entry: 7.5, stopLoss: 50, takeProfit: 100, d_score_exit: 6.0 },
   { id: 'bot3', pair: 'AUD/USD', strategy: 'Breakout', status: 'active', profit_loss: 210.55, drawdown: 15.0, entry_time: '2024-05-20T14:00:00Z', d_score_entry: 9.1, stopLoss: 50, takeProfit: 100, d_score_exit: 6.0 },
   { id: 'bot4', pair: 'USD/JPY', strategy: 'paused', profit_loss: 89.7, drawdown: 110.8, entry_time: '2024-05-19T22:15:00Z', d_score_entry: 6.8, stopLoss: 50, takeProfit: 100, d_score_exit: 6.0 },
-  { id: 'bot5', pair: 'XAU/USD', strategy: 'DCA Grid', status: 'error', profit_loss: -112.0, drawdown: 150.0, entry_time: '2024-05-18T08:45:00Z', d_score_entry: 8.8, d_score_exit: 5.4, stopLoss: 50, takeProfit: 100 },
+  { id: 'bot5', pair: 'XAU/USD', strategy: 'error', profit_loss: -112.0, drawdown: 150.0, entry_time: '2024-05-18T08:45:00Z', d_score_entry: 8.8, d_score_exit: 5.4, stopLoss: 50, takeProfit: 100 },
 ];
 
 export const closedBotsData: Bot[] = [
