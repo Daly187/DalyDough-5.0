@@ -36,16 +36,15 @@ function calculateTrendAlignment(indicators: IndicatorValues): { score: number, 
     if (downTrends === 3) {
         return { score: 3.0, direction: 'down', signal: 'Sell' };
     }
-    if (upTrends === 2 && downTrends === 0) {
+    if (upTrends === 2 && downTrends === 1) { // Fixed: was downTrends === 0
         return { score: 2.0, direction: 'up', signal: 'Buy weak' };
     }
-    if (downTrends === 2 && upTrends === 0) {
+    if (downTrends === 2 && upTrends === 1) { // Fixed: was upTrends === 0
         return { score: 2.0, direction: 'down', signal: 'Sell weak' };
     }
     
     return { score: 1.0, direction: 'mixed', signal: 'Block' };
 }
-
 
 function calculateAdxStrengthScore(indicators: IndicatorValues): number {
     const adx = indicators.daily.adx || 0;
@@ -84,11 +83,11 @@ function calculateMacdMomentumScore(indicators: IndicatorValues): number {
     const isAligned = (macdItem.macd > 0 && macdItem.histogram > 0) || (macdItem.macd < 0 && macdItem.histogram < 0);
     
     if (isAligned) {
-      if (Math.abs(macdItem.histogram) > Math.abs(macdItem.macd * 0.1)) {
-          return 1.0;
-      } else {
-          return 0.6;
-      }
+        if (Math.abs(macdItem.histogram) > Math.abs(macdItem.macd * 0.1)) {
+            return 1.0;
+        } else {
+            return 0.6;
+        }
     }
     return 0.2;
 }
@@ -139,8 +138,11 @@ function calculateOtherIndicatorScore(value: number | undefined, name: string, m
     }
 
     let normalizedValue = 0;
-    if (name === 'stochastic') normalizedValue = value / 100;
-    if (name === 'cci') normalizedValue = (value + 100) / 200;
+    if (name === 'stochastic') {
+        normalizedValue = Math.max(0, Math.min(1, value / 100)); // Added bounds checking
+    } else if (name === 'cci') {
+        normalizedValue = Math.max(0, Math.min(1, (value + 100) / 200)); // Added bounds checking
+    }
 
     let score = 0;
     if (normalizedValue > 0.7) {
@@ -155,9 +157,7 @@ function calculateOtherIndicatorScore(value: number | undefined, name: string, m
     return score;
 }
 
-
 function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMPQuote | null): DScore {
-
     const trendAnalysis = calculateTrendAlignment(indicators);
     const stochValue = indicators.daily.stochastic?.k ?? 50;
 
@@ -225,7 +225,6 @@ function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMP
     };
 }
 
-
 export async function getForexData(pair: string): Promise<DScore> {
     const baseSymbol = pair.replace('/', '');
     
@@ -246,7 +245,7 @@ export async function getForexData(pair: string): Promise<DScore> {
         const dailyPrices = dailyDataResult;
 
         if (!dailyPrices || dailyPrices.length < 200) { 
-             return {
+            return {
                 ...defaultScore,
                 price: quoteData?.price || 0,
                 change: quoteData?.change || 0,
@@ -256,8 +255,9 @@ export async function getForexData(pair: string): Promise<DScore> {
             };
         }
 
-        const fourHourPrices = dailyPrices.slice(-100); 
-        const weeklyPrices = dailyPrices.filter((_, idx) => idx % 5 === 0);
+        // Fixed: Better data slicing to ensure we have enough data for each timeframe
+        const fourHourPrices = dailyPrices.slice(-Math.min(100, dailyPrices.length)); 
+        const weeklyPrices = dailyPrices.filter((_, idx) => idx % 5 === 0).slice(-Math.min(50, Math.floor(dailyPrices.length / 5)));
 
         const indicators: IndicatorValues = {
             daily: calculateIndicators(dailyPrices),
@@ -272,10 +272,12 @@ export async function getForexData(pair: string): Promise<DScore> {
 
     } catch (error) {
         console.error(`❌ Failed to process data for ${pair}:`, error);
-        return defaultScore;
+        return {
+            ...defaultScore,
+            signal: 'Block' // Ensure error cases always return Block signal
+        };
     }
 }
-
 
 export async function getStrengthData(): Promise<StrengthData[]> {
     const currencyIndexes = {
@@ -290,19 +292,24 @@ export async function getStrengthData(): Promise<StrengthData[]> {
     };
 
     const promises = Object.entries(currencyIndexes).map(async ([currency, symbol]) => {
-        const historicalData = await fetchHistorical(symbol, 11);
+        try {
+            const historicalData = await fetchHistorical(symbol, 11);
 
-        if (!historicalData) {
+            if (!historicalData || historicalData.length === 0) {
+                return { currency: `${currency} (${symbol.replace('^', '')})`, data: [] };
+            }
+            
+            // Reverse the array to have the oldest data first for trend calculation
+            const data = historicalData.map(item => ({
+                date: item.date,
+                strength: item.close
+            })).reverse(); 
+
+            return { currency: `${currency} (${symbol.replace('^', '')})`, data };
+        } catch (error) {
+            console.error(`❌ Failed to fetch strength data for ${currency}:`, error);
             return { currency: `${currency} (${symbol.replace('^', '')})`, data: [] };
         }
-        
-        // Reverse the array to have the oldest data first for trend calculation
-        const data = historicalData.map(item => ({
-            date: item.date,
-            strength: item.close
-        })).reverse(); 
-
-        return { currency: `${currency} (${symbol.replace('^', '')})`, data };
     });
 
     return Promise.all(promises);
