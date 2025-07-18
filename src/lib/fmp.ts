@@ -51,7 +51,13 @@ function calculateAdxStrengthScore(indicators: IndicatorValues, trendDirection: 
     if (trendDirection === 'mixed') return 0;
 
     let score = 0;
-    if (adx > 20) score = 2.5;
+    if (adx > 40) {
+      score = 2.5; // Extremely strong trend
+    } else if (adx > 25) {
+      score = 1.5; // Strong trend
+    } else if (adx > 20) {
+      score = 0.5; // Emerging trend
+    }
     
     return trendDirection === 'up' ? score : -score;
 }
@@ -65,7 +71,13 @@ function calculateMacdMomentumScore(indicators: IndicatorValues, trendDirection:
 
     if (!isAlignedUp && !isAlignedDown) return 0;
     
-    const score = 1.0;
+    const histogramAbs = Math.abs(macdItem.histogram);
+    let score = 0;
+    if (histogramAbs > 0.0005) { // Threshold for strong momentum, may need tuning per pair
+        score = 1.0;
+    } else if (histogramAbs > 0) {
+        score = 0.5; // Weaker but still aligned momentum
+    }
     
     return isAlignedUp ? score : -score;
 }
@@ -75,10 +87,17 @@ function calculateAtrVolatilityScore(indicators: IndicatorValues, trendDirection
 
     const atr = indicators.daily.atr || 0;
     const currentPrice = indicators.daily.price || 1;
+    // ATR as a percentage of price gives a normalized volatility measure
     const atrPercent = atr > 0 && currentPrice > 0 ? (atr / currentPrice) * 100 : 0;
     
     let score = 0;
-    if (atrPercent > 0.15) score = 1.5;
+    if (atrPercent > 0.7) { // Very high volatility
+      score = 1.5;
+    } else if (atrPercent > 0.35) { // Healthy volatility
+      score = 1.3;
+    } else if (atrPercent > 0.15) { // Minimal volatility
+      score = 0.5;
+    }
 
     return trendDirection === 'up' ? score : -score;
 }
@@ -96,19 +115,18 @@ function calculateConfirmationScore(indicators: IndicatorValues, trendDirection:
 
     let confirmations = 0;
     if (trendDirection === 'up') {
-        if (stoch < 80) confirmations++; // Not overbought
+        if (stoch < 80 && stoch > 20) confirmations++; // Not overbought or oversold, good for continuation
         if (sar < price) confirmations++; // SAR is below price
-        if (cci > 0) confirmations++; // CCI confirms upward momentum
+        if (cci > 100) confirmations++; // CCI confirms strong upward momentum
     } else { // 'down'
-        if (stoch > 20) confirmations++; // Not oversold
+        if (stoch > 20 && stoch < 80) confirmations++; // Not oversold or overbought
         if (sar > price) confirmations++; // SAR is above price
-        if (cci < 0) confirmations++; // CCI confirms downward momentum
+        if (cci < -100) confirmations++; // CCI confirms strong downward momentum
     }
 
-    if (confirmations === 3) {
-        return trendDirection === 'up' ? 1.0 : -1.0;
-    }
-    return 0;
+    const score = (confirmations / 3) * 1.0; // Prorated score based on number of confirmations
+    
+    return trendDirection === 'up' ? score : -score;
 }
 
 
@@ -188,6 +206,7 @@ export async function getForexData(pair: string): Promise<DScore> {
         const dailyPrices = dailyDataResult;
 
         if (!dailyPrices || dailyPrices.length < 200) { 
+            console.warn(`Insufficient historical data for ${pair} to calculate D-Score.`);
             return {
                 ...defaultScore,
                 price: quoteData?.price || 0,
@@ -197,6 +216,10 @@ export async function getForexData(pair: string): Promise<DScore> {
             };
         }
 
+        // We need enough data for 3 timeframes.
+        // Daily: ~200 for all indicators
+        // 4-Hour: Simulated with last 100 daily candles for faster-reacting indicators.
+        // Weekly: Aggregated from daily data.
         const fourHourPrices = dailyPrices.slice(-Math.min(100, dailyPrices.length)); 
         const weeklyPrices = dailyPrices.filter((_, idx) => idx % 5 === 0).slice(-Math.min(50, Math.floor(dailyPrices.length / 5)));
 
@@ -221,6 +244,11 @@ export async function getForexData(pair: string): Promise<DScore> {
 }
 
 export async function getStrengthData(): Promise<StrengthData[]> {
+    const now = Date.now();
+    if (strengthCache && (now - strengthCacheTimestamp < STRENGTH_CACHE_TTL)) {
+        return strengthCache;
+    }
+
     const currencyIndexes = {
         'USD (DXY)': '^DXY',
         'EUR (EXY)': '^EXY',
@@ -234,9 +262,11 @@ export async function getStrengthData(): Promise<StrengthData[]> {
 
     const promises = Object.entries(currencyIndexes).map(async ([currency, symbol]) => {
         try {
+            // Fetch last 11 days to calculate 10 days of trends.
             const historicalData = await fetchHistorical(symbol, 11);
 
-            if (!historicalData || historicalData.length === 0) {
+            if (!historicalData || historicalData.length < 11) {
+                console.warn(`Could not fetch enough strength data for ${currency}`);
                 return { currency: currency, data: [] };
             }
             
@@ -253,5 +283,8 @@ export async function getStrengthData(): Promise<StrengthData[]> {
         }
     });
 
-    return Promise.all(promises);
+    const results = await Promise.all(promises);
+    strengthCache = results;
+    strengthCacheTimestamp = now;
+    return results;
 }
