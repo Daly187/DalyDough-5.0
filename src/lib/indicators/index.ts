@@ -2,10 +2,8 @@
 import type { FMPHistoricalPrice, IndicatorSet } from '../types';
 import { calculateEMA } from './ema';
 import { calculateADX } from './adx';
-import { calculateRSI } from './rsi';
 import { calculateMACD } from './macd';
 import { calculateATR } from './atr';
-import { calculateBB } from './bb';
 import { calculateStochastic } from './stochastic';
 import { calculatePSAR } from './psar';
 import { calculateCCI } from './cci';
@@ -24,7 +22,7 @@ const preparePriceData = (prices: FMPHistoricalPrice[]) => {
 };
 
 export function calculateIndicators(prices: FMPHistoricalPrice[]): IndicatorSet {
-    if (prices.length < 50) { // Check for minimum length for EMA50
+    if (prices.length < 100) { // Check for minimum length for EMA100
         return {};
     }
 
@@ -34,12 +32,12 @@ export function calculateIndicators(prices: FMPHistoricalPrice[]): IndicatorSet 
     try {
         return {
             price: last(input.close),
+            ema20: calculateEMA(input.close, 20),
             ema50: calculateEMA(input.close, 50),
+            ema100: calculateEMA(input.close, 100),
             adx: calculateADX(input),
-            rsi: calculateRSI(input.close),
             macd: calculateMACD(input.close),
             atr: calculateATR(input),
-            bb: calculateBB(input.close),
             stochastic: calculateStochastic(input),
             sar: calculatePSAR(input),
             cci: calculateCCI(input),

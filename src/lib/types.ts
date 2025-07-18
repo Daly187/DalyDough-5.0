@@ -140,12 +140,12 @@ export type FMPHistoricalPrice = {
 // Locally Calculated Indicator Types
 export type IndicatorSet = {
     price?: number;
+    ema20?: number;
     ema50?: number;
+    ema100?: number;
     adx?: number;
-    rsi?: number;
     macd?: { macd?: number; signal?: number; histogram?: number };
     atr?: number;
-    bb?: { upper: number; middle: number; lower: number };
     stochastic?: { k: number; d: number };
     sar?: number;
     cci?: number;

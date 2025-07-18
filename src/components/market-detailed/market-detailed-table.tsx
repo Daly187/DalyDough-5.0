@@ -15,7 +15,6 @@ import { ArrowUpDown } from 'lucide-react';
 import type { DScore } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { Badge } from '../ui/badge';
 import { format } from 'date-fns';
 
 interface MarketDetailedTableProps {
@@ -69,8 +68,6 @@ export default function MarketDetailedTable({ data }: MarketDetailedTableProps) 
       if (sortKey === 'macd' && typeof bValue === 'object' && bValue !== null) bValue = bValue.histogram;
       if (sortKey === 'stochastic' && typeof aValue === 'object' && aValue !== null) aValue = aValue.k;
       if (sortKey === 'stochastic' && typeof bValue === 'object' && bValue !== null) bValue = bValue.k;
-      if (sortKey === 'bb' && typeof aValue === 'object' && aValue !== null) aValue = aValue.middle;
-      if (sortKey === 'bb' && typeof bValue === 'object' && bValue !== null) bValue = bValue.middle;
 
 
       if (aValue === undefined || aValue === null) return 1;
@@ -113,7 +110,9 @@ export default function MarketDetailedTable({ data }: MarketDetailedTableProps) 
               <SortableHeader tkey="price" label="Price" />
               <SortableHeader tkey="change" label="Change" />
               <SortableHeader tkey="lastUpdated" label="Last Update" />
+              <SortableHeader tkey="ema20" label="EMA 20" />
               <SortableHeader tkey="ema50" label="EMA 50" />
+              <SortableHeader tkey="ema100" label="EMA 100" />
               <SortableHeader tkey="adx" label="ADX" />
               <SortableHeader tkey="macd" label="MACD Hist" />
               <SortableHeader tkey="atr" label="ATR" />
@@ -134,7 +133,9 @@ export default function MarketDetailedTable({ data }: MarketDetailedTableProps) 
                             {formatValue(item.change, 4)} ({formatValue(item.changesPercentage, 2)}%)
                         </TableCell>
                         <TableCell>{formatTimestamp(item.lastUpdated)}</TableCell>
+                        <TableCell>{formatValue(indicators.ema20, 4)}</TableCell>
                         <TableCell>{formatValue(indicators.ema50, 4)}</TableCell>
+                        <TableCell>{formatValue(indicators.ema100, 4)}</TableCell>
                         <TableCell>{formatValue(indicators.adx, 2)}</TableCell>
                         <TableCell>{formatValue(indicators.macd, 4)}</TableCell>
                         <TableCell>{formatValue(indicators.atr, 5)}</TableCell>
