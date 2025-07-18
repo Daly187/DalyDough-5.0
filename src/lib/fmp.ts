@@ -39,7 +39,6 @@ const MAX_WEIGHTS: ScoreWeights = {
 
 async function fetchWithCache<T>(url: string, ttl: number = 3600): Promise<T | null> {
     try {
-        console.log(`Fetching from URL: ${url}`);
         const res = await fetch(url, { next: { revalidate: ttl } });
         
         if (!res.ok) {
@@ -95,14 +94,12 @@ function calculateBollingerBands(prices: number[], period: number = 20, stdDevMu
 function calculateIndicatorsEnhanced(historicalData: FMPHistoricalPrice[], options: any = {}) {
     try {
         if (!historicalData || historicalData.length < 50) {
-            console.warn(`Insufficient valid price data: ${historicalData?.length || 0}`);
             return {};
         }
 
         const closePrices = historicalData.map(d => d.close).filter(price => price && price > 0);
         
         if (closePrices.length < 50) {
-            console.warn(`Insufficient valid close price data: ${closePrices.length}`);
             return {};
         }
 
@@ -130,30 +127,39 @@ function getTrendDirection(ema: number, currentPrice: number): 'up' | 'down' | '
     return 'neutral';
 }
 
-function calculateTrendAlignmentScore(indicators: IndicatorValues): number {
+function calculateTrendAlignment(indicators: IndicatorValues): { score: number, direction: 'up' | 'down' | 'mixed' } {
+    const price = indicators.daily.price || 0;
     const trends = {
-        fourHour: getTrendDirection(indicators.fourHour.ema50 || 0, indicators.fourHour.price || indicators.daily.price || 0),
-        daily: getTrendDirection(indicators.daily.ema50 || 0, indicators.daily.price || 0),
-        weekly: getTrendDirection(indicators.weekly.ema50 || 0, indicators.weekly.price || indicators.daily.price || 0)
+        fourHour: getTrendDirection(indicators.fourHour.ema50 || 0, price),
+        daily: getTrendDirection(indicators.daily.ema50 || 0, price),
+        weekly: getTrendDirection(indicators.weekly.ema50 || 0, price)
     };
 
     const upTrends = Object.values(trends).filter(t => t === 'up').length;
     const downTrends = Object.values(trends).filter(t => t === 'down').length;
 
     let score = 0;
+    let direction: 'up' | 'down' | 'mixed' = 'mixed';
     
-    if (upTrends === 3 || downTrends === 3) {
+    if (upTrends === 3) {
         score = 3.0; // All aligned
-    } else if (upTrends === 2 || downTrends === 2) {
-        score = 2.0; // 2 aligned
-    } else if (upTrends === 1 || downTrends === 1) {
-        score = 1.0; // 1 aligned
+        direction = 'up';
+    } else if (downTrends === 3) {
+        score = 3.0;
+        direction = 'down';
+    } else if (upTrends === 2 && downTrends === 0) {
+        score = 2.0; // Mostly up
+        direction = 'up';
+    } else if (downTrends === 2 && upTrends === 0) {
+        score = 2.0; // Mostly down
+        direction = 'down';
     } else {
-        score = 0; // No alignment
+        score = 1.0; // Mixed or weak
     }
 
-    return score;
+    return { score, direction };
 }
+
 
 function calculateAdxStrengthScore(indicators: IndicatorValues): number {
     const adxValues = [
@@ -255,7 +261,6 @@ function calculateOtherIndicatorScore(value: number, name: string, maxScore: num
     } else {
         score = maxScore * 0.1;
     }
-    
     return score;
 }
 
@@ -263,9 +268,10 @@ function calculateOtherIndicatorScore(value: number, name: string, maxScore: num
 function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMPQuote | null): DScore {
 
     const stochValue = indicators.daily.stochastic?.k ?? 50;
+    const { score: trendAlignmentScore, direction: trendDirection } = calculateTrendAlignment(indicators);
     
     const scores: ScoreWeights = {
-        trendAlignment: calculateTrendAlignmentScore(indicators),
+        trendAlignment: trendAlignmentScore,
         adxStrength: calculateAdxStrengthScore(indicators),
         rsiMomentum: calculateRsiMomentumScore(indicators),
         macdMomentum: calculateMacdMomentumScore(indicators),
@@ -284,13 +290,10 @@ function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMP
     else if (totalScore >= 7.0) grade = 'B';
     
     let signal: 'Buy' | 'Sell' | 'Block' = 'Block';
-    const dailyPrice = indicators.daily.price || currentPriceData?.price || 0;
-    const dailyEma = indicators.daily.ema50;
-
     if (totalScore >= 7.0) {
-        if (dailyEma && dailyPrice > dailyEma) {
+        if (trendDirection === 'up') {
             signal = 'Buy';
-        } else if (dailyEma && dailyPrice < dailyEma) {
+        } else if (trendDirection === 'down') {
             signal = 'Sell';
         }
     }
@@ -339,8 +342,7 @@ export async function getForexData(pair: string): Promise<DScore> {
         const quoteData = quoteResult?.[0];
         const dailyPrices = dailyDataResult?.historical;
 
-        if (!dailyPrices || dailyPrices.length < 50) {
-            console.warn(`⚠️ Insufficient historical data for ${pair} (got ${dailyPrices?.length || 0} records, need at least 50)`);
+        if (!dailyPrices || dailyPrices.length < 200) { // Increased minimum length for weekly EMA
              return {
                 ...defaultScore,
                 price: quoteData?.price || 0,
@@ -350,8 +352,11 @@ export async function getForexData(pair: string): Promise<DScore> {
             };
         }
 
+        // We assume 4h is roughly the same as daily for this simplified model
+        const fourHourPrices = dailyPrices.slice(-100); 
+
         const dailyIndicators = calculateIndicatorsEnhanced(dailyPrices, { emaPeriod: 50 });
-        const fourHourIndicators = dailyIndicators; 
+        const fourHourIndicators = calculateIndicatorsEnhanced(fourHourPrices, { emaPeriod: 50 }); 
         const weeklyIndicators = calculateIndicatorsEnhanced(dailyPrices, { emaPeriod: 200 });
 
         const indicators: IndicatorValues = {
@@ -369,3 +374,5 @@ export async function getForexData(pair: string): Promise<DScore> {
         return defaultScore;
     }
 }
+
+    
