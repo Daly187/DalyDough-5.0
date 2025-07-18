@@ -43,9 +43,12 @@ export default function StrengthTable({ strengthData }: StrengthTableProps) {
               {elevenDays.slice(1).map((day, index) => {
                 const prevStrength = elevenDays[index].strength; // Compare with the previous day
                 const isUp = day.strength >= prevStrength;
+                const isDXY = currency.currency === 'USD';
+
                 return (
                   <TableCell key={index} className="text-center">
-                    <div className="flex justify-center">
+                    <div className="flex flex-col items-center justify-center">
+                        <span className="text-xs text-muted-foreground">{day.strength.toFixed(isDXY ? 2 : 4)}</span>
                         {isUp ? (
                             <ArrowUp className="h-5 w-5 text-green-500" />
                         ) : (
@@ -62,4 +65,3 @@ export default function StrengthTable({ strengthData }: StrengthTableProps) {
     </Table>
   );
 }
-
