@@ -1,6 +1,5 @@
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import ApiKeys from "@/components/settings/api-keys";
-import { apiKeysData } from "@/lib/data";
 
 export default function SettingsPage() {
   return (
@@ -9,18 +8,14 @@ export default function SettingsPage() {
         <h1 className="text-3xl font-semibold font-headline">Settings</h1>
       </div>
       <div className="mx-auto grid w-full max-w-6xl items-start gap-6 md:grid-cols-[180px_1fr] lg:grid-cols-[250px_1fr]">
-        <Tabs defaultValue="api_keys" orientation="vertical" className="sticky top-24">
+        <Tabs defaultValue="preferences" orientation="vertical" className="sticky top-24">
             <TabsList className="flex-col h-auto items-start bg-transparent p-0 border-none">
-                <TabsTrigger value="api_keys" className="w-full justify-start data-[state=active]:bg-muted">API Credentials</TabsTrigger>
                 <TabsTrigger value="preferences" className="w-full justify-start data-[state=active]:bg-muted">Preferences</TabsTrigger>
                 <TabsTrigger value="security" className="w-full justify-start data-[state=active]:bg-muted">Security</TabsTrigger>
             </TabsList>
         </Tabs>
         <div className="grid gap-6">
-            <Tabs defaultValue="api_keys" className="w-full">
-                <TabsContent value="api_keys">
-                    <ApiKeys keys={apiKeysData} />
-                </TabsContent>
+            <Tabs defaultValue="preferences" className="w-full">
                 <TabsContent value="preferences">
                     {/* Preferences Content Here */}
                 </TabsContent>
