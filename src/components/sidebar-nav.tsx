@@ -8,13 +8,14 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, Bot, FileText, Newspaper, BarChart2, Settings, Scan, Wallet, Columns3, GraduationCap, Microscope, Database } from 'lucide-react';
+import { LayoutDashboard, Bot, FileText, Newspaper, BarChart2, Settings, Scan, Wallet, Columns3, GraduationCap, Microscope, Database, Tornado } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/d-score-detailed', label: 'D-Score Detailed', icon: Columns3 },
   { href: '/market-detailed', label: 'Market Detailed', icon: Microscope },
+  { href: '/strength', label: 'Strength', icon: Tornado },
   { href: '/bots', label: 'Bots', icon: Bot },
   { href: '/autobot', label: 'Auto Bot', icon: Scan },
   { href: '/learning', label: 'Learning', icon: GraduationCap },
