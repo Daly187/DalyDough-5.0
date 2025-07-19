@@ -2,12 +2,13 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Link, Download, KeyRound, RefreshCw, Server } from "lucide-react";
+import { Link as LinkIcon, Download, KeyRound, RefreshCw, Server } from "lucide-react";
 
 export default function LinkAccountForm() {
     const [apiKey, setApiKey] = React.useState('');
@@ -67,7 +68,7 @@ export default function LinkAccountForm() {
                 </CardContent>
                 <CardFooter>
                     <Button className="w-full">
-                        <Link className="h-4 w-4 mr-2" />
+                        <LinkIcon className="h-4 w-4 mr-2" />
                         Connect Account
                     </Button>
                 </CardFooter>
@@ -105,14 +106,18 @@ export default function LinkAccountForm() {
                     </div>
                 </CardContent>
                 <CardFooter className="grid grid-cols-2 gap-4">
-                    <Button variant="secondary" className="w-full">
-                        <Download className="h-4 w-4 mr-2" />
-                        Download for MT4
-                    </Button>
-                     <Button variant="secondary" className="w-full">
-                        <Download className="h-4 w-4 mr-2" />
-                        Download for MT5
-                    </Button>
+                    <Link href="/path-to-your/dalydough-ea.ex4" download className="w-full">
+                        <Button variant="secondary" className="w-full">
+                            <Download className="h-4 w-4 mr-2" />
+                            Download for MT4
+                        </Button>
+                    </Link>
+                    <Link href="/path-to-your/dalydough-ea.ex5" download className="w-full">
+                         <Button variant="secondary" className="w-full">
+                            <Download className="h-4 w-4 mr-2" />
+                            Download for MT5
+                        </Button>
+                    </Link>
                 </CardFooter>
             </Card>
         </div>
