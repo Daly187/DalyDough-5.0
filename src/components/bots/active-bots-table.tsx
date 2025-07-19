@@ -62,6 +62,7 @@ const BotRow = ({ bot, allPairs, isClosed }: { bot: Bot, allPairs: DScore[], isC
         stopLoss: bot.stopLoss ?? 50,
         takeProfit: bot.takeProfit ?? 100,
         dSizeExitThreshold: bot.dSizeExitThreshold ?? 6.0,
+        reentryDelay: bot.reentryDelay ?? 15, // Add reentryDelay to state
     });
 
     const handleFieldChange = (field: keyof typeof editableFields, value: string) => {
@@ -79,6 +80,7 @@ const BotRow = ({ bot, allPairs, isClosed }: { bot: Bot, allPairs: DScore[], isC
                 stopLoss: editableFields.stopLoss,
                 takeProfit: editableFields.takeProfit,
                 dSizeExitThreshold: editableFields.dSizeExitThreshold,
+                reentryDelay: editableFields.reentryDelay,
             });
             toast({ title: "Bot Updated", description: `Settings for ${bot.pair} have been saved.` });
             triggerRefresh();
@@ -92,7 +94,15 @@ const BotRow = ({ bot, allPairs, isClosed }: { bot: Bot, allPairs: DScore[], isC
     const handleStatusChange = async (newStatus: Bot['status']) => {
         try {
             const botRef = doc(db, 'bots', bot.id);
-            await updateDoc(botRef, { status: newStatus });
+            const updates: Partial<Bot> = { status: newStatus };
+            
+            // This is the key change: set reentryDelay to -1 to signal "don't re-enter"
+            if (newStatus === 'close_at_tp') {
+                updates.reentryDelay = -1;
+            }
+
+            await updateDoc(botRef, updates);
+
             toast({ title: "Status Updated", description: `${bot.pair} bot is now ${newStatus}.` });
             triggerRefresh();
         } catch (error) {
