@@ -37,24 +37,28 @@ export async function addBot(botData: BotConfigurationData, pair: string, uid: s
 }
 
 /**
- * Fetches all bots from the 'bots' collection in Firestore.
+ * Fetches all bots for a specific user from the 'bots' collection in Firestore.
+ * @param uid The user's ID.
  * @returns An array of bot objects.
  */
-export async function getBots(uid?: string) {
+export async function getBots(uid: string) {
+    if (!uid) {
+        return { success: false, error: "User ID is required to fetch bots." };
+    }
     try {
-        let q;
-        if (uid) {
-            // If a UID is provided, fetch only that user's bots.
-            q = query(collection(db, "bots"), where("uid", "==", uid));
-        } else {
-            // Otherwise, fetch all bots (useful for admin views, but be careful with rules).
-            q = query(collection(db, "bots"));
-        }
+        const q = query(collection(db, "bots"), where("uid", "==", uid));
         
         const querySnapshot = await getDocs(q);
         const bots: Bot[] = [];
         querySnapshot.forEach((doc) => {
-            bots.push({ id: doc.id, ...doc.data() } as Bot);
+            const data = doc.data();
+            // Convert Firestore Timestamp to a serializable object if it exists
+            const botData = {
+                id: doc.id,
+                ...data,
+                createdAt: data.createdAt ? { seconds: data.createdAt.seconds, nanoseconds: data.createdAt.nanoseconds } : null,
+            } as Bot;
+            bots.push(botData);
         });
 
         return { success: true, data: bots };

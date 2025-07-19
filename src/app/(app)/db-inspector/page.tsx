@@ -1,17 +1,10 @@
 
-import { getBots } from "@/app/actions";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bot } from "@/lib/types";
-import { Database } from "lucide-react";
+import { Database, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-export default async function DbInspectorPage() {
-  const { success, data: botsData, error } = await getBots();
-  const allBots: Bot[] = success ? (botsData as Bot[]) : [];
-
-  if (!success) {
-    console.error("Failed to fetch bots:", error);
-  }
+export default function DbInspectorPage() {
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
@@ -26,15 +19,22 @@ export default async function DbInspectorPage() {
         <CardHeader>
           <CardTitle>Bots Collection Data</CardTitle>
           <CardDescription>
-            This is the live data your MT5 Expert Advisor will interact with. Use this structure as a reference.
+            This page is for admin use. To view data, you must update security rules to grant your admin user read access to the entire 'bots' collection.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="h-[70vh] w-full rounded-md border bg-muted/50 p-4">
-            <pre className="text-sm text-foreground">
-              {JSON.stringify(allBots, null, 2)}
-            </pre>
-          </ScrollArea>
+            <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Access Configuration Required</AlertTitle>
+                <AlertDescription>
+                    <p>Fetching all bot documents is disabled by default for security reasons.</p>
+                    <p className="mt-2">To enable this view, you must:</p>
+                    <ol className="list-decimal list-inside mt-1">
+                        <li>Modify your Firestore security rules to grant your specific admin user ID read access to the `/bots/{botId}` path.</li>
+                        <li>Update the `getBots()` server action in `src/app/actions.ts` to be callable without a `uid` for your admin user.</li>
+                    </ol>
+                </AlertDescription>
+            </Alert>
         </CardContent>
       </Card>
     </main>
