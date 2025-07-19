@@ -14,9 +14,10 @@ import MarketControls from '@/components/dashboard/market-controls';
 import { Skeleton } from '@/components/ui/skeleton';
 import AiOptimizedReentries from '@/components/autobot/ai-optimized-reentries';
 import { useRefresh } from '@/context/refresh-context';
-import { getBots } from '@/app/actions';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase/auth';
+import { db } from '@/lib/firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 
 export default function DashboardPage() {
   const [allDScoreData, setAllDScoreData] = React.useState<DScore[]>([]);
@@ -34,11 +35,35 @@ export default function DashboardPage() {
       }
 
       setIsLoading(true);
+
+      // Fetch D-Scores
       const dScorePromise = Promise.all(
         pairs.map(p => getForexData(p) as unknown as Promise<DScore>)
       );
       
-      const botsPromise = getBots(user.uid);
+      // Fetch Bots directly from Firestore
+      const getBotsClientSide = async (uid: string): Promise<{ success: boolean; data?: Bot[]; error?: string }> => {
+        try {
+            const q = query(collection(db, "bots"), where("uid", "==", uid));
+            const querySnapshot = await getDocs(q);
+            const bots: Bot[] = [];
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                const botData = {
+                    id: doc.id,
+                    ...data,
+                    createdAt: data.createdAt ? { seconds: data.createdAt.seconds, nanoseconds: data.createdAt.nanoseconds } : null,
+                } as Bot;
+                bots.push(botData);
+            });
+            return { success: true, data: bots };
+        } catch (e) {
+            console.error("Error getting documents: ", e);
+            return { success: false, error: (e as Error).message };
+        }
+      };
+
+      const botsPromise = getBotsClientSide(user.uid);
 
       const [calculatedScores, botsResult] = await Promise.all([dScorePromise, botsPromise]);
 
