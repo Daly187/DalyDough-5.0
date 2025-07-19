@@ -13,7 +13,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Power, PowerOff, Target, XCircle, Save, ArrowUp, ArrowDown, TrendingUp, TrendingDown, Hourglass } from 'lucide-react';
+import { Power, PowerOff, Target, XCircle, Save, TrendingUp, TrendingDown, Hourglass } from 'lucide-react';
 import type { Bot, DScore } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -54,17 +54,20 @@ const BotRow = ({ bot, allPairs, isClosed }: { bot: Bot, allPairs: DScore[], isC
 
     const getDScoreExitStatus = () => {
         if (isClosed || !currentDScore || !bot.enableDSizeExit) {
-            return { text: 'N/A', color: 'text-muted-foreground' };
+            return { text: 'N/A', color: 'text-muted-foreground', icon: null };
         }
         
         const exitThreshold = Math.abs(dScoreExitThreshold);
-        
+        let shouldExit = false;
+
         if (direction === 'Buy' && currentDScore < exitThreshold) {
-            return { text: 'Ready to Exit', color: 'text-yellow-400', icon: <Hourglass className="h-3 w-3" /> };
+            shouldExit = true;
+        } else if (direction === 'Sell' && currentDScore > -exitThreshold) {
+            shouldExit = true;
         }
         
-        if (direction === 'Sell' && currentDScore > -exitThreshold) {
-            return { text: 'Ready to Exit', color: 'text-yellow-400', icon: <Hourglass className="h-3 w-3" /> };
+        if (shouldExit) {
+             return { text: 'Close at TP', color: 'text-yellow-400', icon: <Hourglass className="h-3 w-3" /> };
         }
         
         return { text: `Armed at ${direction === 'Buy' ? '' : '-'}${exitThreshold}`, color: 'text-green-400', icon: <Target className="h-3 w-3" /> };
@@ -120,7 +123,7 @@ const BotRow = ({ bot, allPairs, isClosed }: { bot: Bot, allPairs: DScore[], isC
                         />
                     </TableCell>
                     <TableCell>
-                        <div className={cn("flex items-center gap-1.5 text-xs", dScoreExitStatus.color)}>
+                        <div className={cn("flex items-center gap-1.5 text-xs font-medium", dScoreExitStatus.color)}>
                            {dScoreExitStatus.icon} {dScoreExitStatus.text}
                         </div>
                     </TableCell>
@@ -178,7 +181,7 @@ export default function ActiveBotsTable({ data, allPairs, title, description, is
                             <TableHead>Stop Loss</TableHead>
                             <TableHead>Take Profit</TableHead>
                             <TableHead>Exit Threshold</TableHead>
-                            <TableHead>D-Score Exit</TableHead>
+                            <TableHead>Exit Status</TableHead>
                             <TableHead>Control</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                         </>

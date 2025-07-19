@@ -33,6 +33,7 @@ export type Bot = {
   createdAt?: { seconds: number; nanoseconds: number; }; // Firestore Timestamp
   d_score_entry: number;
   d_score_exit?: number;
+  d_score_exit_status?: 'Armed' | 'Close at TP';
   stopLoss?: number;
   takeProfit?: number;
   lotSize?: number;
