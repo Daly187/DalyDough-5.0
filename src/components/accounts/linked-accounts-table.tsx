@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -76,8 +77,8 @@ export default function LinkedAccountsTable({ accounts: initialAccounts }: Linke
               <TableHead>Balance</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Copy Trades</TableHead>
-              <TableHead>Copy Weight</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="w-[120px]">Copy Weight</TableHead>
+              <TableHead className="text-right w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
