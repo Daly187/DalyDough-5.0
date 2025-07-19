@@ -37,6 +37,15 @@ export type Bot = {
   lotSize?: number;
 };
 
+export type Notification = {
+  id: string;
+  type: 'new_bot' | 'status_change' | 'bot_closed';
+  title: string;
+  description: string;
+  timestamp: string; // e.g., "5 minutes ago"
+  read: boolean;
+};
+
 export type EquityData = {
   date: string;
   equity: number;

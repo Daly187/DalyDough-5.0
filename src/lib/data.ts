@@ -1,5 +1,6 @@
 
-import type { DScore, Bot, EquityData, RiskMetric, ApiKey, NewsEvent, BotConfigurationData, AIReentry, MarketRegime, ExposureData, TradeAccount } from './types';
+
+import type { DScore, Bot, EquityData, RiskMetric, ApiKey, NewsEvent, BotConfigurationData, AIReentry, MarketRegime, ExposureData, TradeAccount, Notification } from './types';
 
 export const pairs = ['EUR/USD', 'USD/JPY', 'GBP/USD', 'AUD/USD', 'USD/CAD', 'USD/CHF', 'NZD/USD', 'EUR/JPY', 'GBP/JPY', 'XAU/USD'];
 
@@ -15,17 +16,24 @@ export const linkedAccountsData: TradeAccount[] = [
 
 // --- Mock Data (to be phased out or used for dev) ---
 export const activeBotsData: Bot[] = [
-  { id: 'bot1', pair: 'EUR/USD', strategy: 'DCA Grid', status: 'active', profit_loss: 152.3, entry_time: '2024-05-20T10:30:00Z', d_score_entry: 8.2, stopLoss: 50, takeProfit: 100, d_score_exit: 6.0 },
-  { id: 'bot2', pair: 'GBP/USD', strategy: 'Trend Rider', status: 'active', profit_loss: -45.1, entry_time: '2024-05-20T11:05:00Z', d_score_entry: 7.5, stopLoss: 50, takeProfit: 100, d_score_exit: 6.0 },
-  { id: 'bot3', pair: 'AUD/USD', strategy: 'Breakout', status: 'active', profit_loss: 210.55, entry_time: '2024-05-20T14:00:00Z', d_score_entry: 9.1, stopLoss: 50, takeProfit: 100, d_score_exit: 6.0 },
-  { id: 'bot4', pair: 'USD/JPY', strategy: 'paused', profit_loss: 89.7, entry_time: '2024-05-19T22:15:00Z', d_score_entry: 6.8, stopLoss: 50, takeProfit: 100, d_score_exit: 6.0 },
-  { id: 'bot5', pair: 'XAU/USD', strategy: 'error', profit_loss: -112.0, entry_time: '2024-05-18T08:45:00Z', d_score_entry: 8.8, d_score_exit: 5.4, stopLoss: 50, takeProfit: 100 },
+  { id: 'bot1', uid: 'user1', pair: 'EUR/USD', strategy: 'DCA Grid', status: 'active', profit_loss: 152.3, d_score_entry: 8.2, stopLoss: 50, takeProfit: 100 },
+  { id: 'bot2', uid: 'user1', pair: 'GBP/USD', strategy: 'Trend Rider', status: 'active', profit_loss: -45.1, d_score_entry: 7.5, stopLoss: 50, takeProfit: 100 },
+  { id: 'bot3', uid: 'user1', pair: 'AUD/USD', strategy: 'Breakout', status: 'active', profit_loss: 210.55, d_score_entry: 9.1, stopLoss: 50, takeProfit: 100 },
+  { id: 'bot4', uid: 'user1', pair: 'USD/JPY', strategy: 'DCA Grid', status: 'paused', profit_loss: 89.7, d_score_entry: 6.8, stopLoss: 50, takeProfit: 100 },
+  { id: 'bot5', uid: 'user1', pair: 'XAU/USD', strategy: 'DCA Grid', status: 'error', profit_loss: -112.0, d_score_entry: 8.8, d_score_exit: 5.4, stopLoss: 50, takeProfit: 100 },
 ];
 
 export const closedBotsData: Bot[] = [
-    { id: 'bot6', pair: 'EUR/CAD', strategy: 'Trend Rider', status: 'closed', profit_loss: 345.12, entry_time: '2024-05-18T10:00:00Z', d_score_entry: 8.5, d_score_exit: 7.0 },
-    { id: 'bot7', pair: 'NZD/USD', strategy: 'Breakout', status: 'closed', profit_loss: -88.40, entry_time: '2024-05-17T15:30:00Z', d_score_entry: 7.8, d_score_exit: 6.1 },
-    { id: 'bot8', pair: 'GBP/JPY', strategy: 'DCA Grid', status: 'closed', profit_loss: 512.60, entry_time: '2024-05-19T09:00:00Z', d_score_entry: 9.2, d_score_exit: 7.5 },
+    { id: 'bot6', uid: 'user1', pair: 'EUR/CAD', strategy: 'Trend Rider', status: 'closed', profit_loss: 345.12, d_score_entry: 8.5, d_score_exit: 7.0 },
+    { id: 'bot7', uid: 'user1', pair: 'NZD/USD', strategy: 'Breakout', status: 'closed', profit_loss: -88.40, d_score_entry: 7.8, d_score_exit: 6.1 },
+    { id: 'bot8', uid: 'user1', pair: 'GBP/JPY', strategy: 'DCA Grid', status: 'closed', profit_loss: 512.60, d_score_entry: 9.2, d_score_exit: 7.5 },
+];
+
+export const notificationData: Notification[] = [
+  { id: '1', type: 'new_bot', title: 'New Bot Launched', description: 'Your new DCA Grid bot for EUR/USD is now active.', timestamp: '2 minutes ago', read: false },
+  { id: '2', type: 'status_change', title: 'Bot Paused', description: 'The Trend Rider bot for GBP/USD has been manually paused.', timestamp: '15 minutes ago', read: false },
+  { id: '3', type: 'bot_closed', title: 'Trade Closed', description: 'Your GBP/JPY bot hit Take Profit for +$512.60.', timestamp: '1 hour ago', read: true },
+  { id: '4', type: 'status_change', title: 'Bot Error', description: 'XAU/USD bot has encountered a connection error.', timestamp: '3 hours ago', read: true },
 ];
 
 
