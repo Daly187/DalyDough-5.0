@@ -18,6 +18,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { Button } from '../ui/button';
+import { addBot } from '@/app/actions';
+import { useToast } from '@/hooks/use-toast';
 
 
 interface BotConfigurationProps {
@@ -30,6 +32,8 @@ interface BotConfigurationProps {
 export default function BotConfiguration({ config: initialConfig, allPairs, activeBots, isLoading }: BotConfigurationProps) {
   const [config, setConfig] = React.useState(initialConfig);
   const [selectedPair, setSelectedPair] = React.useState<string>("");
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const { toast } = useToast();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -66,6 +70,34 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
       setSelectedPair("");
     }
   }, [allPairs, selectedPair]);
+
+  const handleSubmit = async () => {
+    if (!selectedPair) {
+        toast({
+            variant: "destructive",
+            title: "No Pair Selected",
+            description: "Please select a currency pair to launch a bot.",
+        });
+        return;
+    }
+    setIsSubmitting(true);
+    const result = await addBot(config, selectedPair);
+    setIsSubmitting(false);
+
+    if (result.success) {
+        toast({
+            title: "Bot Launched Successfully!",
+            description: `Your bot for ${selectedPair} has been created with ID: ${result.id}`,
+        });
+    } else {
+        toast({
+            variant: "destructive",
+            title: "Failed to Launch Bot",
+            description: result.error || "An unknown error occurred.",
+        });
+    }
+  };
+
 
   const TooltipLabel = ({ htmlFor, label, tooltipText }: { htmlFor: string, label: string, tooltipText: string }) => (
     <div className="flex items-center gap-2">
@@ -270,9 +302,9 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
         )}
       </CardContent>
       <CardFooter>
-        <Button className="w-full" disabled={isLoading || !selectedPair}>
+        <Button className="w-full" disabled={isLoading || !selectedPair || isSubmitting} onClick={handleSubmit}>
             <Rocket className="mr-2 h-4 w-4" />
-            Launch Bot
+            {isSubmitting ? 'Launching...' : 'Launch Bot'}
         </Button>
       </CardFooter>
     </Card>

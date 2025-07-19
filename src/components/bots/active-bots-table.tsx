@@ -39,6 +39,8 @@ const statusConfig: Record<Bot['status'] | 'unknown', { label: string; color: st
 }
 
 const BotRow = ({ bot, allPairs, isClosed }: { bot: Bot, allPairs: DScore[], isClosed?: boolean }) => {
+    // Note: In a real app, these state values would likely be part of the 'bot' object
+    // and updated via server actions. For now, they are local to the row.
     const [stopLoss, setStopLoss] = React.useState(bot.stopLoss ?? 50);
     const [takeProfit, setTakeProfit] = React.useState(bot.takeProfit ?? 100);
     const [dScoreExit, setDScoreExit] = React.useState(bot.d_score_exit ?? 6.0);
@@ -48,6 +50,7 @@ const BotRow = ({ bot, allPairs, isClosed }: { bot: Bot, allPairs: DScore[], isC
         return allPairs.find(p => p.pair === pair)?.dScore;
     }
     
+    // Use the bot's status from props, but allow local state to override for interaction
     const currentStatus = isClosed ? 'closed' : botStatus;
     const config = statusConfig[currentStatus] || statusConfig.unknown;
     const currentDScore = getCurrentDScore(bot.pair);
@@ -64,7 +67,7 @@ const BotRow = ({ bot, allPairs, isClosed }: { bot: Bot, allPairs: DScore[], isC
             <TableCell className={cn(bot.profit_loss >= 0 ? 'text-green-400' : 'text-red-400')}>
                 {bot.profit_loss >= 0 ? '+' : ''}${bot.profit_loss.toFixed(2)}
             </TableCell>
-            <TableCell>{bot.d_score_entry.toFixed(1)}</TableCell>
+            <TableCell>{typeof bot.d_score_entry === 'number' ? bot.d_score_entry.toFixed(1) : 'N/A'}</TableCell>
             <TableCell>{isClosed ? bot.d_score_exit?.toFixed(1) ?? 'N/A' : currentDScore?.toFixed(1) ?? 'N/A'}</TableCell>
             {!isClosed && (
                 <>
