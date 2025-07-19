@@ -27,18 +27,33 @@ export type Bot = {
   uid: string; // User ID of the bot's owner
   pair: string;
   strategy: string;
-  status: 'active' | 'paused' | 'error' | 'close_at_tp' | 'closed';
-  direction: 'Buy' | 'Sell';
+  status: 'active' | 'paused' | 'error' | 'close_at_tp' | 'closed' | 'close_now';
+  direction?: 'Buy' | 'Sell';
   profit_loss: number;
   createdAt?: { seconds: number; nanoseconds: number; }; // Firestore Timestamp
   d_score_entry: number;
   d_score_exit?: number;
   d_score_exit_status?: 'Armed' | 'Close at TP';
+  // Include all configuration options that can be set
+  botType?: string;
+  lotSize?: number;
+  maxPositions?: number;
+  reentryDelay?: number;
   stopLoss?: number;
   takeProfit?: number;
-  lotSize?: number;
   enableDSizeExit?: boolean;
   dSizeExitThreshold?: number;
+  enableTrailingStop?: boolean;
+  trailingStopPips?: number;
+  newsFilter?: boolean;
+  weekendTrading?: boolean;
+  aiOptimization?: boolean;
+  gridLevels?: number;
+  gridDistance?: number;
+  lotSizeMultiplier?: number;
+  takeProfitType?: 'fixed' | 'average';
+  closeOnRetrace?: boolean;
+  retracePercentage?: number;
 };
 
 export type Notification = {

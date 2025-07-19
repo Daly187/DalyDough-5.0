@@ -13,13 +13,26 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Power, PowerOff, Target, XCircle, Save, TrendingUp, TrendingDown, Hourglass } from 'lucide-react';
+import { Save, Target, TrendingUp, TrendingDown, Hourglass, XCircle, AlertTriangle } from 'lucide-react';
 import type { Bot, DScore } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-
+import { db, doc, updateDoc } from '@/lib/firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
+import { useRefresh } from '@/context/refresh-context';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 interface ActiveBotsTableProps {
   data: Bot[];
@@ -35,19 +48,65 @@ const statusConfig: Record<Bot['status'] | 'unknown', { label: string; color: st
     error: { label: "Error", color: "bg-red-500/20 text-red-400 border-red-500/30" },
     closed: { label: "Closed", color: "bg-gray-500/20 text-gray-400 border-gray-500/30" },
     close_at_tp: { label: "Close at TP", color: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
+    close_now: { label: "Close Now", color: "bg-red-500/20 text-red-400 border-red-500/30" }, // For immediate action
     unknown: { label: "Unknown", color: "bg-gray-500/20 text-gray-400 border-gray-500/30" }
 }
 
 const BotRow = ({ bot, allPairs, isClosed }: { bot: Bot, allPairs: DScore[], isClosed?: boolean }) => {
-    const [stopLoss, setStopLoss] = React.useState(bot.stopLoss ?? 50);
-    const [takeProfit, setTakeProfit] = React.useState(bot.takeProfit ?? 100);
-    const [dScoreExitThreshold, setDScoreExitThreshold] = React.useState(bot.dSizeExitThreshold ?? 6.0);
-    const [botStatus, setBotStatus] = React.useState(bot.status);
+    const { toast } = useToast();
+    const { triggerRefresh } = useRefresh();
+    const [isSaving, setIsSaving] = React.useState(false);
+
+    // Local state for editable fields, initialized from bot props
+    const [editableFields, setEditableFields] = React.useState({
+        stopLoss: bot.stopLoss ?? 50,
+        takeProfit: bot.takeProfit ?? 100,
+        dSizeExitThreshold: bot.dSizeExitThreshold ?? 6.0,
+    });
+
+    const handleFieldChange = (field: keyof typeof editableFields, value: string) => {
+        const numValue = parseFloat(value);
+        if (!isNaN(numValue)) {
+            setEditableFields(prev => ({ ...prev, [field]: numValue }));
+        }
+    };
+
+    const handleUpdate = async () => {
+        setIsSaving(true);
+        try {
+            const botRef = doc(db, 'bots', bot.id);
+            await updateDoc(botRef, {
+                stopLoss: editableFields.stopLoss,
+                takeProfit: editableFields.takeProfit,
+                dSizeExitThreshold: editableFields.dSizeExitThreshold,
+            });
+            toast({ title: "Bot Updated", description: `Settings for ${bot.pair} have been saved.` });
+            triggerRefresh();
+        } catch (error) {
+            toast({ variant: 'destructive', title: "Update Failed", description: (error as Error).message });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleStatusChange = async (newStatus: Bot['status']) => {
+        try {
+            const botRef = doc(db, 'bots', bot.id);
+            await updateDoc(botRef, { status: newStatus });
+            toast({ title: "Status Updated", description: `${bot.pair} bot is now ${newStatus}.` });
+            triggerRefresh();
+        } catch (error) {
+            toast({ variant: 'destructive', title: "Status Update Failed", description: (error as Error).message });
+        }
+    };
+
+    const handleCloseNow = async () => {
+        await handleStatusChange('closed');
+    };
 
     const getCurrentDScore = (pair: string) => allPairs.find(p => p.pair === pair)?.dScore;
     
-    const currentStatus = isClosed ? 'closed' : botStatus;
-    const config = statusConfig[currentStatus] || statusConfig.unknown;
+    const config = statusConfig[bot.status] || statusConfig.unknown;
     const currentDScore = getCurrentDScore(bot.pair);
 
     const direction = bot.direction || (bot.d_score_entry > 0 ? 'Buy' : 'Sell');
@@ -57,7 +116,7 @@ const BotRow = ({ bot, allPairs, isClosed }: { bot: Bot, allPairs: DScore[], isC
             return { text: 'N/A', color: 'text-muted-foreground', icon: null };
         }
         
-        const exitThreshold = Math.abs(dScoreExitThreshold);
+        const exitThreshold = Math.abs(editableFields.dSizeExitThreshold);
         let shouldExit = false;
 
         if (direction === 'Buy' && currentDScore < exitThreshold) {
@@ -101,24 +160,24 @@ const BotRow = ({ bot, allPairs, isClosed }: { bot: Bot, allPairs: DScore[], isC
                         <Input 
                             type="number" 
                             className="w-24 h-8"
-                            value={stopLoss} 
-                            onChange={(e) => setStopLoss(parseFloat(e.target.value))} 
+                            value={editableFields.stopLoss} 
+                            onChange={(e) => handleFieldChange('stopLoss', e.target.value)} 
                         />
                     </TableCell>
                     <TableCell>
                         <Input 
                             type="number" 
                             className="w-24 h-8"
-                            value={takeProfit} 
-                            onChange={(e) => setTakeProfit(parseFloat(e.target.value))} 
+                            value={editableFields.takeProfit} 
+                            onChange={(e) => handleFieldChange('takeProfit', e.target.value)}
                         />
                     </TableCell>
                      <TableCell>
                         <Input 
                             type="number" 
                             className="w-24 h-8"
-                            value={dScoreExitThreshold} 
-                            onChange={(e) => setDScoreExitThreshold(parseFloat(e.target.value))}
+                            value={editableFields.dSizeExitThreshold} 
+                            onChange={(e) => handleFieldChange('dSizeExitThreshold', e.target.value)}
                             disabled={!bot.enableDSizeExit}
                         />
                     </TableCell>
@@ -128,7 +187,7 @@ const BotRow = ({ bot, allPairs, isClosed }: { bot: Bot, allPairs: DScore[], isC
                         </div>
                     </TableCell>
                     <TableCell>
-                        <Select value={botStatus} onValueChange={(value) => setBotStatus(value as Bot['status'])}>
+                        <Select value={bot.status} onValueChange={(value) => handleStatusChange(value as Bot['status'])}>
                             <SelectTrigger className="w-32 h-8">
                                 <SelectValue placeholder="Set Status" />
                             </SelectTrigger>
@@ -136,18 +195,33 @@ const BotRow = ({ bot, allPairs, isClosed }: { bot: Bot, allPairs: DScore[], isC
                                 <SelectItem value="active">Active</SelectItem>
                                 <SelectItem value="paused">Pause</SelectItem>
                                 <SelectItem value="close_at_tp">Close at TP</SelectItem>
-                                <SelectItem value="close_now">Close Now</SelectItem>
                             </SelectContent>
                         </Select>
                     </TableCell>
                     <TableCell className="text-right">
                         <div className="flex gap-2">
-                             <Button variant="outline" size="sm" className="h-8">
-                                <Save className="h-4 w-4" />
+                             <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleUpdate} disabled={isSaving}>
+                                <Save className={cn("h-4 w-4", isSaving && "animate-spin")} />
                             </Button>
-                            <Button variant="destructive" size="sm" className="h-8">
-                                <XCircle className="h-4 w-4" />
-                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="destructive" size="icon" className="h-8 w-8">
+                                    <XCircle className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle/>Are you absolutely sure?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This action will immediately close the bot for {bot.pair}. This cannot be undone and will realize any current profit or loss.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={handleCloseNow}>Yes, Close Bot</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                         </div>
                     </TableCell>
                 </>
