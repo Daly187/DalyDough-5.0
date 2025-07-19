@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Settings, Lightbulb, HelpCircle, Rocket } from "lucide-react";
-import type { BotConfigurationData, DScore, Bot } from "@/lib/types";
+import type { BotConfigurationData, DScore, Bot, PendingOrder } from "@/lib/types";
 import { cn } from '@/lib/utils';
 import {
   Tooltip,
@@ -103,8 +103,34 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
     try {
         const dScoreData = await getForexData(selectedPair);
         
-        if (!dScoreData) {
-            throw new Error("Could not fetch D-Score data for the selected pair.");
+        if (!dScoreData || !dScoreData.price) {
+            throw new Error("Could not fetch D-Score data or price for the selected pair.");
+        }
+
+        const direction = dScoreData.dScore > 0 ? 'Buy' : 'Sell';
+        const pipSize = selectedPair.includes('JPY') ? 0.01 : 0.0001;
+        
+        // Calculate pending orders
+        const pendingOrders: PendingOrder[] = [];
+        let currentLotSize = Number(config.lotSize);
+
+        for (let i = 1; i <= config.gridLevels; i++) {
+             // Increment lot size for levels > 1
+            if (i > 1) {
+                currentLotSize *= Number(config.lotSizeMultiplier);
+            }
+            
+            const priceOffset = Number(config.gridDistance) * pipSize * i;
+            const targetPrice = direction === 'Buy' 
+                ? dScoreData.price - priceOffset 
+                : dScoreData.price + priceOffset;
+
+            pendingOrders.push({
+                level: i,
+                targetPrice: parseFloat(targetPrice.toFixed(5)),
+                lotSize: parseFloat(currentLotSize.toFixed(2)),
+                status: 'PENDING'
+            });
         }
 
         const docRef = await addDoc(collection(db, "bots"), {
@@ -115,8 +141,9 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
             profit_loss: 0,
             strategy: config.botType || "DCA Grid",
             d_score_entry: dScoreData?.dScore ?? 0,
-            direction: dScoreData.dScore > 0 ? 'Buy' : 'Sell',
+            direction: direction,
             uid: user.uid,
+            pendingOrders: pendingOrders,
         });
 
         toast({
@@ -194,7 +221,7 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
                 </div>
                  <div>
                     <Label htmlFor="initialLotOrder">Initial Lot Order</Label>
-                    <Input id="initialLotOrder" type="number" value={config.lotSize} onChange={handleInputChange} />
+                    <Input id="lotSize" type="number" value={config.lotSize} onChange={handleInputChange} />
                 </div>
                 <div>
                     <Label htmlFor="gridLevels">Grid Levels</Label>

@@ -1,5 +1,14 @@
 
 
+export type PendingOrderStatus = 'PENDING' | 'BLOCKED_NEWS' | 'SLEEPING' | 'PRICE_RETRACE' | 'D_SCORE_LOW';
+
+export type PendingOrder = {
+  level: number;
+  targetPrice: number;
+  lotSize: number;
+  status: PendingOrderStatus;
+};
+
 export type DScore = {
   id: string;
   pair: string;
@@ -54,6 +63,7 @@ export type Bot = {
   takeProfitType?: 'fixed' | 'average';
   closeOnRetrace?: boolean;
   retracePercentage?: number;
+  pendingOrders?: PendingOrder[];
 };
 
 export type Notification = {
