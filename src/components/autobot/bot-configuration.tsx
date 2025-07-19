@@ -18,10 +18,11 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { Button } from '../ui/button';
-import { addBot } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
-import { auth } from '@/lib/firebase/auth';
-import { useAuthState } from 'react-firebase-hooks/auth';
+import { getAuth } from 'firebase/auth';
+import { db } from '@/lib/firebase/firestore';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { getForexData } from '@/lib/fmp';
 
 
 interface BotConfigurationProps {
@@ -36,8 +37,7 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
   const [selectedPair, setSelectedPair] = React.useState<string>("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const { toast } = useToast();
-  const [user] = useAuthState(auth);
-
+  
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     setConfig((prev) => ({ ...prev, [id]: value }));
@@ -75,37 +75,57 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
   }, [allPairs, selectedPair]);
 
   const handleSubmit = async () => {
+    setIsSubmitting(true);
+
+    const auth = getAuth();
+    const user = auth.currentUser;
+
     if (!user) {
         toast({
             variant: "destructive",
             title: "Authentication Error",
             description: "You must be logged in to launch a bot.",
         });
+        setIsSubmitting(false);
         return;
     }
+
     if (!selectedPair) {
         toast({
             variant: "destructive",
             title: "No Pair Selected",
             description: "Please select a currency pair to launch a bot.",
         });
+        setIsSubmitting(false);
         return;
     }
-    setIsSubmitting(true);
-    const result = await addBot(config, selectedPair, user.uid);
-    setIsSubmitting(false);
+    
+    try {
+        const dScoreData = await getForexData(selectedPair);
+        
+        const docRef = await addDoc(collection(db, "bots"), {
+            ...config,
+            pair: selectedPair,
+            status: 'active',
+            createdAt: serverTimestamp(),
+            profit_loss: 0,
+            strategy: config.botType || "DCA Grid",
+            d_score_entry: dScoreData?.dScore ?? 0,
+            uid: user.uid,
+        });
 
-    if (result.success) {
         toast({
             title: "Bot Launched Successfully!",
-            description: `Your bot for ${selectedPair} has been created with ID: ${result.id}`,
+            description: `Your bot for ${selectedPair} has been created with ID: ${docRef.id}`,
         });
-    } else {
+    } catch (e) {
         toast({
             variant: "destructive",
             title: "Failed to Launch Bot",
-            description: result.error || "An unknown error occurred.",
+            description: (e as Error).message || "An unknown error occurred.",
         });
+    } finally {
+        setIsSubmitting(false);
     }
   };
 
@@ -313,7 +333,7 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
         )}
       </CardContent>
       <CardFooter>
-        <Button className="w-full" disabled={isLoading || !user || !selectedPair || isSubmitting} onClick={handleSubmit}>
+        <Button className="w-full" disabled={isLoading || !selectedPair || isSubmitting} onClick={handleSubmit}>
             <Rocket className="mr-2 h-4 w-4" />
             {isSubmitting ? 'Launching...' : 'Launch Bot'}
         </Button>
@@ -321,3 +341,5 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
     </Card>
   );
 }
+
+    
