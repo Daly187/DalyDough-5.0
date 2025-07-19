@@ -8,7 +8,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, Bot, FileText, Newspaper, BarChart2, Settings, Scan, Wallet, Columns3, GraduationCap, Microscope } from 'lucide-react';
+import { LayoutDashboard, Bot, FileText, Newspaper, BarChart2, Settings, Scan, Wallet, Columns3, GraduationCap, Microscope, Database } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -22,6 +22,7 @@ const navItems = [
   { href: '/analytics', label: 'Statistics', icon: BarChart2 },
   { href: '/accounts', label: 'Accounts', icon: Wallet },
   { href: '/settings', label: 'Settings', icon: Settings },
+  { href: '/db-inspector', label: 'DB Inspector', icon: Database },
 ];
 
 export default function SidebarNav() {
