@@ -15,7 +15,6 @@ const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/d-score-detailed', label: 'D-Score Detailed', icon: Columns3 },
   { href: '/market-detailed', label: 'Market Detailed', icon: Microscope },
-  { href: '/strength', label: 'Strength', icon: Tornado },
   { href: '/bots', label: 'Bots', icon: Bot },
   { href: '/autobot', label: 'Auto Bot', icon: Scan },
   { href: '/learning', label: 'Learning', icon: GraduationCap },
