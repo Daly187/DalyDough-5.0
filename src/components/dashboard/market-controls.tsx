@@ -10,13 +10,25 @@ import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
 import { Switch } from '../ui/switch';
 import { cn } from '@/lib/utils';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface MarketControlsProps {
   thresholds: { lower: number, upper: number };
   onThresholdChange: (values: { lower: number, upper: number }) => void;
+  onCloseAll: () => void;
 }
 
-export default function MarketControls({ thresholds, onThresholdChange }: MarketControlsProps) {
+export default function MarketControls({ thresholds, onThresholdChange, onCloseAll }: MarketControlsProps) {
   const [lowerSlider, setLowerSlider] = React.useState([thresholds.lower]);
   const [upperSlider, setUpperSlider] = React.useState([thresholds.upper]);
   const [isPaused, setIsPaused] = React.useState(false);
@@ -122,10 +134,28 @@ export default function MarketControls({ thresholds, onThresholdChange }: Market
                             aria-label="Pause all bots"
                         />
                     </div>
-                     <Button variant="destructive" className="w-full">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Close All Positions
-                    </Button>
+                     <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" className="w-full">
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Close All Positions
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action will immediately close all active bots and positions. This cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={onCloseAll}>
+                            Yes, close everything
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                 </div>
              </div>
           </div>

@@ -17,15 +17,18 @@ import { useRefresh } from '@/context/refresh-context';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase/auth';
 import { db } from '@/lib/firebase/firestore';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, writeBatch } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
+
 
 export default function DashboardPage() {
   const [allDScoreData, setAllDScoreData] = React.useState<DScore[]>([]);
   const [activeBots, setActiveBots] = React.useState<Bot[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [dScoreThresholds, setDScoreThresholds] = React.useState({ lower: -7.0, upper: 7.0 });
-  const { refreshKey } = useRefresh();
+  const { refreshKey, triggerRefresh } = useRefresh();
   const [user] = useAuthState(auth);
+  const { toast } = useToast();
 
   React.useEffect(() => {
     async function fetchData() {
@@ -36,12 +39,10 @@ export default function DashboardPage() {
 
       setIsLoading(true);
 
-      // Fetch D-Scores
       const dScorePromise = Promise.all(
         pairs.map(p => getForexData(p) as unknown as Promise<DScore>)
       );
       
-      // Fetch Bots directly from Firestore
       const getBotsClientSide = async (uid: string): Promise<{ success: boolean; data?: Bot[]; error?: string }> => {
         try {
             const q = query(collection(db, "bots"), where("uid", "==", uid));
@@ -74,12 +75,54 @@ export default function DashboardPage() {
         setActiveBots(allBots.filter(b => b.status !== 'closed'));
       } else if (!botsResult.success) {
         console.error("Failed to fetch bots:", botsResult.error);
+        toast({
+          variant: 'destructive',
+          title: 'Error Fetching Bots',
+          description: botsResult.error
+        });
       }
 
       setIsLoading(false);
     }
     fetchData();
-  }, [refreshKey, user]);
+  }, [refreshKey, user, toast]);
+
+  const handleCloseAllBots = async () => {
+    if (!user) {
+      toast({ variant: 'destructive', title: 'Authentication Error', description: 'You must be logged in.' });
+      return;
+    }
+
+    const batch = writeBatch(db);
+    const botsToClose = activeBots.filter(bot => bot.status !== 'closed');
+    
+    if (botsToClose.length === 0) {
+      toast({ title: 'No active bots to close.' });
+      return;
+    }
+
+    botsToClose.forEach(bot => {
+      const botRef = doc(db, 'bots', bot.id);
+      batch.update(botRef, { status: 'closed' });
+    });
+
+    try {
+      await batch.commit();
+      toast({
+        title: 'Success',
+        description: `${botsToClose.length} bot(s) have been closed.`,
+      });
+      triggerRefresh(); // Refresh data to update UI
+    } catch (error) {
+      console.error('Failed to close all bots:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error Closing Bots',
+        description: 'Could not update all bot statuses. Please try again.',
+      });
+    }
+  };
+
 
   const filteredDScoreData = React.useMemo(() => {
     return allDScoreData.filter(p => p.dScore <= dScoreThresholds.lower || p.dScore >= dScoreThresholds.upper);
@@ -92,7 +135,11 @@ export default function DashboardPage() {
       {isLoading ? (
         <Skeleton className="h-[158px] w-full rounded-lg" />
       ) : (
-        <MarketControls thresholds={dScoreThresholds} onThresholdChange={setDScoreThresholds} />
+        <MarketControls 
+          thresholds={dScoreThresholds} 
+          onThresholdChange={setDScoreThresholds}
+          onCloseAll={handleCloseAllBots}
+        />
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
