@@ -98,7 +98,7 @@ export default function LinkAccountForm() {
                         <p className="font-semibold">Installation Steps:</p>
                         <ol className="list-decimal list-inside space-y-1">
                             <li>Download the EA file for your platform (MT4/MT5).</li>
-                            <li>In MetaTrader, go to `File > Open Data Folder`.</li>
+                            <li>In MetaTrader, go to `File {' > '} Open Data Folder`.</li>
                             <li>Place the `.ex4` or `.ex5` file in the `MQL4/Experts` or `MQL5/Experts` folder.</li>
                             <li>Refresh your Expert Advisors list in the Navigator panel.</li>
                             <li>Drag the EA onto a chart and enter the unique key above when prompted.</li>
