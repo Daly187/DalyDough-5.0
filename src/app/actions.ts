@@ -68,5 +68,3 @@ export async function getBots(uid: string) {
         return { success: false, error: (e as Error).message };
     }
 }
-
-
