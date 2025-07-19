@@ -85,7 +85,7 @@ export default function LinkedAccountsTable({ accounts: initialAccounts }: Linke
                       <RadioGroupItem value={account.id} id={`primary-${account.id}`} />
                     </TableCell>
                     <TableCell className="font-medium">{account.nickname}</TableCell>
-                    <TableCell>{account.id}</TableCell>
+                    <TableCell className="font-mono">{account.id}</TableCell>
                     <TableCell>{account.broker}</TableCell>
                     <TableCell>{formatCurrency(account.balance)}</TableCell>
                     <TableCell>
