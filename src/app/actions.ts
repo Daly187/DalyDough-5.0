@@ -2,6 +2,7 @@
 "use server";
 
 import { db } from "@/lib/firebase/firestore";
+import { getForexData } from "@/lib/fmp";
 import type { BotConfigurationData } from "@/lib/types";
 import { collection, addDoc, getDocs, serverTimestamp } from "firebase/firestore";
 
@@ -12,12 +13,16 @@ import { collection, addDoc, getDocs, serverTimestamp } from "firebase/firestore
  */
 export async function addBot(botData: BotConfigurationData, pair: string) {
     try {
+        const dScoreData = await getForexData(pair);
+        
         const docRef = await addDoc(collection(db, "bots"), {
             ...botData,
             pair: pair,
             status: 'active', // Set initial status
             createdAt: serverTimestamp(), // Add a server-side timestamp
             profit_loss: 0,
+            strategy: botData.botType || "DCA Grid",
+            d_score_entry: dScoreData?.dScore ?? 0,
         });
         console.log("Document written with ID: ", docRef.id);
         return { success: true, id: docRef.id };
