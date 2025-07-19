@@ -3,15 +3,18 @@
 
 import { db } from "@/lib/firebase/firestore";
 import { getForexData } from "@/lib/fmp";
-import type { BotConfigurationData } from "@/lib/types";
-import { collection, addDoc, getDocs, serverTimestamp } from "firebase/firestore";
+import type { Bot, BotConfigurationData } from "@/lib/types";
+import { collection, addDoc, getDocs, serverTimestamp, query, where, DocumentData } from "firebase/firestore";
 
 /**
  * Saves a new bot configuration to the 'bots' collection in Firestore.
  * @param botData The configuration data for the new bot.
  * @returns The ID of the newly created document.
  */
-export async function addBot(botData: BotConfigurationData, pair: string) {
+export async function addBot(botData: BotConfigurationData, pair: string, uid: string) {
+    if (!uid) {
+        return { success: false, error: "User is not authenticated." };
+    }
     try {
         const dScoreData = await getForexData(pair);
         
@@ -23,6 +26,7 @@ export async function addBot(botData: BotConfigurationData, pair: string) {
             profit_loss: 0,
             strategy: botData.botType || "DCA Grid",
             d_score_entry: dScoreData?.dScore ?? 0,
+            uid: uid, // Associate the bot with the user
         });
         console.log("Document written with ID: ", docRef.id);
         return { success: true, id: docRef.id };
@@ -36,10 +40,23 @@ export async function addBot(botData: BotConfigurationData, pair: string) {
  * Fetches all bots from the 'bots' collection in Firestore.
  * @returns An array of bot objects.
  */
-export async function getBots() {
+export async function getBots(uid?: string) {
     try {
-        const querySnapshot = await getDocs(collection(db, "bots"));
-        const bots = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        let q;
+        if (uid) {
+            // If a UID is provided, fetch only that user's bots.
+            q = query(collection(db, "bots"), where("uid", "==", uid));
+        } else {
+            // Otherwise, fetch all bots (useful for admin views, but be careful with rules).
+            q = query(collection(db, "bots"));
+        }
+        
+        const querySnapshot = await getDocs(q);
+        const bots: Bot[] = [];
+        querySnapshot.forEach((doc) => {
+            bots.push({ id: doc.id, ...doc.data() } as Bot);
+        });
+
         return { success: true, data: bots };
     } catch (e) {
         console.error("Error getting documents: ", e);

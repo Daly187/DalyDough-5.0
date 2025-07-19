@@ -20,6 +20,8 @@ import {
 import { Button } from '../ui/button';
 import { addBot } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
+import { auth } from '@/lib/firebase/auth';
+import { useAuthState } from 'react-firebase-hooks/auth';
 
 
 interface BotConfigurationProps {
@@ -34,6 +36,7 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
   const [selectedPair, setSelectedPair] = React.useState<string>("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const { toast } = useToast();
+  const [user, authLoading] = useAuthState(auth);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -72,6 +75,14 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
   }, [allPairs, selectedPair]);
 
   const handleSubmit = async () => {
+    if (!user) {
+        toast({
+            variant: "destructive",
+            title: "Authentication Error",
+            description: "You must be logged in to launch a bot.",
+        });
+        return;
+    }
     if (!selectedPair) {
         toast({
             variant: "destructive",
@@ -81,7 +92,7 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
         return;
     }
     setIsSubmitting(true);
-    const result = await addBot(config, selectedPair);
+    const result = await addBot(config, selectedPair, user.uid);
     setIsSubmitting(false);
 
     if (result.success) {
@@ -302,7 +313,7 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
         )}
       </CardContent>
       <CardFooter>
-        <Button className="w-full" disabled={isLoading || !selectedPair || isSubmitting} onClick={handleSubmit}>
+        <Button className="w-full" disabled={isLoading || authLoading || !selectedPair || isSubmitting} onClick={handleSubmit}>
             <Rocket className="mr-2 h-4 w-4" />
             {isSubmitting ? 'Launching...' : 'Launch Bot'}
         </Button>

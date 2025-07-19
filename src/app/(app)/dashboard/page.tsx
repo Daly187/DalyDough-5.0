@@ -15,6 +15,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import AiOptimizedReentries from '@/components/autobot/ai-optimized-reentries';
 import { useRefresh } from '@/context/refresh-context';
 import { getBots } from '@/app/actions';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '@/lib/firebase/auth';
 
 export default function DashboardPage() {
   const [allDScoreData, setAllDScoreData] = React.useState<DScore[]>([]);
@@ -22,29 +24,40 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [dScoreThresholds, setDScoreThresholds] = React.useState({ lower: -7.0, upper: 7.0 });
   const { refreshKey } = useRefresh();
+  const [user, authLoading] = useAuthState(auth);
 
   React.useEffect(() => {
     async function fetchData() {
-      setIsLoading(true);
-      const dScorePromise = Promise.all(
-        pairs.map(p => getForexData(p) as unknown as Promise<DScore>)
-      );
-      
-      const botsPromise = getBots();
-
-      const [calculatedScores, botsResult] = await Promise.all([dScorePromise, botsPromise]);
-
-      setAllDScoreData(calculatedScores);
-      
-      if (botsResult.success && botsResult.data) {
-        const allBots = botsResult.data as Bot[];
-        setActiveBots(allBots.filter(b => b.status !== 'closed'));
+      if (!user && !authLoading) {
+        // User is not logged in, maybe redirect or show a message.
+        setIsLoading(false);
+        return;
       }
 
-      setIsLoading(false);
+      if (user) {
+          setIsLoading(true);
+          const dScorePromise = Promise.all(
+            pairs.map(p => getForexData(p) as unknown as Promise<DScore>)
+          );
+          
+          const botsPromise = getBots(user.uid);
+
+          const [calculatedScores, botsResult] = await Promise.all([dScorePromise, botsPromise]);
+
+          setAllDScoreData(calculatedScores);
+          
+          if (botsResult.success && botsResult.data) {
+            const allBots = botsResult.data as Bot[];
+            setActiveBots(allBots.filter(b => b.status !== 'closed'));
+          } else if (!botsResult.success) {
+            console.error("Failed to fetch bots:", botsResult.error);
+          }
+
+          setIsLoading(false);
+      }
     }
     fetchData();
-  }, [refreshKey]);
+  }, [refreshKey, user, authLoading]);
 
   const filteredDScoreData = React.useMemo(() => {
     return allDScoreData.filter(p => p.dScore <= dScoreThresholds.lower || p.dScore >= dScoreThresholds.upper);

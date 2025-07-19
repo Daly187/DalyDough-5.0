@@ -23,6 +23,7 @@ export type DScore = {
 
 export type Bot = {
   id: string;
+  uid: string; // User ID of the bot's owner
   pair: string;
   strategy: string;
   status: 'active' | 'paused' | 'error' | 'close_at_tp' | 'closed';
