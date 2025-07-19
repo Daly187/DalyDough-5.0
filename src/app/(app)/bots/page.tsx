@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import * as React from 'react';
@@ -14,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 
 export default function BotsPage() {
-  const [user, authLoading] = useAuthState(auth);
+  const [user] = useAuthState(auth);
   const [dScoreData, setDScoreData] = React.useState<DScore[]>([]);
   const [allBots, setAllBots] = React.useState<Bot[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -35,17 +34,17 @@ export default function BotsPage() {
           console.error("Failed to fetch bots:", botsResult.error);
         }
         setIsLoading(false);
-      } else if (!authLoading) {
+      } else {
         setIsLoading(false);
       }
     };
     fetchData();
-  }, [user, authLoading]);
+  }, [user]);
 
   const activeBots = allBots.filter(b => b.status !== 'closed');
   const closedBots = allBots.filter(b => b.status === 'closed');
 
-  if (isLoading || authLoading) {
+  if (isLoading) {
     return (
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
         <div className="flex items-center">

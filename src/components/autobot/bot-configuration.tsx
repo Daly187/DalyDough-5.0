@@ -36,7 +36,7 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
   const [selectedPair, setSelectedPair] = React.useState<string>("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const { toast } = useToast();
-  const [user, authLoading] = useAuthState(auth);
+  const [user] = useAuthState(auth);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -313,7 +313,7 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
         )}
       </CardContent>
       <CardFooter>
-        <Button className="w-full" disabled={isLoading || authLoading || !selectedPair || isSubmitting} onClick={handleSubmit}>
+        <Button className="w-full" disabled={isLoading || !user || !selectedPair || isSubmitting} onClick={handleSubmit}>
             <Rocket className="mr-2 h-4 w-4" />
             {isSubmitting ? 'Launching...' : 'Launch Bot'}
         </Button>

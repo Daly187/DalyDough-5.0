@@ -24,40 +24,37 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [dScoreThresholds, setDScoreThresholds] = React.useState({ lower: -7.0, upper: 7.0 });
   const { refreshKey } = useRefresh();
-  const [user, authLoading] = useAuthState(auth);
+  const [user] = useAuthState(auth);
 
   React.useEffect(() => {
     async function fetchData() {
-      if (!user && !authLoading) {
-        // User is not logged in, maybe redirect or show a message.
+      if (!user) {
         setIsLoading(false);
         return;
       }
 
-      if (user) {
-          setIsLoading(true);
-          const dScorePromise = Promise.all(
-            pairs.map(p => getForexData(p) as unknown as Promise<DScore>)
-          );
-          
-          const botsPromise = getBots(user.uid);
+      setIsLoading(true);
+      const dScorePromise = Promise.all(
+        pairs.map(p => getForexData(p) as unknown as Promise<DScore>)
+      );
+      
+      const botsPromise = getBots(user.uid);
 
-          const [calculatedScores, botsResult] = await Promise.all([dScorePromise, botsPromise]);
+      const [calculatedScores, botsResult] = await Promise.all([dScorePromise, botsPromise]);
 
-          setAllDScoreData(calculatedScores);
-          
-          if (botsResult.success && botsResult.data) {
-            const allBots = botsResult.data as Bot[];
-            setActiveBots(allBots.filter(b => b.status !== 'closed'));
-          } else if (!botsResult.success) {
-            console.error("Failed to fetch bots:", botsResult.error);
-          }
-
-          setIsLoading(false);
+      setAllDScoreData(calculatedScores);
+      
+      if (botsResult.success && botsResult.data) {
+        const allBots = botsResult.data as Bot[];
+        setActiveBots(allBots.filter(b => b.status !== 'closed'));
+      } else if (!botsResult.success) {
+        console.error("Failed to fetch bots:", botsResult.error);
       }
+
+      setIsLoading(false);
     }
     fetchData();
-  }, [refreshKey, user, authLoading]);
+  }, [refreshKey, user]);
 
   const filteredDScoreData = React.useMemo(() => {
     return allDScoreData.filter(p => p.dScore <= dScoreThresholds.lower || p.dScore >= dScoreThresholds.upper);

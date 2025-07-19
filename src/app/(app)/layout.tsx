@@ -64,8 +64,8 @@ export default function AppLayout({
   if (loading) {
     return (
       <div className="flex min-h-screen w-full">
-        <div className="hidden flex-col gap-4 border-r bg-muted/40 p-2 md:flex">
-            <div className="p-2">
+        <div className="hidden flex-col gap-4 border-r bg-muted/40 p-2 md:flex md:w-[256px]">
+            <div className="p-2 pt-4">
                 <Skeleton className="h-8 w-40" />
             </div>
             <div className="flex flex-col gap-2 px-2">
@@ -74,8 +74,16 @@ export default function AppLayout({
                 ))}
             </div>
         </div>
-        <div className="flex-1 p-8">
-            <Skeleton className="h-full w-full" />
+        <div className="flex flex-1 flex-col">
+            <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
+                <Skeleton className="h-8 w-1/3" />
+                 <div className="flex items-center gap-4 ml-auto">
+                    <Skeleton className="h-8 w-32" />
+                 </div>
+            </header>
+            <main className="flex-1 p-8">
+                <Skeleton className="h-full w-full" />
+            </main>
         </div>
       </div>
     );
