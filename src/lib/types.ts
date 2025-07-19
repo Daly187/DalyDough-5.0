@@ -32,6 +32,7 @@ export type Bot = {
   d_score_exit?: number;
   stopLoss?: number;
   takeProfit?: number;
+  lotSize?: number;
 };
 
 export type EquityData = {
