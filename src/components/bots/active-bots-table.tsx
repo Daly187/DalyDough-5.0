@@ -13,7 +13,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Power, PowerOff, Target, XCircle, Save } from 'lucide-react';
+import { Power, PowerOff, Target, XCircle, Save, ArrowUp, ArrowDown, TrendingUp, TrendingDown, Hourglass } from 'lucide-react';
 import type { Bot, DScore } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -39,21 +39,38 @@ const statusConfig: Record<Bot['status'] | 'unknown', { label: string; color: st
 }
 
 const BotRow = ({ bot, allPairs, isClosed }: { bot: Bot, allPairs: DScore[], isClosed?: boolean }) => {
-    // Note: In a real app, these state values would likely be part of the 'bot' object
-    // and updated via server actions. For now, they are local to the row.
     const [stopLoss, setStopLoss] = React.useState(bot.stopLoss ?? 50);
     const [takeProfit, setTakeProfit] = React.useState(bot.takeProfit ?? 100);
-    const [dScoreExit, setDScoreExit] = React.useState(bot.d_score_exit ?? 6.0);
+    const [dScoreExitThreshold, setDScoreExitThreshold] = React.useState(bot.dSizeExitThreshold ?? 6.0);
     const [botStatus, setBotStatus] = React.useState(bot.status);
 
-    const getCurrentDScore = (pair: string) => {
-        return allPairs.find(p => p.pair === pair)?.dScore;
-    }
+    const getCurrentDScore = (pair: string) => allPairs.find(p => p.pair === pair)?.dScore;
     
-    // Use the bot's status from props, but allow local state to override for interaction
     const currentStatus = isClosed ? 'closed' : botStatus;
     const config = statusConfig[currentStatus] || statusConfig.unknown;
     const currentDScore = getCurrentDScore(bot.pair);
+
+    const direction = bot.direction || (bot.d_score_entry > 0 ? 'Buy' : 'Sell');
+
+    const getDScoreExitStatus = () => {
+        if (isClosed || !currentDScore || !bot.enableDSizeExit) {
+            return { text: 'N/A', color: 'text-muted-foreground' };
+        }
+        
+        const exitThreshold = Math.abs(dScoreExitThreshold);
+        
+        if (direction === 'Buy' && currentDScore < exitThreshold) {
+            return { text: 'Ready to Exit', color: 'text-yellow-400', icon: <Hourglass className="h-3 w-3" /> };
+        }
+        
+        if (direction === 'Sell' && currentDScore > -exitThreshold) {
+            return { text: 'Ready to Exit', color: 'text-yellow-400', icon: <Hourglass className="h-3 w-3" /> };
+        }
+        
+        return { text: `Armed at ${direction === 'Buy' ? '' : '-'}${exitThreshold}`, color: 'text-green-400', icon: <Target className="h-3 w-3" /> };
+    };
+
+    const dScoreExitStatus = getDScoreExitStatus();
 
     return (
         <TableRow key={bot.id}>
@@ -63,6 +80,12 @@ const BotRow = ({ bot, allPairs, isClosed }: { bot: Bot, allPairs: DScore[], isC
                  <Badge variant="outline" className={cn("flex items-center gap-1.5 w-fit", config.color)}>
                     {config.label}
                 </Badge>
+            </TableCell>
+            <TableCell>
+                 <div className={cn("flex items-center gap-2 font-semibold", direction === 'Buy' ? 'text-green-400' : 'text-red-400')}>
+                    {direction === 'Buy' ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                    <span>{direction}</span>
+                </div>
             </TableCell>
             <TableCell className={cn(bot.profit_loss >= 0 ? 'text-green-400' : 'text-red-400')}>
                 {bot.profit_loss >= 0 ? '+' : ''}${bot.profit_loss.toFixed(2)}
@@ -91,9 +114,15 @@ const BotRow = ({ bot, allPairs, isClosed }: { bot: Bot, allPairs: DScore[], isC
                         <Input 
                             type="number" 
                             className="w-24 h-8"
-                            value={dScoreExit} 
-                            onChange={(e) => setDScoreExit(parseFloat(e.target.value))} 
+                            value={dScoreExitThreshold} 
+                            onChange={(e) => setDScoreExitThreshold(parseFloat(e.target.value))}
+                            disabled={!bot.enableDSizeExit}
                         />
+                    </TableCell>
+                    <TableCell>
+                        <div className={cn("flex items-center gap-1.5 text-xs", dScoreExitStatus.color)}>
+                           {dScoreExitStatus.icon} {dScoreExitStatus.text}
+                        </div>
                     </TableCell>
                     <TableCell>
                         <Select value={botStatus} onValueChange={(value) => setBotStatus(value as Bot['status'])}>
@@ -140,6 +169,7 @@ export default function ActiveBotsTable({ data, allPairs, title, description, is
                     <TableHead>Pair</TableHead>
                     <TableHead>Strategy</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Direction</TableHead>
                     <TableHead>P/L</TableHead>
                     <TableHead>Entry D-Score</TableHead>
                     <TableHead>{isClosed ? 'Exit D-Score' : 'Current D-Score'}</TableHead>
@@ -147,6 +177,7 @@ export default function ActiveBotsTable({ data, allPairs, title, description, is
                         <>
                             <TableHead>Stop Loss</TableHead>
                             <TableHead>Take Profit</TableHead>
+                            <TableHead>Exit Threshold</TableHead>
                             <TableHead>D-Score Exit</TableHead>
                             <TableHead>Control</TableHead>
                             <TableHead className="text-right">Actions</TableHead>

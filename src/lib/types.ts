@@ -28,6 +28,7 @@ export type Bot = {
   pair: string;
   strategy: string;
   status: 'active' | 'paused' | 'error' | 'close_at_tp' | 'closed';
+  direction: 'Buy' | 'Sell';
   profit_loss: number;
   createdAt?: { seconds: number; nanoseconds: number; }; // Firestore Timestamp
   d_score_entry: number;
@@ -35,6 +36,8 @@ export type Bot = {
   stopLoss?: number;
   takeProfit?: number;
   lotSize?: number;
+  enableDSizeExit?: boolean;
+  dSizeExitThreshold?: number;
 };
 
 export type Notification = {

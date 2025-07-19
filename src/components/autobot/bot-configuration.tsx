@@ -103,6 +103,10 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
     try {
         const dScoreData = await getForexData(selectedPair);
         
+        if (!dScoreData) {
+            throw new Error("Could not fetch D-Score data for the selected pair.");
+        }
+
         const docRef = await addDoc(collection(db, "bots"), {
             ...config,
             pair: selectedPair,
@@ -111,6 +115,7 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
             profit_loss: 0,
             strategy: config.botType || "DCA Grid",
             d_score_entry: dScoreData?.dScore ?? 0,
+            direction: dScoreData.dScore > 0 ? 'Buy' : 'Sell',
             uid: user.uid,
         });
 
@@ -341,5 +346,3 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
     </Card>
   );
 }
-
-    
