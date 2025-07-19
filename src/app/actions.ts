@@ -12,6 +12,7 @@ import { collection, addDoc, getDocs, serverTimestamp, query, where, DocumentDat
  * @returns The ID of the newly created document.
  */
 export async function addBot(botData: BotConfigurationData, pair: string, uid: string) {
+    console.log("UID used for write:", uid); // Debugging: Log the UID received by the server action.
     if (!uid) {
         return { success: false, error: "User is not authenticated." };
     }
@@ -67,4 +68,5 @@ export async function getBots(uid: string) {
         return { success: false, error: (e as Error).message };
     }
 }
+
 
