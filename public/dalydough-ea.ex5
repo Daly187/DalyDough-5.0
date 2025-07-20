@@ -15,7 +15,7 @@ input int Update_Frequency_Seconds = 5;     // How often to sync with server (se
 
 //--- Global variables
 bool isAuthenticated = false;
-string baseURL = "https://firestore.googleapis.com/v1/projects/your-project-id/databases/(default)/documents/";
+string baseURL = "https://firestore.googleapis.com/v1/projects/studio-7990806245/databases/(default)/documents/";
 string accountDocumentPath = "";
 string userID = "";
 datetime lastUpdate = 0;

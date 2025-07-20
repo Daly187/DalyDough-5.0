@@ -163,7 +163,7 @@ export default function LinkAccountForm({ onAccountAdded }: LinkAccountFormProps
                             </Label>
                             <div className="flex items-center gap-2">
                                 <Input id="apiKey" value={apiKey} readOnly className="font-code" />
-                                <Button variant="ghost" size="icon" onClick={generateApiKey}>
+                                <Button variant="ghost" size="icon" type="button" onClick={generateApiKey}>
                                     <RefreshCw className="h-4 w-4" />
                                 </Button>
                             </div>
@@ -181,13 +181,13 @@ export default function LinkAccountForm({ onAccountAdded }: LinkAccountFormProps
                         </div>
                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <Link href="/dalydough-ea.ex4" download className="w-full">
-                                <Button variant="secondary" className="w-full">
+                                <Button variant="secondary" className="w-full" type="button">
                                     <Download className="h-4 w-4 mr-2" />
                                     Download for MT4
                                 </Button>
                             </Link>
                             <Link href="/dalydough-ea.ex5" download className="w-full">
-                                <Button variant="secondary" className="w-full">
+                                <Button variant="secondary" className="w-full" type="button">
                                     <Download className="h-4 w-4 mr-2" />
                                     Download for MT5
                                 </Button>

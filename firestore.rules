@@ -3,29 +3,35 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    // Users can only read, write, and delete their own documents.
-    // This applies to bots, trade accounts, and settings.
-    // The "uid" field in the document must match the user's authenticated UID.
     
-    match /bots/{botId} {
-      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.uid;
-      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
-    }
-
-    match /tradeAccounts/{accountId} {
-      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.uid;
-      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
-    }
-    
-    // For userSettings, the document ID is the user's UID.
+    // Users can only access their own settings.
     match /userSettings/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if request.auth.uid == userId;
     }
 
-    // Auto bot strategies are also per-user. The document ID is the user's UID.
+    // Users can only access their own trading accounts.
+    match /tradeAccounts/{accountId} {
+      allow read, write: if request.auth.uid == resource.data.uid;
+    }
+    
+    // Users can create a new trading account for themselves.
+    match /tradeAccounts/{accountId} {
+      allow create: if request.auth.uid == request.resource.data.uid;
+    }
+    
+    // Users can only access bots linked to their user ID.
+    match /bots/{botId} {
+        allow read, write: if request.auth.uid == resource.data.uid;
+    }
+
+    // Users can create a new bot for themselves.
+    match /bots/{botId} {
+        allow create: if request.auth.uid == request.resource.data.uid;
+    }
+
+    // Auto Bot strategies are linked to a user.
     match /autobotStrategies/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, write: if request.auth.uid == userId;
     }
   }
 }
