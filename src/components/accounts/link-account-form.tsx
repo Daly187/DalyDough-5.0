@@ -67,6 +67,7 @@ export default function LinkAccountForm({ onAccountAdded }: LinkAccountFormProps
             const newAccountData = {
                 uid: user.uid,
                 ...data,
+                eaKey: apiKey, // Save the generated key
                 balance: 0,
                 equity: 0,
                 status: 'Connecting', // Initial status
@@ -77,7 +78,10 @@ export default function LinkAccountForm({ onAccountAdded }: LinkAccountFormProps
             const docRef = await addDoc(collection(db, "tradeAccounts"), newAccountData);
             
             toast({ title: "Account Linking...", description: "Connecting to your trading account." });
-            reset(); // Reset form fields
+            
+            // Re-generate a new key for the next form entry and reset fields
+            generateApiKey(); 
+            reset();
 
             // Simulate connection process
             setTimeout(() => {
@@ -164,7 +168,7 @@ export default function LinkAccountForm({ onAccountAdded }: LinkAccountFormProps
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="apiKey" className="flex items-center gap-2">
-                            <KeyRound className="h-4 w-4" /> Your Unique EA Key
+                            <KeyRound className="h-4 w-4" /> Your Unique EA Key for this Account
                         </Label>
                         <div className="flex items-center gap-2">
                             <Input id="apiKey" value={apiKey} readOnly className="font-code" />
@@ -172,6 +176,7 @@ export default function LinkAccountForm({ onAccountAdded }: LinkAccountFormProps
                                 <RefreshCw className="h-4 w-4" />
                             </Button>
                         </div>
+                         <p className="text-xs text-muted-foreground">A new key is generated for each account you link.</p>
                     </div>
                     <div className="text-xs text-muted-foreground p-4 bg-muted/50 rounded-lg space-y-2">
                         <p className="font-semibold">Installation Steps:</p>

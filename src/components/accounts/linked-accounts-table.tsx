@@ -9,7 +9,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Save, Trash2, Loader2, AlertTriangle } from "lucide-react";
+import { Save, Trash2, Loader2, AlertTriangle, KeyRound, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TradeAccount } from "@/lib/types";
 import { db } from "@/lib/firebase/firestore";
@@ -26,6 +26,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const statusColors: Record<TradeAccount['status'], string> = {
   Connected: "bg-green-500/20 text-green-400 border-green-500/30",
@@ -82,6 +88,13 @@ const AccountRow: React.FC<AccountRowProps> = ({ account, isPrimary, onPrimaryCh
     // isDeleting will be reset by parent component re-render
   };
 
+  const handleCopyKey = () => {
+    if (account.eaKey) {
+        navigator.clipboard.writeText(account.eaKey);
+        toast({ title: "Copied!", description: "EA Key copied to clipboard." });
+    }
+  };
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
   }
@@ -93,6 +106,23 @@ const AccountRow: React.FC<AccountRowProps> = ({ account, isPrimary, onPrimaryCh
       </TableCell>
       <TableCell className="font-medium">{localAccount.nickname}</TableCell>
       <TableCell className="font-mono">{localAccount.accountId}</TableCell>
+      <TableCell>
+        <div className="flex items-center gap-2 font-mono text-xs">
+          <span>{localAccount.eaKey ? `${localAccount.eaKey.substring(0, 8)}...` : 'N/A'}</span>
+            {localAccount.eaKey && (
+              <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleCopyKey}>
+                            <Copy className="h-3 w-3" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>Copy EA Key</p></TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+        </div>
+      </TableCell>
       <TableCell>{localAccount.broker}</TableCell>
       <TableCell>{formatCurrency(localAccount.balance)}</TableCell>
       <TableCell>
@@ -203,6 +233,12 @@ export default function LinkedAccountsTable({ accounts }: { accounts: TradeAccou
                 <TableHead className="w-[50px]">Primary</TableHead>
                 <TableHead>Nickname</TableHead>
                 <TableHead>Account ID</TableHead>
+                <TableHead>
+                    <div className="flex items-center gap-2">
+                        <KeyRound className="h-4 w-4" />
+                        EA Key
+                    </div>
+                </TableHead>
                 <TableHead>Broker</TableHead>
                 <TableHead>Balance</TableHead>
                 <TableHead>Status</TableHead>

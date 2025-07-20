@@ -99,11 +99,12 @@ export type TradeAccount = {
   platform: 'mt4' | 'mt5';
   accountId: string; // Actual trading account number
   server: string;
-  broker: string;
+  broker?: string;
   balance: number;
   equity: number;
   status: 'Connected' | 'Disconnected' | 'Error' | 'Connecting';
   isPrimary: boolean;
+  eaKey?: string;
   copySettings?: {
     enabled: boolean;
     weight: number;
