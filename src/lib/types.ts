@@ -93,17 +93,22 @@ export type ApiKey = {
 };
 
 export type TradeAccount = {
-  id: string; // Unique Account Number for MT5
+  id: string; // Firestore document ID
+  uid: string; // User ID
   nickname: string;
+  platform: 'mt4' | 'mt5';
+  accountId: string; // Actual trading account number
+  server: string;
   broker: string;
   balance: number;
   equity: number;
-  status: 'Connected' | 'Disconnected' | 'Error';
+  status: 'Connected' | 'Disconnected' | 'Error' | 'Connecting';
   isPrimary: boolean;
   copySettings?: {
     enabled: boolean;
     weight: number;
   };
+  createdAt?: { seconds: number; nanoseconds: number; };
 };
 
 export type AutoBotStrategy = {

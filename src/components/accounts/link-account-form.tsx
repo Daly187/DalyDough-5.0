@@ -8,10 +8,40 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Link as LinkIcon, Download, KeyRound, RefreshCw, Server } from "lucide-react";
+import { Link as LinkIcon, Download, KeyRound, RefreshCw, Server, Loader2 } from "lucide-react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useToast } from "@/hooks/use-toast";
+import { db } from "@/lib/firebase/firestore";
+import { auth } from "@/lib/firebase/auth";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { useAuthState } from "react-firebase-hooks/auth";
+import type { TradeAccount } from "@/lib/types";
 
-export default function LinkAccountForm() {
+const accountSchema = z.object({
+  nickname: z.string().min(1, "Nickname is required"),
+  platform: z.enum(["mt4", "mt5"], { required_error: "Platform is required" }),
+  accountId: z.string().min(1, "Account ID is required"),
+  password: z.string().min(1, "Password is required"),
+  server: z.string().min(1, "Server is required"),
+});
+
+type AccountFormData = z.infer<typeof accountSchema>;
+
+interface LinkAccountFormProps {
+    onAccountAdded: (account: TradeAccount) => void;
+}
+
+export default function LinkAccountForm({ onAccountAdded }: LinkAccountFormProps) {
     const [apiKey, setApiKey] = React.useState('');
+    const { toast } = useToast();
+    const [user] = useAuthState(auth);
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+    const { register, handleSubmit, control, formState: { errors }, reset } = useForm<AccountFormData>({
+        resolver: zodResolver(accountSchema),
+    });
 
     const generateApiKey = () => {
         const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -26,52 +56,101 @@ export default function LinkAccountForm() {
         generateApiKey();
     }, []);
 
+    const onSubmit = async (data: AccountFormData) => {
+        if (!user) {
+            toast({ variant: "destructive", title: "Not Authenticated", description: "You must be logged in to link an account." });
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            const newAccountData = {
+                uid: user.uid,
+                ...data,
+                balance: 0,
+                equity: 0,
+                status: 'Connecting', // Initial status
+                isPrimary: false, // New accounts are not primary by default
+                copySettings: { enabled: false, weight: 1.0 },
+                createdAt: serverTimestamp(),
+            };
+            const docRef = await addDoc(collection(db, "tradeAccounts"), newAccountData);
+            
+            toast({ title: "Account Linking...", description: "Connecting to your trading account." });
+            reset(); // Reset form fields
+
+            // Simulate connection process
+            setTimeout(() => {
+                 toast({ title: "Account Linked!", description: `Account ${data.nickname} has been successfully linked.` });
+                 onAccountAdded({ id: docRef.id, ...newAccountData } as unknown as TradeAccount);
+            }, 2000);
+
+        } catch (error) {
+            toast({ variant: "destructive", title: "Linking Failed", description: (error as Error).message });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     return (
         <div className="grid gap-8 md:grid-cols-2">
             <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 font-headline">
-                        <Server className="h-5 w-5" />
-                        Link Trading Account
-                    </CardTitle>
-                    <CardDescription>Connect your MT4 or MT5 account to start trading.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="nickname">Account Nickname</Label>
-                        <Input id="nickname" placeholder="e.g., Main Profit Account" />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="platform">Platform</Label>
-                        <Select>
-                            <SelectTrigger id="platform">
-                                <SelectValue placeholder="Select Platform" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="mt4">MetaTrader 4</SelectItem>
-                                <SelectItem value="mt5">MetaTrader 5</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="accountId">Account ID</Label>
-                        <Input id="accountId" placeholder="Enter your account ID" />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="password">Password</Label>
-                        <Input id="password" type="password" placeholder="Enter your account password" />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="server">Server</Label>
-                        <Input id="server" placeholder="Enter your broker's server" />
-                    </div>
-                </CardContent>
-                <CardFooter>
-                    <Button className="w-full">
-                        <LinkIcon className="h-4 w-4 mr-2" />
-                        Connect Account
-                    </Button>
-                </CardFooter>
+                <form onSubmit={handleSubmit(onSubmit)}>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 font-headline">
+                            <Server className="h-5 w-5" />
+                            Link Trading Account
+                        </CardTitle>
+                        <CardDescription>Connect your MT4 or MT5 account to start trading.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="nickname">Account Nickname</Label>
+                            <Input id="nickname" placeholder="e.g., Main Profit Account" {...register("nickname")} />
+                            {errors.nickname && <p className="text-red-500 text-xs">{errors.nickname.message}</p>}
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="platform">Platform</Label>
+                            <Controller
+                                name="platform"
+                                control={control}
+                                render={({ field }) => (
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <SelectTrigger id="platform">
+                                            <SelectValue placeholder="Select Platform" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="mt4">MetaTrader 4</SelectItem>
+                                            <SelectItem value="mt5">MetaTrader 5</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            />
+                            {errors.platform && <p className="text-red-500 text-xs">{errors.platform.message}</p>}
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="accountId">Account ID</Label>
+                            <Input id="accountId" placeholder="Enter your account ID" {...register("accountId")} />
+                            {errors.accountId && <p className="text-red-500 text-xs">{errors.accountId.message}</p>}
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="password">Password</Label>
+                            <Input id="password" type="password" placeholder="Enter your account password" {...register("password")} />
+                            {errors.password && <p className="text-red-500 text-xs">{errors.password.message}</p>}
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="server">Server</Label>
+                            <Input id="server" placeholder="Enter your broker's server" {...register("server")} />
+                            {errors.server && <p className="text-red-500 text-xs">{errors.server.message}</p>}
+                        </div>
+                    </CardContent>
+                    <CardFooter>
+                        <Button type="submit" className="w-full" disabled={isSubmitting}>
+                             {isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <LinkIcon className="h-4 w-4 mr-2" />}
+                            {isSubmitting ? "Connecting..." : "Connect Account"}
+                        </Button>
+                    </CardFooter>
+                </form>
             </Card>
 
             <Card>

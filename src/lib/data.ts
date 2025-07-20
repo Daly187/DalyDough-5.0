@@ -1,17 +1,13 @@
 
 
-import type { DScore, Bot, EquityData, RiskMetric, ApiKey, NewsEvent, BotConfigurationData, AIReentry, MarketRegime, ExposureData, TradeAccount, Notification } from './types';
+import type { Bot, EquityData, RiskMetric, ApiKey, NewsEvent, BotConfigurationData, AIReentry, MarketRegime, ExposureData, TradeAccount, Notification } from './types';
 
 export const pairs = ['EUR/USD', 'USD/JPY', 'GBP/USD', 'AUD/USD', 'USD/CAD', 'USD/CHF', 'NZD/USD', 'EUR/JPY', 'GBP/JPY', 'XAU/USD'];
 
 // --- Live-ish Data ---
-export const linkedAccountsData: TradeAccount[] = [
-    { id: '50012345', nickname: 'Main Profit', broker: 'IC Markets', balance: 10250.75, equity: 10850.25, status: 'Connected', isPrimary: true },
-    { id: '50067890', nickname: 'Test Account', broker: 'Pepperstone', balance: 1000.00, equity: 950.50, status: 'Connected', isPrimary: false, copySettings: { enabled: true, weight: 0.1 } },
-    { id: '50011223', nickname: 'Small Hedging', broker: 'IC Markets', balance: 500.00, equity: 520.00, status: 'Connected', isPrimary: false, copySettings: { enabled: true, weight: 0.05 } },
-    { id: '50044556', nickname: 'Disconnected Acct', broker: 'ThinkMarkets', balance: 2500.00, equity: 2500.00, status: 'Disconnected', isPrimary: false, copySettings: { enabled: false, weight: 0.25 } },
-    { id: '50077889', nickname: 'Error Account', broker: 'IC Markets', balance: 0.00, equity: 0.00, status: 'Error', isPrimary: false, copySettings: { enabled: false, weight: 1.0 } },
-];
+// This data is now fetched from Firestore and this mock data is no longer used.
+// It is kept here for reference or for local testing if Firestore is unavailable.
+export const linkedAccountsData: TradeAccount[] = [];
 
 
 // --- Mock Data (to be phased out or used for dev) ---
