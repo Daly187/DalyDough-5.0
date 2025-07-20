@@ -1,1 +1,525 @@
-This is a placeholder for the DalyDough MT5 Expert Advisor. Replace this file with your actual .ex5 file.
+//+------------------------------------------------------------------+
+//|                                                DalyDoughEA.mq5   |
+//|                                  Copyright 2025, DalyDough Ltd   |
+//|                                             https://dalydough.com |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2025, DalyDough Ltd"
+#property link      "https://dalydough.com"
+#property version   "1.00"
+
+//--- Include necessary files
+#include <Trade\Trade.mqh>
+
+//--- Input parameters
+input string EA_Key = "";                    // Your unique EA Key from DalyDough
+input int Update_Frequency_Seconds = 5;     // How often to sync with server (seconds)
+
+//--- Global variables
+bool isAuthenticated = false;
+string baseURL = "https://firestore.googleapis.com/v1/projects/your-project-id/databases/(default)/documents/";
+string accountDocumentPath = "";
+string userID = "";
+datetime lastUpdate = 0;
+CTrade trade;
+
+//+------------------------------------------------------------------+
+//| Expert initialization function                                   |
+//+------------------------------------------------------------------+
+int OnInit()
+{
+    Print("DalyDough EA starting...");
+    
+    // Check if EA_Key is provided
+    if(StringLen(EA_Key) == 0)
+    {
+        Print("ERROR: EA_Key is required. Please enter your unique EA Key from DalyDough.");
+        return(INIT_FAILED);
+    }
+    
+    // Authenticate with DalyDough
+    if(!AuthenticateEA())
+    {
+        Print("ERROR: Authentication failed. Please check your EA_Key.");
+        return(INIT_FAILED);
+    }
+    
+    // Set timer for regular updates
+    if(!EventSetTimer(Update_Frequency_Seconds))
+    {
+        Print("ERROR: Failed to set timer.");
+        return(INIT_FAILED);
+    }
+    
+    // Send initial account status
+    UpdateAccountStatus();
+    
+    Print("DalyDough EA initialized successfully!");
+    return(INIT_SUCCEEDED);
+}
+
+//+------------------------------------------------------------------+
+//| Expert deinitialization function                                 |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+{
+    EventKillTimer();
+    Print("DalyDough EA stopped.");
+}
+
+//+------------------------------------------------------------------+
+//| Timer function - main logic loop                                |
+//+------------------------------------------------------------------+
+void OnTimer()
+{
+    if(!isAuthenticated) return;
+    
+    // Task 1: Update account status
+    UpdateAccountStatus();
+    
+    // Task 2: Update open positions P/L
+    UpdatePositionsPnL();
+    
+    // Task 3: Check for and execute commands
+    ProcessBotCommands();
+    
+    lastUpdate = TimeCurrent();
+}
+
+//+------------------------------------------------------------------+
+//| Authenticate EA with DalyDough server                           |
+//+------------------------------------------------------------------+
+bool AuthenticateEA()
+{
+    string url = baseURL + "tradeAccounts/" + EA_Key;
+    string headers = "Content-Type: application/json\r\n";
+    
+    char data[];
+    char result[];
+    string resultHeaders;
+    int timeout = 5000; // 5 seconds
+    
+    // Make GET request to check if EA_Key exists
+    int res = WebRequest("GET", url, headers, timeout, data, result, resultHeaders);
+    
+    if(res == 200)
+    {
+        string response = CharArrayToString(result);
+        
+        // Parse response to get user ID and account info
+        // This is a simplified version - you may need to parse JSON properly
+        if(StringFind(response, "\"name\"") >= 0)
+        {
+            isAuthenticated = true;
+            accountDocumentPath = "tradeAccounts/" + EA_Key;
+            
+            // Extract userID from response (simplified parsing)
+            int uidStart = StringFind(response, "\"uid\"");
+            if(uidStart >= 0)
+            {
+                uidStart = StringFind(response, "\"", uidStart + 6) + 1;
+                int uidEnd = StringFind(response, "\"", uidStart);
+                userID = StringSubstr(response, uidStart, uidEnd - uidStart);
+            }
+            
+            Print("Authentication successful. User ID: ", userID);
+            return true;
+        }
+    }
+    
+    Print("Authentication failed. HTTP Code: ", res);
+    return false;
+}
+
+//+------------------------------------------------------------------+
+//| Update account status in Firestore                              |
+//+------------------------------------------------------------------+
+void UpdateAccountStatus()
+{
+    double balance = AccountInfoDouble(ACCOUNT_BALANCE);
+    double equity = AccountInfoDouble(ACCOUNT_EQUITY);
+    double marginLevel = AccountInfoDouble(ACCOUNT_MARGIN_LEVEL);
+    
+    string jsonData = StringFormat(
+        "{"
+        "\"fields\": {"
+        "\"balance\": {\"doubleValue\": %.2f},"
+        "\"equity\": {\"doubleValue\": %.2f},"
+        "\"marginLevel\": {\"doubleValue\": %.2f},"
+        "\"status\": {\"stringValue\": \"Connected\"},"
+        "\"lastUpdate\": {\"timestampValue\": \"%s\"}"
+        "}"
+        "}",
+        balance, equity, marginLevel, TimeToString(TimeCurrent(), TIME_DATE|TIME_SECONDS)
+    );
+    
+    SendFirestoreRequest("PATCH", accountDocumentPath, jsonData);
+}
+
+//+------------------------------------------------------------------+
+//| Update positions P/L for all bots                               |
+//+------------------------------------------------------------------+
+void UpdatePositionsPnL()
+{
+    // Get all bots for this user
+    string queryData = StringFormat(
+        "{"
+        "\"structuredQuery\": {"
+        "\"where\": {"
+        "\"fieldFilter\": {"
+        "\"field\": {\"fieldPath\": \"uid\"},"
+        "\"op\": \"EQUAL\","
+        "\"value\": {\"stringValue\": \"%s\"}"
+        "}"
+        "},"
+        "\"from\": [{\"collectionId\": \"bots\"}]"
+        "}"
+        "}",
+        userID
+    );
+    
+    string url = baseURL + ":runQuery";
+    char data[];
+    char result[];
+    string headers = "Content-Type: application/json\r\n";
+    string resultHeaders;
+    
+    ArrayResize(data, StringToCharArray(queryData, data, 0, WHOLE_ARRAY, CP_UTF8) - 1);
+    int res = WebRequest("POST", url, headers, 5000, data, result, resultHeaders);
+    
+    if(res == 200)
+    {
+        string response = CharArrayToString(result);
+        ParseAndUpdateBotPnL(response);
+    }
+}
+
+//+------------------------------------------------------------------+
+//| Parse bot response and update P/L                               |
+//+------------------------------------------------------------------+
+void ParseAndUpdateBotPnL(string response)
+{
+    // Simplified JSON parsing - in production, use a proper JSON library
+    int pos = 0;
+    while((pos = StringFind(response, "\"name\":", pos)) >= 0)
+    {
+        // Extract bot document path and ID
+        int pathStart = StringFind(response, "\"", pos + 7) + 1;
+        int pathEnd = StringFind(response, "\"", pathStart);
+        string botPath = StringSubstr(response, pathStart, pathEnd - pathStart);
+        
+        // Extract bot ID from path
+        int botsPos = StringFind(botPath, "bots/");
+        if(botsPos >= 0)
+        {
+            string botId = StringSubstr(botPath, botsPos + 5);
+            
+            // Calculate P/L for this bot
+            double totalPnL = CalculateBotPnL(botId);
+            
+            // Update bot document with new P/L
+            string updateData = StringFormat(
+                "{"
+                "\"fields\": {"
+                "\"profit_loss\": {\"doubleValue\": %.2f}"
+                "}"
+                "}",
+                totalPnL
+            );
+            
+            string docPath = StringSubstr(botPath, StringFind(botPath, "documents/") + 10);
+            SendFirestoreRequest("PATCH", docPath, updateData);
+        }
+        
+        pos = pathEnd;
+    }
+}
+
+//+------------------------------------------------------------------+
+//| Calculate P/L for a specific bot                                |
+//+------------------------------------------------------------------+
+double CalculateBotPnL(string botId)
+{
+    double totalPnL = 0.0;
+    
+    // Convert botId to magic number (use hash or first characters)
+    ulong magicNumber = 0;
+    for(int i = 0; i < StringLen(botId) && i < 8; i++)
+    {
+        magicNumber = magicNumber * 31 + StringGetCharacter(botId, i);
+    }
+    magicNumber = magicNumber % 2147483647; // Keep it within int range
+    
+    // Check positions
+    for(int i = 0; i < PositionsTotal(); i++)
+    {
+        if(PositionGetTicket(i) > 0)
+        {
+            if(PositionGetInteger(POSITION_MAGIC) == (long)magicNumber)
+            {
+                totalPnL += PositionGetDouble(POSITION_PROFIT) + PositionGetDouble(POSITION_SWAP);
+            }
+        }
+    }
+    
+    return totalPnL;
+}
+
+//+------------------------------------------------------------------+
+//| Process bot commands from Firestore                             |
+//+------------------------------------------------------------------+
+void ProcessBotCommands()
+{
+    // Query active bots for this user
+    string queryData = StringFormat(
+        "{"
+        "\"structuredQuery\": {"
+        "\"where\": {"
+        "\"compositeFilter\": {"
+        "\"op\": \"AND\","
+        "\"filters\": ["
+        "{\"fieldFilter\": {\"field\": {\"fieldPath\": \"uid\"}, \"op\": \"EQUAL\", \"value\": {\"stringValue\": \"%s\"}}},"
+        "{\"fieldFilter\": {\"field\": {\"fieldPath\": \"status\"}, \"op\": \"NOT_EQUAL\", \"value\": {\"stringValue\": \"closed\"}}}"
+        "]"
+        "}"
+        "},"
+        "\"from\": [{\"collectionId\": \"bots\"}]"
+        "}"
+        "}",
+        userID
+    );
+    
+    string url = baseURL + ":runQuery";
+    char data[];
+    char result[];
+    string headers = "Content-Type: application/json\r\n";
+    string resultHeaders;
+    
+    ArrayResize(data, StringToCharArray(queryData, data, 0, WHOLE_ARRAY, CP_UTF8) - 1);
+    int res = WebRequest("POST", url, headers, 5000, data, result, resultHeaders);
+    
+    if(res == 200)
+    {
+        string response = CharArrayToString(result);
+        ProcessBotDocuments(response);
+    }
+}
+
+//+------------------------------------------------------------------+
+//| Process individual bot documents                                 |
+//+------------------------------------------------------------------+
+void ProcessBotDocuments(string response)
+{
+    // Parse each bot document and handle commands
+    int pos = 0;
+    while((pos = StringFind(response, "\"document\":", pos)) >= 0)
+    {
+        // Extract bot data (simplified parsing)
+        int docStart = pos;
+        int docEnd = StringFind(response, "}", docStart);
+        string botDoc = StringSubstr(response, docStart, docEnd - docStart + 1);
+        
+        // Process this bot
+        ProcessSingleBot(botDoc);
+        
+        pos = docEnd;
+    }
+}
+
+//+------------------------------------------------------------------+
+//| Process a single bot document                                    |
+//+------------------------------------------------------------------+
+void ProcessSingleBot(string botDoc)
+{
+    // Extract bot ID
+    string botId = ExtractStringValue(botDoc, "botId");
+    
+    // Extract status
+    string status = ExtractStringValue(botDoc, "status");
+    
+    // Handle different statuses
+    if(status == "close_now" || status == "closed")
+    {
+        CloseAllBotTrades(botId);
+    }
+    else if(status == "active")
+    {
+        // Check for pending orders
+        ProcessPendingOrders(botDoc, botId);
+        
+        // Check stop loss / take profit
+        CheckStopLossTakeProfit(botDoc, botId);
+    }
+}
+
+//+------------------------------------------------------------------+
+//| Close all trades for a specific bot                             |
+//+------------------------------------------------------------------+
+void CloseAllBotTrades(string botId)
+{
+    // Convert botId to magic number
+    ulong magicNumber = 0;
+    for(int i = 0; i < StringLen(botId) && i < 8; i++)
+    {
+        magicNumber = magicNumber * 31 + StringGetCharacter(botId, i);
+    }
+    magicNumber = magicNumber % 2147483647;
+    
+    for(int i = PositionsTotal() - 1; i >= 0; i--)
+    {
+        if(PositionGetTicket(i) > 0)
+        {
+            if(PositionGetInteger(POSITION_MAGIC) == (long)magicNumber)
+            {
+                string symbol = PositionGetString(POSITION_SYMBOL);
+                ulong ticket = PositionGetTicket(i);
+                
+                if(trade.PositionClose(ticket))
+                {
+                    Print("Closed position for bot: ", botId, " Ticket: ", ticket);
+                }
+                else
+                {
+                    Print("Failed to close position for bot: ", botId, " Error: ", GetLastError());
+                }
+            }
+        }
+    }
+}
+
+//+------------------------------------------------------------------+
+//| Process pending orders for a bot                                |
+//+------------------------------------------------------------------+
+void ProcessPendingOrders(string botDoc, string botId)
+{
+    // This is a simplified version - you would need to properly parse the pendingOrders array
+    // and check if targetPrice conditions are met, then execute trades
+    
+    // Example logic:
+    double currentPrice = (SymbolInfoDouble(_Symbol, SYMBOL_ASK) + SymbolInfoDouble(_Symbol, SYMBOL_BID)) / 2;
+    
+    // Extract pending orders from botDoc (simplified)
+    // For each pending order:
+    //   - Check if targetPrice is reached
+    //   - If yes, execute market order
+    //   - Update Firestore to mark order as filled
+}
+
+//+------------------------------------------------------------------+
+//| Check stop loss and take profit conditions                      |
+//+------------------------------------------------------------------+
+void CheckStopLossTakeProfit(string botDoc, string botId)
+{
+    double stopLoss = ExtractDoubleValue(botDoc, "stopLoss");
+    double takeProfit = ExtractDoubleValue(botDoc, "takeProfit");
+    
+    if(stopLoss > 0 || takeProfit > 0)
+    {
+        // Convert botId to magic number
+        ulong magicNumber = 0;
+        for(int i = 0; i < StringLen(botId) && i < 8; i++)
+        {
+            magicNumber = magicNumber * 31 + StringGetCharacter(botId, i);
+        }
+        magicNumber = magicNumber % 2147483647;
+        
+        for(int i = PositionsTotal() - 1; i >= 0; i--)
+        {
+            if(PositionGetTicket(i) > 0)
+            {
+                if(PositionGetInteger(POSITION_MAGIC) == (long)magicNumber)
+                {
+                    double currentProfit = PositionGetDouble(POSITION_PROFIT) + PositionGetDouble(POSITION_SWAP);
+                    
+                    bool shouldClose = false;
+                    
+                    if(stopLoss > 0 && currentProfit <= -stopLoss)
+                    {
+                        shouldClose = true;
+                        Print("Stop loss triggered for bot: ", botId);
+                    }
+                    else if(takeProfit > 0 && currentProfit >= takeProfit)
+                    {
+                        shouldClose = true;
+                        Print("Take profit triggered for bot: ", botId);
+                    }
+                    
+                    if(shouldClose)
+                    {
+                        ulong ticket = PositionGetTicket(i);
+                        trade.PositionClose(ticket);
+                    }
+                }
+            }
+        }
+    }
+}
+
+//+------------------------------------------------------------------+
+//| Send HTTP request to Firestore                                  |
+//+------------------------------------------------------------------+
+bool SendFirestoreRequest(string method, string documentPath, string jsonData)
+{
+    string url = baseURL + documentPath;
+    string headers = "Content-Type: application/json\r\n";
+    
+    char data[];
+    char result[];
+    string resultHeaders;
+    
+    if(method == "PATCH" || method == "POST")
+    {
+        ArrayResize(data, StringToCharArray(jsonData, data, 0, WHOLE_ARRAY, CP_UTF8) - 1);
+    }
+    
+    int res = WebRequest(method, url, headers, 5000, data, result, resultHeaders);
+    
+    if(res == 200)
+    {
+        return true;
+    }
+    else
+    {
+        Print("Firestore request failed. Method: ", method, " URL: ", url, " HTTP Code: ", res);
+        return false;
+    }
+}
+
+//+------------------------------------------------------------------+
+//| Helper function to extract string value from JSON               |
+//+------------------------------------------------------------------+
+string ExtractStringValue(string json, string fieldName)
+{
+    string searchPattern = "\"" + fieldName + "\"";
+    int pos = StringFind(json, searchPattern);
+    if(pos < 0) return "";
+    
+    pos = StringFind(json, "\"stringValue\"", pos);
+    if(pos < 0) return "";
+    
+    pos = StringFind(json, "\"", pos + 13) + 1;
+    int endPos = StringFind(json, "\"", pos);
+    
+    return StringSubstr(json, pos, endPos - pos);
+}
+
+//+------------------------------------------------------------------+
+//| Helper function to extract double value from JSON               |
+//+------------------------------------------------------------------+
+double ExtractDoubleValue(string json, string fieldName)
+{
+    string searchPattern = "\"" + fieldName + "\"";
+    int pos = StringFind(json, searchPattern);
+    if(pos < 0) return 0.0;
+    
+    pos = StringFind(json, "\"doubleValue\"", pos);
+    if(pos < 0) return 0.0;
+    
+    pos = StringFind(json, ":", pos) + 1;
+    int endPos = StringFind(json, ",", pos);
+    if(endPos < 0) endPos = StringFind(json, "}", pos);
+    
+    string valueStr = StringSubstr(json, pos, endPos - pos);
+    StringReplace(valueStr, " ", "");
+    
+    return StringToDouble(valueStr);
+}

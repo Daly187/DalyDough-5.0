@@ -2,6 +2,9 @@
 
 import type { Bot, EquityData, RiskMetric, ApiKey, NewsEvent, BotConfigurationData, AIReentry, MarketRegime, ExposureData, TradeAccount, Notification } from './types';
 
+// This hardcoded list is no longer the primary source of truth.
+// It will be replaced by user-configured symbol mappings stored in Firestore.
+// It is kept here as a fallback or for initial setup.
 export const pairs = ['EUR/USD', 'USD/JPY', 'GBP/USD', 'AUD/USD', 'USD/CAD', 'USD/CHF', 'NZD/USD', 'EUR/JPY', 'GBP/JPY', 'XAU/USD'];
 
 // --- Live-ish Data ---
