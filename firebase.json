@@ -10,19 +10,6 @@
       "region": "us-central1"
     }
   },
-  "functions": [
-    {
-      "source": "functions",
-      "codebase": "default",
-      "ignore": [
-        "node_modules",
-        ".git",
-        "firebase-debug.log",
-        "firebase-debug.*.log"
-      ],
-      "runtime": "nodejs20"
-    }
-  ],
   "emulators": {
     "auth": {
       "port": 9099
@@ -40,13 +27,5 @@
       "enabled": true
     },
     "singleProjectMode": true
-  },
-  "scheduling": {
-    "schedules": [
-      {
-        "function": "runAutoBotScanner",
-        "schedule": "every 10 minutes"
-      }
-    ]
   }
 }

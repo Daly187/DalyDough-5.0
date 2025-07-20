@@ -1,5 +1,5 @@
 
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/lib/firebase/firestore';
 import { collection, doc, getDoc, getDocs, query, where, addDoc, serverTimestamp } from 'firebase/firestore';
 import { getForexData } from '@/lib/fmp';
@@ -8,7 +8,14 @@ import type { AutoBotStrategy, Bot, PendingOrder } from '@/lib/types';
 // In a multi-user app, this ID would be derived from the authenticated user's ID.
 const GLOBAL_STRATEGY_ID = 'global_strategy';
 
-export async function POST() {
+export async function POST(request: NextRequest) {
+  // Simple security check for the cron job. In a real production environment,
+  // you might use a secret key stored in an environment variable.
+  const internalCronHeader = request.headers.get('x-internal-cron');
+  if (process.env.NODE_ENV === 'production' && internalCronHeader !== 'true') {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     // 1. Fetch the Auto Bot Strategy
     const strategyRef = doc(db, 'autobotStrategies', GLOBAL_STRATEGY_ID);
