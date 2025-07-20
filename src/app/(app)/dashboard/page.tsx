@@ -4,7 +4,7 @@
 import * as React from 'react';
 import MarketOverviewTable from '@/components/dashboard/market-overview-table';
 import SystemStatus from '@/components/dashboard/system-status';
-import { botConfigurationData, aiReentriesData, pairs } from '@/lib/data';
+import { botConfigurationData, aiReentriesData } from '@/lib/data';
 import ActiveBotsTable from '@/components/bots/active-bots-table';
 import BotConfiguration from '@/components/autobot/bot-configuration';
 import { Rocket } from 'lucide-react';
@@ -17,7 +17,7 @@ import { useRefresh } from '@/context/refresh-context';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase/auth';
 import { db } from '@/lib/firebase/firestore';
-import { collection, getDocs, query, where, writeBatch, doc } from 'firebase/firestore';
+import { collection, getDocs, query, where, writeBatch, doc, getDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
 
@@ -39,6 +39,24 @@ export default function DashboardPage() {
 
       setIsLoading(true);
 
+      // 1. Fetch user's symbol mappings
+      const settingsRef = doc(db, 'userSettings', user.uid);
+      const settingsSnap = await getDoc(settingsRef);
+      let pairs: string[] = [];
+      if (settingsSnap.exists() && settingsSnap.data().symbolMappings) {
+        pairs = settingsSnap.data().symbolMappings.map((m: { apiSymbol: string }) => m.apiSymbol);
+      } else {
+        // Fallback to a default list if no mappings are found
+        pairs = ['EUR/USD', 'USD/JPY', 'GBP/USD'];
+      }
+
+      if (pairs.length === 0) {
+        setAllDScoreData([]);
+        setActiveBots([]);
+        setIsLoading(false);
+        return;
+      }
+      
       const dScorePromise = Promise.all(
         pairs.map(p => getForexData(p) as unknown as Promise<DScore>)
       );
@@ -68,7 +86,7 @@ export default function DashboardPage() {
 
       const [calculatedScores, botsResult] = await Promise.all([dScorePromise, botsPromise]);
 
-      setAllDScoreData(calculatedScores);
+      setAllDScoreData(calculatedScores.filter(Boolean));
       
       if (botsResult.success && botsResult.data) {
         const allBots = botsResult.data as Bot[];

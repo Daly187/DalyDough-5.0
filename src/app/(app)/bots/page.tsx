@@ -3,14 +3,13 @@
 
 import * as React from 'react';
 import ActiveBotsTable from '@/components/bots/active-bots-table';
-import { pairs } from '@/lib/data';
 import { getForexData } from '@/lib/fmp';
 import { DScore, Bot } from '@/lib/types';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase/auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { db } from '@/lib/firebase/firestore';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
 import PendingOrdersTable from '@/components/pending-orders/pending-orders-table';
 
 
@@ -24,9 +23,21 @@ export default function BotsPage() {
     const fetchData = async () => {
       if (user) {
         setIsLoading(true);
-        const dScorePromise = Promise.all(pairs.map(p => getForexData(p) as unknown as Promise<DScore>));
 
-        // Fetch Bots directly from Firestore
+        const settingsRef = doc(db, 'userSettings', user.uid);
+        const settingsSnap = await getDoc(settingsRef);
+        let pairs: string[] = [];
+        if (settingsSnap.exists() && settingsSnap.data().symbolMappings) {
+            pairs = settingsSnap.data().symbolMappings.map((m: { apiSymbol: string }) => m.apiSymbol);
+        }
+
+        let dScores: DScore[] = [];
+        if (pairs.length > 0) {
+            dScores = await Promise.all(
+                pairs.map(p => getForexData(p) as unknown as Promise<DScore>)
+            );
+        }
+
         const getBotsClientSide = async (uid: string): Promise<{ success: boolean; data?: Bot[]; error?: string }> => {
           try {
               const q = query(collection(db, "bots"), where("uid", "==", uid));
@@ -50,9 +61,9 @@ export default function BotsPage() {
 
         const botsPromise = getBotsClientSide(user.uid);
 
-        const [dScores, botsResult] = await Promise.all([dScorePromise, botsPromise]);
+        const [fetchedDScores, botsResult] = await Promise.all([dScores, botsPromise]);
 
-        setDScoreData(dScores);
+        setDScoreData(fetchedDScores.filter(Boolean));
         if (botsResult.success && botsResult.data) {
           setAllBots(botsResult.data);
         } else {
@@ -60,7 +71,6 @@ export default function BotsPage() {
         }
         setIsLoading(false);
       } else {
-        // If there's no user, stop loading. The layout will redirect to login.
         setIsLoading(false);
       }
     };
@@ -99,4 +109,3 @@ export default function BotsPage() {
     </main>
   );
 }
-

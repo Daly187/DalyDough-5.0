@@ -3,12 +3,16 @@
 
 import * as React from 'react';
 import MarketOpportunities from '@/components/autobot/market-opportunities';
-import { pairs, botConfigurationData } from '@/lib/data';
+import { botConfigurationData } from '@/lib/data';
 import { getForexData } from '@/lib/fmp';
 import type { DScore, AutoBotStrategy } from '@/lib/types';
 import { Scan, PlayCircle, Loader2 } from 'lucide-react';
 import AutoBotStrategyForm from '@/components/autobot/autobot-strategy-form';
 import { useToast } from '@/hooks/use-toast';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '@/lib/firebase/auth';
+import { db } from '@/lib/firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function AutoBotPage() {
   const [dScoreData, setDScoreData] = React.useState<DScore[]>([]);
@@ -16,31 +20,58 @@ export default function AutoBotPage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [isScanning, setIsScanning] = React.useState(false);
   const { toast } = useToast();
+  const [user] = useAuthState(auth);
 
   React.useEffect(() => {
     const fetchData = async () => {
+      if (!user) return;
+
       setIsLoading(true);
-      const dScorePromise = Promise.all(
-        pairs.map(p => getForexData(p) as unknown as Promise<DScore>)
-      );
-      // In a real app with multiple users, you'd fetch the strategy for the logged-in user.
-      // For now, we assume a single strategy document.
+
+      // Fetch user's symbol mappings
+      const settingsRef = doc(db, 'userSettings', user.uid);
+      const settingsSnap = await getDoc(settingsRef);
+      let pairs: string[] = [];
+      if (settingsSnap.exists() && settingsSnap.data().symbolMappings) {
+        pairs = settingsSnap.data().symbolMappings.map((m: { apiSymbol: string }) => m.apiSymbol);
+      } else {
+        pairs = ['EUR/USD', 'USD/JPY', 'GBP/USD']; // Fallback
+      }
+
+      let dScores: DScore[] = [];
+      if (pairs.length > 0) {
+        dScores = await Promise.all(
+          pairs.map(p => getForexData(p) as unknown as Promise<DScore>)
+        );
+      }
+      
       const strategyPromise = fetch('/api/autobot/strategy').then(res => res.json());
 
-      const [dScores, strategyRes] = await Promise.all([dScorePromise, strategyPromise]);
+      const [strategyRes] = await Promise.all([strategyPromise]);
       
-      setDScoreData(dScores);
+      setDScoreData(dScores.filter(Boolean));
       if (strategyRes.success && strategyRes.data) {
-        setStrategy(strategyRes.data);
+        // Ensure includedPairs is populated for all available pairs
+        const currentIncluded = strategyRes.data.includedPairs || {};
+        const newIncludedPairs = Object.fromEntries(pairs.map(p => [p, currentIncluded[p] ?? true]));
+        setStrategy({ ...strategyRes.data, includedPairs: newIncludedPairs });
       } else {
         // If no strategy is found, use the default config
-        setStrategy({ id: 'default', ...botConfigurationData, includedPairs: Object.fromEntries(pairs.map(p => [p, true])) });
+        setStrategy({ 
+          id: 'default', 
+          ...botConfigurationData, 
+          includedPairs: Object.fromEntries(pairs.map(p => [p, true])),
+          entryThresholdLower: -7,
+          entryThresholdUpper: 7,
+          exitThresholdLower: -6,
+          exitThresholdUpper: 6
+        });
       }
 
       setIsLoading(false);
     };
     fetchData();
-  }, []);
+  }, [user]);
 
   const handleScanNow = async () => {
     setIsScanning(true);

@@ -3,9 +3,9 @@
 import type { Bot, EquityData, RiskMetric, ApiKey, NewsEvent, BotConfigurationData, AIReentry, MarketRegime, ExposureData, TradeAccount, Notification } from './types';
 
 // This hardcoded list is no longer the primary source of truth.
-// It will be replaced by user-configured symbol mappings stored in Firestore.
+// It is superseded by the user-configured symbol mappings stored in Firestore.
 // It is kept here as a fallback or for initial setup.
-export const pairs = ['EUR/USD', 'USD/JPY', 'GBP/USD', 'AUD/USD', 'USD/CAD', 'USD/CHF', 'NZD/USD', 'EUR/JPY', 'GBP/JPY', 'XAU/USD'];
+// export const pairs = ['EUR/USD', 'USD/JPY', 'GBP/USD', 'AUD/USD', 'USD/CAD', 'USD/CHF', 'NZD/USD', 'EUR/JPY', 'GBP/JPY', 'XAU/USD'];
 
 // --- Live-ish Data ---
 // This data is now fetched from Firestore and this mock data is no longer used.
@@ -126,15 +126,11 @@ export const newsData: NewsEvent[] = [
 
 
 
-export const marketRegimeData: MarketRegime[] = pairs.map(pair => ({
-    currencyPair: pair,
-    price: Math.random() * 1.5 + 0.5,
-    volatility: Math.random() * 2,
-    adx: Math.random() * 60 + 10,
-    atr: Math.random() * 0.01,
-    bollingerWidth: Math.random() * 0.05,
-    maSlopes: 'Up, Up, Down',
-}));
+export const marketRegimeData: MarketRegime[] = [
+    { currencyPair: 'EUR/USD', price: 1.07, volatility: 1.2, adx: 25, atr: 0.005, bollingerWidth: 0.02, maSlopes: 'Up, Up, Down' },
+    // more data...
+];
+
 
 export const exposureData: ExposureData[] = [
     { currency: 'EUR', exposure: 12500.50, type: 'long' },
