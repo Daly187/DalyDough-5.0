@@ -185,13 +185,13 @@ export default function LinkAccountForm({ onAccountAdded }: LinkAccountFormProps
                     </div>
                 </CardContent>
                 <CardFooter className="grid grid-cols-2 gap-4">
-                    <Link href="/path-to-your/dalydough-ea.ex4" download className="w-full">
+                    <Link href="/dalydough-ea.ex4" download className="w-full">
                         <Button variant="secondary" className="w-full">
                             <Download className="h-4 w-4 mr-2" />
                             Download for MT4
                         </Button>
                     </Link>
-                    <Link href="/path-to-your/dalydough-ea.ex5" download className="w-full">
+                    <Link href="/dalydough-ea.ex5" download className="w-full">
                          <Button variant="secondary" className="w-full">
                             <Download className="h-4 w-4 mr-2" />
                             Download for MT5
