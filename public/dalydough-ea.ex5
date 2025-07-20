@@ -7,7 +7,6 @@
 #property link      "https://dalydough.com"
 #property version   "1.00"
 
-//--- Include necessary files
 #include <Trade\Trade.mqh>
 
 //--- Input parameters
@@ -20,6 +19,7 @@ string baseURL = "https://firestore.googleapis.com/v1/projects/your-project-id/d
 string accountDocumentPath = "";
 string userID = "";
 datetime lastUpdate = 0;
+datetime lastSymbolSync = 0;
 CTrade trade;
 
 //+------------------------------------------------------------------+
@@ -29,29 +29,26 @@ int OnInit()
 {
     Print("DalyDough EA starting...");
     
-    // Check if EA_Key is provided
     if(StringLen(EA_Key) == 0)
     {
         Print("ERROR: EA_Key is required. Please enter your unique EA Key from DalyDough.");
         return(INIT_FAILED);
     }
     
-    // Authenticate with DalyDough
     if(!AuthenticateEA())
     {
         Print("ERROR: Authentication failed. Please check your EA_Key.");
         return(INIT_FAILED);
     }
     
-    // Set timer for regular updates
     if(!EventSetTimer(Update_Frequency_Seconds))
     {
         Print("ERROR: Failed to set timer.");
         return(INIT_FAILED);
     }
     
-    // Send initial account status
     UpdateAccountStatus();
+    SyncBrokerSymbols();
     
     Print("DalyDough EA initialized successfully!");
     return(INIT_SUCCEEDED);
@@ -67,26 +64,28 @@ void OnDeinit(const int reason)
 }
 
 //+------------------------------------------------------------------+
-//| Timer function - main logic loop                                |
+//| Timer function                                                   |
 //+------------------------------------------------------------------+
 void OnTimer()
 {
-    if(!isAuthenticated) return;
+    if(!isAuthenticated) 
+        return;
     
-    // Task 1: Update account status
     UpdateAccountStatus();
-    
-    // Task 2: Update open positions P/L
     UpdatePositionsPnL();
-    
-    // Task 3: Check for and execute commands
     ProcessBotCommands();
+    
+    if(TimeCurrent() - lastSymbolSync > 3600)
+    {
+        SyncBrokerSymbols();
+        lastSymbolSync = TimeCurrent();
+    }
     
     lastUpdate = TimeCurrent();
 }
 
 //+------------------------------------------------------------------+
-//| Authenticate EA with DalyDough server                           |
+//| Authenticate EA                                                  |
 //+------------------------------------------------------------------+
 bool AuthenticateEA()
 {
@@ -96,23 +95,19 @@ bool AuthenticateEA()
     char data[];
     char result[];
     string resultHeaders;
-    int timeout = 5000; // 5 seconds
+    int timeout = 5000;
     
-    // Make GET request to check if EA_Key exists
     int res = WebRequest("GET", url, headers, timeout, data, result, resultHeaders);
     
     if(res == 200)
     {
         string response = CharArrayToString(result);
         
-        // Parse response to get user ID and account info
-        // This is a simplified version - you may need to parse JSON properly
         if(StringFind(response, "\"name\"") >= 0)
         {
             isAuthenticated = true;
             accountDocumentPath = "tradeAccounts/" + EA_Key;
             
-            // Extract userID from response (simplified parsing)
             int uidStart = StringFind(response, "\"uid\"");
             if(uidStart >= 0)
             {
@@ -131,7 +126,7 @@ bool AuthenticateEA()
 }
 
 //+------------------------------------------------------------------+
-//| Update account status in Firestore                              |
+//| Update account status                                            |
 //+------------------------------------------------------------------+
 void UpdateAccountStatus()
 {
@@ -156,11 +151,120 @@ void UpdateAccountStatus()
 }
 
 //+------------------------------------------------------------------+
-//| Update positions P/L for all bots                               |
+//| Sync broker symbols                                              |
+//+------------------------------------------------------------------+
+void SyncBrokerSymbols()
+{
+    Print("Starting symbol synchronization...");
+    
+    int totalSymbols = SymbolsTotal(true);
+    int syncedCount = 0;
+    
+    for(int i = 0; i < totalSymbols; i++)
+    {
+        string symbol = SymbolName(i, true);
+        
+        if(!SymbolInfoInteger(symbol, SYMBOL_SELECT))
+            continue;
+            
+        string description = SymbolInfoString(symbol, SYMBOL_DESCRIPTION);
+        int digits = (int)SymbolInfoInteger(symbol, SYMBOL_DIGITS);
+        double tickSize = SymbolInfoDouble(symbol, SYMBOL_TRADE_TICK_SIZE);
+        double contractSize = SymbolInfoDouble(symbol, SYMBOL_TRADE_CONTRACT_SIZE);
+        double minLot = SymbolInfoDouble(symbol, SYMBOL_VOLUME_MIN);
+        double maxLot = SymbolInfoDouble(symbol, SYMBOL_VOLUME_MAX);
+        double lotStep = SymbolInfoDouble(symbol, SYMBOL_VOLUME_STEP);
+        
+        string apiSymbol = MapBrokerSymbolToAPI(symbol);
+        
+        string symbolData = StringFormat(
+            "{"
+            "\"fields\": {"
+            "\"brokerSymbol\": {\"stringValue\": \"%s\"},"
+            "\"apiSymbol\": {\"stringValue\": \"%s\"},"
+            "\"description\": {\"stringValue\": \"%s\"},"
+            "\"digits\": {\"integerValue\": %d},"
+            "\"tickSize\": {\"doubleValue\": %.5f},"
+            "\"contractSize\": {\"doubleValue\": %.2f},"
+            "\"minLot\": {\"doubleValue\": %.2f},"
+            "\"maxLot\": {\"doubleValue\": %.2f},"
+            "\"lotStep\": {\"doubleValue\": %.2f},"
+            "\"accountKey\": {\"stringValue\": \"%s\"},"
+            "\"lastUpdated\": {\"timestampValue\": \"%s\"},"
+            "\"isActive\": {\"booleanValue\": true}"
+            "}"
+            "}",
+            symbol, apiSymbol, description, digits, tickSize, contractSize,
+            minLot, maxLot, lotStep, EA_Key, TimeToString(TimeCurrent(), TIME_DATE|TIME_SECONDS)
+        );
+        
+        string documentPath = "brokerSymbols/" + EA_Key + "_" + symbol;
+        if(SendFirestoreRequest("PATCH", documentPath, symbolData))
+        {
+            syncedCount++;
+        }
+        
+        Sleep(100);
+    }
+    
+    Print("Symbol synchronization completed. Synced ", syncedCount, " of ", totalSymbols, " symbols.");
+}
+
+//+------------------------------------------------------------------+
+//| Map broker symbol to API format                                 |
+//+------------------------------------------------------------------+
+string MapBrokerSymbolToAPI(string brokerSymbol)
+{
+    string apiSymbol = brokerSymbol;
+    
+    StringReplace(apiSymbol, "m", "");
+    StringReplace(apiSymbol, "z", "");
+    StringReplace(apiSymbol, "pro", "");
+    StringReplace(apiSymbol, ".", "");
+    StringReplace(apiSymbol, "_", "");
+    
+    if(StringLen(apiSymbol) == 6)
+    {
+        string base = StringSubstr(apiSymbol, 0, 3);
+        string quote = StringSubstr(apiSymbol, 3, 3);
+        apiSymbol = base + "/" + quote;
+    }
+    
+    if(apiSymbol == "EURUSD" || apiSymbol == "EUR/USD") return "EUR/USD";
+    if(apiSymbol == "GBPUSD" || apiSymbol == "GBP/USD") return "GBP/USD";
+    if(apiSymbol == "USDJPY" || apiSymbol == "USD/JPY") return "USD/JPY";
+    if(apiSymbol == "USDCHF" || apiSymbol == "USD/CHF") return "USD/CHF";
+    if(apiSymbol == "AUDUSD" || apiSymbol == "AUD/USD") return "AUD/USD";
+    if(apiSymbol == "USDCAD" || apiSymbol == "USD/CAD") return "USD/CAD";
+    if(apiSymbol == "NZDUSD" || apiSymbol == "NZD/USD") return "NZD/USD";
+    if(apiSymbol == "EURGBP" || apiSymbol == "EUR/GBP") return "EUR/GBP";
+    if(apiSymbol == "EURJPY" || apiSymbol == "EUR/JPY") return "EUR/JPY";
+    if(apiSymbol == "GBPJPY" || apiSymbol == "GBP/JPY") return "GBP/JPY";
+    
+    if(StringFind(apiSymbol, "US30") >= 0 || StringFind(apiSymbol, "DOW") >= 0) return "^DJI";
+    if(StringFind(apiSymbol, "SPX") >= 0 || StringFind(apiSymbol, "US500") >= 0) return "^GSPC";
+    if(StringFind(apiSymbol, "NAS") >= 0 || StringFind(apiSymbol, "US100") >= 0) return "^IXIC";
+    if(StringFind(apiSymbol, "DAX") >= 0 || StringFind(apiSymbol, "GER") >= 0) return "^GDAXI";
+    if(StringFind(apiSymbol, "FTSE") >= 0 || StringFind(apiSymbol, "UK100") >= 0) return "^FTSE";
+    if(StringFind(apiSymbol, "CAC") >= 0 || StringFind(apiSymbol, "FRA40") >= 0) return "^FCHI";
+    if(StringFind(apiSymbol, "NIKKEI") >= 0 || StringFind(apiSymbol, "JPN225") >= 0) return "^N225";
+    
+    if(StringFind(apiSymbol, "GOLD") >= 0 || StringFind(apiSymbol, "XAU") >= 0) return "GC=F";
+    if(StringFind(apiSymbol, "SILVER") >= 0 || StringFind(apiSymbol, "XAG") >= 0) return "SI=F";
+    if(StringFind(apiSymbol, "OIL") >= 0 || StringFind(apiSymbol, "WTI") >= 0) return "CL=F";
+    if(StringFind(apiSymbol, "BRENT") >= 0) return "BZ=F";
+    
+    if(StringFind(apiSymbol, "BTC") >= 0) return "BTC-USD";
+    if(StringFind(apiSymbol, "ETH") >= 0) return "ETH-USD";
+    
+    return apiSymbol;
+}
+
+//+------------------------------------------------------------------+
+//| Update positions P/L                                            |
 //+------------------------------------------------------------------+
 void UpdatePositionsPnL()
 {
-    // Get all bots for this user
     string queryData = StringFormat(
         "{"
         "\"structuredQuery\": {"
@@ -194,29 +298,23 @@ void UpdatePositionsPnL()
 }
 
 //+------------------------------------------------------------------+
-//| Parse bot response and update P/L                               |
+//| Parse and update bot P/L                                        |
 //+------------------------------------------------------------------+
 void ParseAndUpdateBotPnL(string response)
 {
-    // Simplified JSON parsing - in production, use a proper JSON library
     int pos = 0;
     while((pos = StringFind(response, "\"name\":", pos)) >= 0)
     {
-        // Extract bot document path and ID
         int pathStart = StringFind(response, "\"", pos + 7) + 1;
         int pathEnd = StringFind(response, "\"", pathStart);
         string botPath = StringSubstr(response, pathStart, pathEnd - pathStart);
         
-        // Extract bot ID from path
         int botsPos = StringFind(botPath, "bots/");
         if(botsPos >= 0)
         {
             string botId = StringSubstr(botPath, botsPos + 5);
-            
-            // Calculate P/L for this bot
             double totalPnL = CalculateBotPnL(botId);
             
-            // Update bot document with new P/L
             string updateData = StringFormat(
                 "{"
                 "\"fields\": {"
@@ -235,21 +333,19 @@ void ParseAndUpdateBotPnL(string response)
 }
 
 //+------------------------------------------------------------------+
-//| Calculate P/L for a specific bot                                |
+//| Calculate bot P/L                                               |
 //+------------------------------------------------------------------+
 double CalculateBotPnL(string botId)
 {
     double totalPnL = 0.0;
     
-    // Convert botId to magic number (use hash or first characters)
     ulong magicNumber = 0;
     for(int i = 0; i < StringLen(botId) && i < 8; i++)
     {
         magicNumber = magicNumber * 31 + StringGetCharacter(botId, i);
     }
-    magicNumber = magicNumber % 2147483647; // Keep it within int range
+    magicNumber = magicNumber % 2147483647;
     
-    // Check positions
     for(int i = 0; i < PositionsTotal(); i++)
     {
         if(PositionGetTicket(i) > 0)
@@ -265,11 +361,10 @@ double CalculateBotPnL(string botId)
 }
 
 //+------------------------------------------------------------------+
-//| Process bot commands from Firestore                             |
+//| Process bot commands                                             |
 //+------------------------------------------------------------------+
 void ProcessBotCommands()
 {
-    // Query active bots for this user
     string queryData = StringFormat(
         "{"
         "\"structuredQuery\": {"
@@ -305,20 +400,17 @@ void ProcessBotCommands()
 }
 
 //+------------------------------------------------------------------+
-//| Process individual bot documents                                 |
+//| Process bot documents                                            |
 //+------------------------------------------------------------------+
 void ProcessBotDocuments(string response)
 {
-    // Parse each bot document and handle commands
     int pos = 0;
     while((pos = StringFind(response, "\"document\":", pos)) >= 0)
     {
-        // Extract bot data (simplified parsing)
         int docStart = pos;
         int docEnd = StringFind(response, "}", docStart);
         string botDoc = StringSubstr(response, docStart, docEnd - docStart + 1);
         
-        // Process this bot
         ProcessSingleBot(botDoc);
         
         pos = docEnd;
@@ -326,37 +418,29 @@ void ProcessBotDocuments(string response)
 }
 
 //+------------------------------------------------------------------+
-//| Process a single bot document                                    |
+//| Process single bot                                               |
 //+------------------------------------------------------------------+
 void ProcessSingleBot(string botDoc)
 {
-    // Extract bot ID
     string botId = ExtractStringValue(botDoc, "botId");
-    
-    // Extract status
     string status = ExtractStringValue(botDoc, "status");
     
-    // Handle different statuses
     if(status == "close_now" || status == "closed")
     {
         CloseAllBotTrades(botId);
     }
     else if(status == "active")
     {
-        // Check for pending orders
         ProcessPendingOrders(botDoc, botId);
-        
-        // Check stop loss / take profit
         CheckStopLossTakeProfit(botDoc, botId);
     }
 }
 
 //+------------------------------------------------------------------+
-//| Close all trades for a specific bot                             |
+//| Close all bot trades                                            |
 //+------------------------------------------------------------------+
 void CloseAllBotTrades(string botId)
 {
-    // Convert botId to magic number
     ulong magicNumber = 0;
     for(int i = 0; i < StringLen(botId) && i < 8; i++)
     {
@@ -370,7 +454,6 @@ void CloseAllBotTrades(string botId)
         {
             if(PositionGetInteger(POSITION_MAGIC) == (long)magicNumber)
             {
-                string symbol = PositionGetString(POSITION_SYMBOL);
                 ulong ticket = PositionGetTicket(i);
                 
                 if(trade.PositionClose(ticket))
@@ -387,25 +470,18 @@ void CloseAllBotTrades(string botId)
 }
 
 //+------------------------------------------------------------------+
-//| Process pending orders for a bot                                |
+//| Process pending orders                                           |
 //+------------------------------------------------------------------+
 void ProcessPendingOrders(string botDoc, string botId)
 {
-    // This is a simplified version - you would need to properly parse the pendingOrders array
-    // and check if targetPrice conditions are met, then execute trades
-    
-    // Example logic:
     double currentPrice = (SymbolInfoDouble(_Symbol, SYMBOL_ASK) + SymbolInfoDouble(_Symbol, SYMBOL_BID)) / 2;
     
-    // Extract pending orders from botDoc (simplified)
-    // For each pending order:
-    //   - Check if targetPrice is reached
-    //   - If yes, execute market order
-    //   - Update Firestore to mark order as filled
+    // Simplified - would need proper JSON parsing for pendingOrders array
+    // Extract and process pending orders here
 }
 
 //+------------------------------------------------------------------+
-//| Check stop loss and take profit conditions                      |
+//| Check stop loss and take profit                                 |
 //+------------------------------------------------------------------+
 void CheckStopLossTakeProfit(string botDoc, string botId)
 {
@@ -414,7 +490,6 @@ void CheckStopLossTakeProfit(string botDoc, string botId)
     
     if(stopLoss > 0 || takeProfit > 0)
     {
-        // Convert botId to magic number
         ulong magicNumber = 0;
         for(int i = 0; i < StringLen(botId) && i < 8; i++)
         {
@@ -455,7 +530,7 @@ void CheckStopLossTakeProfit(string botDoc, string botId)
 }
 
 //+------------------------------------------------------------------+
-//| Send HTTP request to Firestore                                  |
+//| Send Firestore request                                           |
 //+------------------------------------------------------------------+
 bool SendFirestoreRequest(string method, string documentPath, string jsonData)
 {
@@ -485,7 +560,7 @@ bool SendFirestoreRequest(string method, string documentPath, string jsonData)
 }
 
 //+------------------------------------------------------------------+
-//| Helper function to extract string value from JSON               |
+//| Extract string value from JSON                                  |
 //+------------------------------------------------------------------+
 string ExtractStringValue(string json, string fieldName)
 {
@@ -503,7 +578,7 @@ string ExtractStringValue(string json, string fieldName)
 }
 
 //+------------------------------------------------------------------+
-//| Helper function to extract double value from JSON               |
+//| Extract double value from JSON                                  |
 //+------------------------------------------------------------------+
 double ExtractDoubleValue(string json, string fieldName)
 {

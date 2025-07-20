@@ -1,41 +1,75 @@
 
+'use server';
+
 import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/lib/firebase/firestore';
-import { collection, doc, getDoc, getDocs, query, where, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, where, addDoc, serverTimestamp, runTransaction } from 'firebase/firestore';
 import { getForexData } from '@/lib/fmp';
-import type { AutoBotStrategy, Bot, PendingOrder } from '@/lib/types';
+import type { AutoBotStrategy, Bot, PendingOrder, TradeAccount } from '@/lib/types';
+import { headers } from 'next/headers';
 
-// In a multi-user app, this ID would be derived from the authenticated user's ID.
-const GLOBAL_STRATEGY_ID = 'global_strategy';
+async function getUserId() {
+  const headersList = headers();
+  // In a real cron job, you might pass a user ID in the request body or as a query param.
+  // For manual scans from the UI, we get it from the header.
+  const userId = headersList.get('x-user-id');
+  if (!userId) {
+    // This allows unauthenticated cron jobs to work, but they must specify a UID in the body.
+    console.warn("x-user-id header not found. This is expected for cron jobs.");
+    return null; 
+  }
+  return userId;
+}
+
+async function getStrategy(userId: string): Promise<AutoBotStrategy | null> {
+    const strategyRef = doc(db, 'autobotStrategies', userId);
+    const strategySnap = await getDoc(strategyRef);
+    if (!strategySnap.exists()) return null;
+    return { id: strategySnap.id, ...strategySnap.data() } as AutoBotStrategy;
+}
 
 export async function POST(request: NextRequest) {
-  // Simple security check for the cron job. In a real production environment,
-  // you might use a secret key stored in an environment variable.
   const internalCronHeader = request.headers.get('x-internal-cron');
-  if (process.env.NODE_ENV === 'production' && internalCronHeader !== 'true') {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+  const isCronJob = internalCronHeader === 'true';
+
+  let userId: string | null = null;
+  let requestBody: any = {};
+  
+  try {
+    requestBody = await request.json().catch(() => ({})); 
+  } catch (e) {
+    // Ignore error if body is empty
+  }
+
+  if (isCronJob) {
+    // Cron job must provide a target UID in the request body
+    userId = requestBody.uid;
+    if (!userId) {
+      return NextResponse.json({ success: false, error: 'Cron job must specify a user ID (uid) in the request body.' }, { status: 400 });
+    }
+  } else {
+    // Manual scan from UI, get user from headers
+    userId = await getUserId();
+     if (!userId) {
+        return NextResponse.json({ success: false, error: 'Unauthorized: User not specified for manual scan.' }, { status: 401 });
+     }
   }
 
   try {
-    // 1. Fetch the Auto Bot Strategy
-    const strategyRef = doc(db, 'autobotStrategies', GLOBAL_STRATEGY_ID);
-    const strategySnap = await getDoc(strategyRef);
+    const strategy = await getStrategy(userId);
 
-    if (!strategySnap.exists()) {
-      return NextResponse.json({ success: false, error: 'Auto Bot strategy not configured.' }, { status: 404 });
+    if (!strategy) {
+      return NextResponse.json({ success: false, error: `Auto Bot strategy not configured for user ${userId}.` }, { status: 404 });
     }
-    const strategy = strategySnap.data() as Omit<AutoBotStrategy, 'id'>;
 
-    // 2. Fetch all active bots to avoid creating duplicates
-    // We assume a single user for now. In a real app, you'd filter by UID.
     const activeBotsQuery = query(
         collection(db, "bots"), 
+        where("uid", "==", userId),
         where("status", "==", "active")
     );
     const activeBotsSnap = await getDocs(activeBotsQuery);
     const activeBotPairs = new Set(activeBotsSnap.docs.map(doc => doc.data().pair));
 
-    // 3. Scan the market for all included pairs
     const includedPairs = Object.entries(strategy.includedPairs)
         .filter(([, included]) => included)
         .map(([pair]) => pair);
@@ -45,7 +79,6 @@ export async function POST(request: NextRequest) {
 
     let botsCreatedCount = 0;
 
-    // 4. Iterate and create bots if conditions are met
     for (const dScore of dScores) {
       if (!dScore) continue;
 
@@ -54,7 +87,6 @@ export async function POST(request: NextRequest) {
       const alreadyHasActiveBot = activeBotPairs.has(dScore.pair);
 
       if ((isBuySignal || isSellSignal) && !alreadyHasActiveBot) {
-        // Create a new bot
         const direction = isBuySignal ? 'Buy' : 'Sell';
         const pipSize = dScore.pair.includes('JPY') ? 0.01 : 0.0001;
         
@@ -79,7 +111,7 @@ export async function POST(request: NextRequest) {
         
         const newBotData: Omit<Bot, 'id'> = {
             ...strategy,
-            uid: 'autobot_system', // Identify as an auto-created bot
+            uid: userId, 
             pair: dScore.pair,
             status: 'active',
             createdAt: serverTimestamp(),
@@ -95,7 +127,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ success: true, message: `Scan complete. ${botsCreatedCount} new bot(s) created.` });
+    return NextResponse.json({ success: true, message: `Scan complete for user ${userId}. ${botsCreatedCount} new bot(s) created.` });
 
   } catch (error) {
     console.error("Error during Auto Bot scan:", error);

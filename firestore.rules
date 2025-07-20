@@ -1,0 +1,31 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+  
+    // Users can only read, write, and delete their own documents.
+    // This applies to bots, trade accounts, and settings.
+    // The "uid" field in the document must match the user's authenticated UID.
+    
+    match /bots/{botId} {
+      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.uid;
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+    }
+
+    match /tradeAccounts/{accountId} {
+      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.uid;
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+    }
+    
+    // For userSettings, the document ID is the user's UID.
+    match /userSettings/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Auto bot strategies are also per-user. The document ID is the user's UID.
+    match /autobotStrategies/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
