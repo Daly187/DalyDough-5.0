@@ -57,12 +57,11 @@ const BotRow = ({ bot, allPairs, isClosed }: { bot: Bot, allPairs: DScore[], isC
     const { triggerRefresh } = useRefresh();
     const [isSaving, setIsSaving] = React.useState(false);
 
-    // Local state for editable fields, initialized from bot props
     const [editableFields, setEditableFields] = React.useState({
         stopLoss: bot.stopLoss ?? 50,
         takeProfit: bot.takeProfit ?? 100,
         dSizeExitThreshold: bot.dSizeExitThreshold ?? 6.0,
-        reentryDelay: bot.reentryDelay ?? 15, // Add reentryDelay to state
+        reentryDelay: bot.reentryDelay ?? 15,
     });
 
     const handleFieldChange = (field: keyof typeof editableFields, value: string) => {
@@ -96,7 +95,6 @@ const BotRow = ({ bot, allPairs, isClosed }: { bot: Bot, allPairs: DScore[], isC
             const botRef = doc(db, 'bots', bot.id);
             const updates: Partial<Bot> = { status: newStatus };
             
-            // This is the key change: set reentryDelay to -1 to signal "don't re-enter"
             if (newStatus === 'close_at_tp') {
                 updates.reentryDelay = -1;
             }
@@ -249,7 +247,7 @@ export default function ActiveBotsTable({ data, allPairs, title, description, is
               <CardDescription>{description}</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
-            <ScrollArea className="h-[265px] w-full">
+            <ScrollArea className={cn("w-full", isClosed ? "h-[75vh]" : "h-[265px]")}>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -273,9 +271,15 @@ export default function ActiveBotsTable({ data, allPairs, title, description, is
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.map((bot) => (
+                  {data.length > 0 ? data.map((bot) => (
                     <BotRow key={bot.id} bot={bot} allPairs={allPairs} isClosed={isClosed} />
-                  ))}
+                  )) : (
+                    <TableRow>
+                      <TableCell colSpan={isClosed ? 7 : 13} className="h-24 text-center">
+                        No {isClosed ? 'closed' : 'active'} bots found.
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </ScrollArea>

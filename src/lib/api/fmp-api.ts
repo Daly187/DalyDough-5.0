@@ -6,7 +6,7 @@ const BASE_URL = 'https://financialmodelingprep.com/api/v3';
 
 // A simple in-memory cache to avoid redundant API calls during the same session
 const cache = new Map<string, { data: any, timestamp: number }>();
-const CACHE_TTL_MS = 60 * 1000 * 1; // 1 minute
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 async function fetchWithCache<T>(endpoint: string, noCache: boolean = false): Promise<T | null> {
     const now = Date.now();

@@ -11,13 +11,12 @@ import { auth } from '@/lib/firebase/auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { db } from '@/lib/firebase/firestore';
 import { collection, getDocs, query, where } from 'firebase/firestore';
-import PendingOrdersTable from '@/components/pending-orders/pending-orders-table';
 
 
-export default function BotsPage() {
+export default function ClosedBotsPage() {
   const [user] = useAuthState(auth);
   const [dScoreData, setDScoreData] = React.useState<DScore[]>([]);
-  const [allBots, setAllBots] = React.useState<Bot[]>([]);
+  const [closedBots, setClosedBots] = React.useState<Bot[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
 
   React.useEffect(() => {
@@ -29,7 +28,7 @@ export default function BotsPage() {
         // Fetch Bots directly from Firestore
         const getBotsClientSide = async (uid: string): Promise<{ success: boolean; data?: Bot[]; error?: string }> => {
           try {
-              const q = query(collection(db, "bots"), where("uid", "==", uid));
+              const q = query(collection(db, "bots"), where("uid", "==", uid), where("status", "==", "closed"));
               const querySnapshot = await getDocs(q);
               const bots: Bot[] = [];
               querySnapshot.forEach((doc) => {
@@ -54,34 +53,27 @@ export default function BotsPage() {
 
         setDScoreData(dScores);
         if (botsResult.success && botsResult.data) {
-          setAllBots(botsResult.data);
+          setClosedBots(botsResult.data);
         } else {
           console.error("Failed to fetch bots:", botsResult.error);
         }
         setIsLoading(false);
       } else {
-        // If there's no user, stop loading. The layout will redirect to login.
         setIsLoading(false);
       }
     };
     fetchData();
   }, [user]);
 
-  const activeBots = allBots.filter(b => b.status !== 'closed');
-  
-  const allPendingOrders = activeBots.flatMap(bot => 
-    bot.pendingOrders?.map(order => ({ ...order, pair: bot.pair, botId: bot.id })) ?? []
-  );
 
   if (isLoading) {
     return (
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
         <div className="flex items-center">
-          <h1 className="text-lg font-semibold md:text-2xl font-headline">Bots Management</h1>
+          <h1 className="text-lg font-semibold md:text-2xl font-headline">Closed Bots</h1>
         </div>
         <div className="grid gap-8">
-          <Skeleton className="h-[300px] w-full" />
-          <Skeleton className="h-[300px] w-full" />
+          <Skeleton className="h-[400px] w-full" />
         </div>
       </main>
     )
@@ -90,13 +82,11 @@ export default function BotsPage() {
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
       <div className="flex items-center">
-        <h1 className="text-lg font-semibold md:text-2xl font-headline">Bots Management</h1>
+        <h1 className="text-lg font-semibold md:text-2xl font-headline">Closed Bots History</h1>
       </div>
       <div className="grid gap-8">
-        <ActiveBotsTable data={activeBots} allPairs={dScoreData} title="Active Bots" description="Manage and monitor your currently running trade bots."/>
-        <PendingOrdersTable orders={allPendingOrders} />
+        <ActiveBotsTable data={closedBots} allPairs={dScoreData} title="Closed Bots" description="Review the performance of completed bot trades." isClosed={true} />
       </div>
     </main>
   );
 }
-

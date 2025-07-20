@@ -1,9 +1,14 @@
+
+"use client";
+
+import * as React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ArrowDown, ArrowUp } from "lucide-react";
 import type { DScore } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { Checkbox } from '../ui/checkbox';
+import { ScrollArea } from '../ui/scroll-area';
 
 interface MarketOpportunitiesProps {
     opportunities: DScore[];
@@ -16,12 +21,32 @@ const gradeColors = {
 };
 
 const signalConfig = {
-    Buy: { color: "text-green-400", icon: <ArrowUp className="h-3 w-3 mr-1" />, label: "Buy" },
-    Sell: { color: "text-red-400", icon: <ArrowDown className="h-3 w-3 mr-1" />, label: "Sell" },
-    Block: { color: "text-muted-foreground", icon: null, label: "Block" },
+    Buy: { color: "text-green-400", label: "Buy" },
+    Sell: { color: "text-red-400", label: "Sell" },
+    Block: { color: "text-muted-foreground", label: "Block" },
 };
 
 export default function MarketOpportunities({ opportunities }: MarketOpportunitiesProps) {
+    const [includedPairs, setIncludedPairs] = React.useState<Record<string, boolean>>(
+        Object.fromEntries(opportunities.map(op => [op.pair, true]))
+    );
+    const [sortKey, setSortKey] = React.useState<keyof DScore>('dScore');
+    const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc');
+
+    const handleInclusionChange = (pair: string, checked: boolean) => {
+        setIncludedPairs(prev => ({ ...prev, [pair]: checked }));
+    };
+
+    const sortedData = React.useMemo(() => {
+        return [...opportunities].sort((a, b) => {
+            const aVal = Math.abs(a[sortKey] as number);
+            const bVal = Math.abs(b[sortKey] as number);
+            return sortOrder === 'desc' ? bVal - aVal : aVal - bVal;
+        });
+    }, [opportunities, sortKey, sortOrder]);
+
+    const formatScore = (score: number) => (score > 0 ? '+' : '') + score.toFixed(1);
+
     return (
         <Card>
             <CardHeader>
@@ -29,28 +54,38 @@ export default function MarketOpportunities({ opportunities }: MarketOpportuniti
                     <div className="flex items-center gap-2">
                         Market Opportunities
                     </div>
-                    <Badge variant="secondary">{opportunities.length} pairs</Badge>
+                    <Badge variant="secondary">{Object.values(includedPairs).filter(Boolean).length} / {opportunities.length} pairs included</Badge>
                 </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-                 <div className="h-[300px] overflow-y-auto">
+                 <ScrollArea className="h-[450px]">
                     <Table>
                         <TableHeader className="sticky top-0 bg-card">
                             <TableRow>
+                                <TableHead className="w-[50px]">Incl.</TableHead>
                                 <TableHead>PAIR</TableHead>
                                 <TableHead>SCORE</TableHead>
-                                <TableHead>QLY</TableHead>
+                                <TableHead>GRADE</TableHead>
                                 <TableHead>SIGNAL</TableHead>
-                                <TableHead className="text-right">POS</TableHead>
+                                <TableHead className="text-right">BOTS</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {opportunities.map((item) => {
+                            {sortedData.map((item) => {
                                 const signal = signalConfig[item.signal];
                                 return (
                                     <TableRow key={item.id}>
+                                        <TableCell>
+                                            <Checkbox
+                                                checked={includedPairs[item.pair] ?? false}
+                                                onCheckedChange={(checked) => handleInclusionChange(item.pair, !!checked)}
+                                                id={`include-${item.pair}`}
+                                            />
+                                        </TableCell>
                                         <TableCell className="font-medium">{item.pair}</TableCell>
-                                        <TableCell className="font-semibold text-primary">{item.dScore.toFixed(1)}</TableCell>
+                                        <TableCell className={cn("font-semibold", item.dScore > 0 ? "text-green-400" : "text-red-400")}>
+                                            {formatScore(item.dScore)}
+                                        </TableCell>
                                         <TableCell>
                                             <Badge variant="outline" className={cn("text-xs font-bold", gradeColors[item.grade])}>
                                                 {item.grade}
@@ -81,8 +116,9 @@ export default function MarketOpportunities({ opportunities }: MarketOpportuniti
                             })}
                         </TableBody>
                     </Table>
-                </div>
+                </ScrollArea>
             </CardContent>
         </Card>
     );
 }
+

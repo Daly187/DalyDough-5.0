@@ -1,10 +1,11 @@
 
 "use client";
 
+import * as React from 'react';
 import { useRefresh } from '@/context/refresh-context';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Button } from './ui/button';
-import { RefreshCw, Bell, Bot, Settings, PowerOff } from 'lucide-react';
+import { Bell, Bot, Settings, PowerOff } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,11 +15,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { notificationData } from '@/lib/data';
+import { notificationData, linkedAccountsData } from '@/lib/data';
 import type { Notification } from '@/lib/types';
-import { cn } from '@/lib/utils';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-
+import { format } from 'date-fns';
 
 const notificationIcons: { [key in Notification['type']]: React.ReactNode } = {
   new_bot: <Bot className="h-4 w-4 text-green-500" />,
@@ -27,17 +26,29 @@ const notificationIcons: { [key in Notification['type']]: React.ReactNode } = {
 };
 
 export default function Header() {
-  const { triggerRefresh } = useRefresh();
+  const { refreshKey } = useRefresh();
+  const [lastUpdated, setLastUpdated] = React.useState(new Date());
 
-  const handleRefresh = () => {
-    triggerRefresh();
-  };
+  React.useEffect(() => {
+    setLastUpdated(new Date());
+  }, [refreshKey]);
+
+  const primaryAccount = linkedAccountsData.find(a => a.isPrimary);
 
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
       <SidebarTrigger className="flex md:hidden" />
       <div className="flex w-full items-center justify-between">
-        <div className="flex gap-6 text-sm">
+        <div className="flex gap-6 text-sm items-center">
+            {primaryAccount && (
+              <>
+                <div>
+                  <span className="text-muted-foreground">Primary Account: </span>
+                  <span className="font-semibold text-primary">{primaryAccount.nickname}</span>
+                </div>
+                <div className="h-6 w-px bg-border" />
+              </>
+            )}
             <div>
                 <span className="text-muted-foreground">P/L Summary: </span>
                 <span className="font-semibold text-green-400">+$6,101.75</span>
@@ -55,11 +66,10 @@ export default function Header() {
                 <span className="font-semibold text-orange-400">745.8%</span>
             </div>
         </div>
-        <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleRefresh}>
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Refresh Data
-            </Button>
+        <div className="flex items-center gap-4">
+            <div className="text-xs text-muted-foreground">
+              Last API Pull: {format(lastUpdated, 'HH:mm:ss')}
+            </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon" className="relative h-9 w-9">

@@ -32,13 +32,13 @@ export default function PendingOrdersTable({ orders }: PendingOrdersTableProps) 
   return (
       <Card>
           <CardHeader>
-              <CardTitle>All Pending Grid Orders</CardTitle>
+              <CardTitle>Pending Grid Orders</CardTitle>
               <CardDescription>
-                  This table shows all the future trades your active bots are ready to place. The EA will execute these when the price reaches the target.
+                  This table shows all the future trades your active bots are ready to place.
               </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
-            <ScrollArea className="h-[70vh] w-full">
+            <ScrollArea className="h-[250px] w-full">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -48,11 +48,10 @@ export default function PendingOrdersTable({ orders }: PendingOrdersTableProps) 
                     <TableHead>Target Price</TableHead>
                     <TableHead>Lot Size</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Reason / ETA</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {orders.map((order, index) => {
+                  {orders.length > 0 ? orders.map((order, index) => {
                       const config = statusConfig[order.status];
                       return (
                         <TableRow key={`${order.botId}-${order.level}`}>
@@ -67,12 +66,15 @@ export default function PendingOrdersTable({ orders }: PendingOrdersTableProps) 
                                     {config.label}
                                 </Badge>
                             </TableCell>
-                            <TableCell className="text-muted-foreground text-xs">
-                                Waiting for price action...
-                            </TableCell>
                         </TableRow>
                       )
-                  })}
+                  }) : (
+                    <TableRow>
+                        <TableCell colSpan={6} className="h-24 text-center">
+                            No pending orders for active bots.
+                        </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </ScrollArea>
