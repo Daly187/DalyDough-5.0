@@ -18,6 +18,7 @@ import { auth } from "@/lib/firebase/auth";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useAuthState } from "react-firebase-hooks/auth";
 import type { TradeAccount } from "@/lib/types";
+import { Separator } from "../ui/separator";
 
 const accountSchema = z.object({
   nickname: z.string().min(1, "Nickname is required"),
@@ -97,17 +98,20 @@ export default function LinkAccountForm({ onAccountAdded }: LinkAccountFormProps
     };
 
     return (
-        <div className="grid gap-8 md:grid-cols-2">
-            <Card>
-                <form onSubmit={handleSubmit(onSubmit)}>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 font-headline">
-                            <Server className="h-5 w-5" />
-                            Link Trading Account
-                        </CardTitle>
-                        <CardDescription>Connect your MT4 or MT5 account to start trading.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
+        <Card>
+            <form onSubmit={handleSubmit(onSubmit)}>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 font-headline">
+                        <Server className="h-5 w-5" />
+                        Link New Trading Account
+                    </CardTitle>
+                    <CardDescription>
+                        Complete the form below, then download the Expert Advisor (EA) and install it in MetaTrader using the provided key.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    {/* Form Fields */}
+                    <div className="space-y-4">
                         <div className="space-y-2">
                             <Label htmlFor="nickname">Account Nickname</Label>
                             <Input id="nickname" placeholder="e.g., Main Profit Account" {...register("nickname")} />
@@ -147,63 +151,57 @@ export default function LinkAccountForm({ onAccountAdded }: LinkAccountFormProps
                             <Input id="server" placeholder="Enter your broker's server" {...register("server")} />
                             {errors.server && <p className="text-red-500 text-xs">{errors.server.message}</p>}
                         </div>
-                    </CardContent>
-                    <CardFooter>
-                        <Button type="submit" className="w-full" disabled={isSubmitting}>
-                             {isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <LinkIcon className="h-4 w-4 mr-2" />}
-                            {isSubmitting ? "Connecting..." : "Connect Account"}
-                        </Button>
-                    </CardFooter>
-                </form>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 font-headline">
-                        <Download className="h-5 w-5" />
-                        Expert Advisor (EA)
-                    </CardTitle>
-                    <CardDescription>Download the EA and use the key below for setup.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="apiKey" className="flex items-center gap-2">
-                            <KeyRound className="h-4 w-4" /> Your Unique EA Key for this Account
-                        </Label>
-                        <div className="flex items-center gap-2">
-                            <Input id="apiKey" value={apiKey} readOnly className="font-code" />
-                             <Button variant="ghost" size="icon" onClick={generateApiKey}>
-                                <RefreshCw className="h-4 w-4" />
-                            </Button>
-                        </div>
-                         <p className="text-xs text-muted-foreground">A new key is generated for each account you link.</p>
                     </div>
-                    <div className="text-xs text-muted-foreground p-4 bg-muted/50 rounded-lg space-y-2">
-                        <p className="font-semibold">Installation Steps:</p>
-                        <ol className="list-decimal list-inside space-y-1">
-                            <li>Download the EA file for your platform (MT4/MT5).</li>
-                            <li>In MetaTrader, go to `File {' > '} Open Data Folder`.</li>
-                            <li>Place the `.ex4` or `.ex5` file in the `MQL4/Experts` or `MQL5/Experts` folder.</li>
-                            <li>Refresh your Expert Advisors list in the Navigator panel.</li>
-                            <li>Drag the EA onto a chart and enter the unique key above when prompted.</li>
-                        </ol>
+
+                    <Separator />
+
+                    {/* EA Section */}
+                    <div className="space-y-4">
+                         <div className="space-y-2">
+                            <Label htmlFor="apiKey" className="flex items-center gap-2">
+                                <KeyRound className="h-4 w-4" /> Your Unique EA Key for this Account
+                            </Label>
+                            <div className="flex items-center gap-2">
+                                <Input id="apiKey" value={apiKey} readOnly className="font-code" />
+                                <Button variant="ghost" size="icon" onClick={generateApiKey}>
+                                    <RefreshCw className="h-4 w-4" />
+                                </Button>
+                            </div>
+                            <p className="text-xs text-muted-foreground">A new key is generated for each account you link. Use this key during EA setup in MetaTrader.</p>
+                        </div>
+                        <div className="text-xs text-muted-foreground p-4 bg-muted/50 rounded-lg space-y-2">
+                            <p className="font-semibold text-foreground">Installation Steps:</p>
+                            <ol className="list-decimal list-inside space-y-1">
+                                <li>Download the EA file for your platform below.</li>
+                                <li>In MetaTrader, go to `File {' > '} Open Data Folder`.</li>
+                                <li>Place the `.ex4` or `.ex5` file in the `MQL4/Experts` or `MQL5/Experts` folder.</li>
+                                <li>Refresh your Expert Advisors list in the Navigator panel.</li>
+                                <li>Drag the EA onto a chart and enter the unique key above when prompted.</li>
+                            </ol>
+                        </div>
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <Link href="/dalydough-ea.ex4" download className="w-full">
+                                <Button variant="secondary" className="w-full">
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Download for MT4
+                                </Button>
+                            </Link>
+                            <Link href="/dalydough-ea.ex5" download className="w-full">
+                                <Button variant="secondary" className="w-full">
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Download for MT5
+                                </Button>
+                            </Link>
+                        </div>
                     </div>
                 </CardContent>
-                <CardFooter className="grid grid-cols-2 gap-4">
-                    <Link href="/dalydough-ea.ex4" download className="w-full">
-                        <Button variant="secondary" className="w-full">
-                            <Download className="h-4 w-4 mr-2" />
-                            Download for MT4
-                        </Button>
-                    </Link>
-                    <Link href="/dalydough-ea.ex5" download className="w-full">
-                         <Button variant="secondary" className="w-full">
-                            <Download className="h-4 w-4 mr-2" />
-                            Download for MT5
-                        </Button>
-                    </Link>
+                <CardFooter>
+                    <Button type="submit" className="w-full" disabled={isSubmitting}>
+                         {isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <LinkIcon className="h-4 w-4 mr-2" />}
+                        {isSubmitting ? "Connecting..." : "Connect Account"}
+                    </Button>
                 </CardFooter>
-            </Card>
-        </div>
+            </form>
+        </Card>
     );
 }
