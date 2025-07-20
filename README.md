@@ -110,21 +110,28 @@ This layer is responsible for taking the raw data from the API layer and transfo
 
 ## 7. Setting Up Automated Scanning (Cloud Scheduler)
 
-To make the Auto Bot feature fully automatic, you need to configure a cron job to call the scanner API route.
+To make the Auto Bot feature fully automatic, you need to configure a cron job to call the scanner API route. This is the final step to enable the automated trading functionality.
 
-1.  **Find your Deployed URL**: After deploying to Firebase Hosting, you will get a URL like `https://your-project-id.web.app`.
+1.  **Find your Deployed URL**: After deploying your application to Firebase Hosting, you will get a URL. Your project ID is `studio-7990806245`, so your URL will be `https://studio-7990806245.web.app`.
 
-2.  **Go to Cloud Scheduler**: Open the [Google Cloud Scheduler](https://console.cloud.google.com/cloudscheduler) page.
+2.  **Go to Cloud Scheduler**: Open the [Google Cloud Scheduler](https://console.cloud.google.com/cloudscheduler) page. Make sure the correct project is selected.
 
-3.  **Create a Job**:
-    *   **Name**: `dalydough-autobot-scanner`
-    *   **Frequency**: `*/10 * * * *` (for every 10 minutes)
-    *   **Timezone**: `UTC`
+3.  **Click "Create Job"**:
+    *   **Name**: Give it a memorable name, like `dalydough-autobot-scanner`.
+    *   **Frequency**: To run every 10 minutes, enter `*/10 * * * *` in the field.
+    *   **Timezone**: Select `(UTC+00:00) Coordinated Universal Time` (or "UTC").
+    *   Click **"Continue"**.
 
 4.  **Configure Execution**:
-    *   **Target type**: `HTTP`
-    *   **URL**: Enter your deployed URL from step 1, followed by the API path: `https://your-project-id.web.app/api/autobot/scan`
-    *   **HTTP method**: `POST`
-    *   **Headers**: Add a header with the name `x-internal-cron` and the value `true`. This is a security measure to verify the request is from the scheduler.
+    *   **Target type**: Select **HTTP**.
+    *   **URL**: Enter your full deployed URL from step 1, followed by the API path: `https://studio-7990806245.web.app/api/autobot/scan`
+    *   **HTTP method**: Select **POST**.
+    *   **Headers**: Click **"Add Header"**.
+        *   Header name: `x-internal-cron`
+        *   Header value: `true`
+      This header is a security measure to verify the request is coming from your trusted scheduler.
 
-5.  **Create** the job. It will now run automatically.
+5.  **Create the Job**: Click the **"Create"** button at the bottom.
+
+Your Auto Bot is now fully automated and will scan the market according to your saved strategy. You can use the "FORCE RUN" button in the Cloud Scheduler dashboard to test it immediately.
+```
