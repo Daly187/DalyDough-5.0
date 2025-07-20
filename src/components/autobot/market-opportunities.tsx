@@ -12,6 +12,8 @@ import { ScrollArea } from '../ui/scroll-area';
 
 interface MarketOpportunitiesProps {
     opportunities: DScore[];
+    includedPairs: Record<string, boolean>;
+    onInclusionChange: (pair: string, included: boolean) => void;
 }
 
 const gradeColors = {
@@ -26,16 +28,9 @@ const signalConfig = {
     Block: { color: "text-muted-foreground", label: "Block" },
 };
 
-export default function MarketOpportunities({ opportunities }: MarketOpportunitiesProps) {
-    const [includedPairs, setIncludedPairs] = React.useState<Record<string, boolean>>(
-        Object.fromEntries(opportunities.map(op => [op.pair, true]))
-    );
+export default function MarketOpportunities({ opportunities, includedPairs, onInclusionChange }: MarketOpportunitiesProps) {
     const [sortKey, setSortKey] = React.useState<keyof DScore>('dScore');
     const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc');
-
-    const handleInclusionChange = (pair: string, checked: boolean) => {
-        setIncludedPairs(prev => ({ ...prev, [pair]: checked }));
-    };
 
     const sortedData = React.useMemo(() => {
         return [...opportunities].sort((a, b) => {
@@ -46,6 +41,8 @@ export default function MarketOpportunities({ opportunities }: MarketOpportuniti
     }, [opportunities, sortKey, sortOrder]);
 
     const formatScore = (score: number) => (score > 0 ? '+' : '') + score.toFixed(1);
+    
+    const includedCount = Object.values(includedPairs).filter(Boolean).length;
 
     return (
         <Card>
@@ -54,7 +51,7 @@ export default function MarketOpportunities({ opportunities }: MarketOpportuniti
                     <div className="flex items-center gap-2">
                         Market Opportunities
                     </div>
-                    <Badge variant="secondary">{Object.values(includedPairs).filter(Boolean).length} / {opportunities.length} pairs included</Badge>
+                    <Badge variant="secondary">{includedCount} / {opportunities.length} pairs included</Badge>
                 </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
@@ -78,7 +75,7 @@ export default function MarketOpportunities({ opportunities }: MarketOpportuniti
                                         <TableCell>
                                             <Checkbox
                                                 checked={includedPairs[item.pair] ?? false}
-                                                onCheckedChange={(checked) => handleInclusionChange(item.pair, !!checked)}
+                                                onCheckedChange={(checked) => onInclusionChange(item.pair, !!checked)}
                                                 id={`include-${item.pair}`}
                                             />
                                         </TableCell>
@@ -121,4 +118,3 @@ export default function MarketOpportunities({ opportunities }: MarketOpportuniti
         </Card>
     );
 }
-

@@ -106,7 +106,15 @@ export type TradeAccount = {
   };
 };
 
-export type BotConfigurationData = {
+export type AutoBotStrategy = {
+  id: string; // Should correspond to a user or a global setting
+  entryThresholdUpper: number;
+  entryThresholdLower: number;
+  exitThresholdUpper: number;
+  exitThresholdLower: number;
+  includedPairs: Record<string, boolean>;
+
+  // Include all bot configuration options
   botType: string;
   lotSize: number;
   maxPositions: number;
@@ -127,6 +135,7 @@ export type BotConfigurationData = {
   closeOnRetrace: boolean;
   retracePercentage: number;
 }
+
 
 export type AIReentry = {
   level: number;

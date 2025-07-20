@@ -8,8 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Settings, Lightbulb, HelpCircle, Save, SlidersHorizontal } from "lucide-react";
-import type { BotConfigurationData } from "@/lib/types";
+import { Settings, Lightbulb, HelpCircle, Save, SlidersHorizontal, Loader2 } from "lucide-react";
+import type { AutoBotStrategy } from "@/lib/types";
 import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -21,47 +21,53 @@ import {
 import { Slider } from '../ui/slider';
 
 interface AutoBotStrategyFormProps {
-  config: BotConfigurationData;
+  initialStrategy: AutoBotStrategy;
 }
 
-export default function AutoBotStrategyForm({ config: initialConfig }: AutoBotStrategyFormProps) {
-  const [config, setConfig] = React.useState(initialConfig);
+export default function AutoBotStrategyForm({ initialStrategy }: AutoBotStrategyFormProps) {
+  const [strategy, setStrategy] = React.useState(initialStrategy);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const { toast } = useToast();
-  
-  const [entryThresholdUpper, setEntryThresholdUpper] = React.useState([7.0]);
-  const [entryThresholdLower, setEntryThresholdLower] = React.useState([-7.0]);
-  const [exitThresholdUpper, setExitThresholdUpper] = React.useState([6.0]);
-  const [exitThresholdLower, setExitThresholdLower] = React.useState([-6.0]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
-    setConfig((prev) => ({ ...prev, [id]: parseFloat(value) || 0 }));
+    const numValue = parseFloat(value);
+    setStrategy((prev) => ({ ...prev, [id]: isNaN(numValue) ? value : numValue }));
   };
 
-  const handleSelectChange = (id: keyof BotConfigurationData) => (value: string) => {
-    setConfig((prev) => ({ ...prev, [id]: value }));
+  const handleSelectChange = (id: keyof AutoBotStrategy) => (value: string) => {
+    setStrategy((prev) => ({ ...prev, [id]: value }));
   };
 
-  const handleSwitchChange = (id: keyof BotConfigurationData) => (checked: boolean) => {
-    setConfig((prev) => ({ ...prev, [id]: checked }));
+  const handleSwitchChange = (id: keyof AutoBotStrategy) => (checked: boolean) => {
+    setStrategy((prev) => ({ ...prev, [id]: checked }));
   };
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    // In a real app, this would save the config to a global state or database
-    console.log("Saving Auto Bot Strategy:", { 
-        ...config, 
-        entryThresholdUpper: entryThresholdUpper[0],
-        entryThresholdLower: entryThresholdLower[0],
-        exitThresholdUpper: exitThresholdUpper[0],
-        exitThresholdLower: exitThresholdLower[0]
-    });
-    toast({
-      title: "Strategy Saved",
-      description: "Your Auto Bot strategy has been updated.",
-    });
-    setIsSubmitting(false);
+    try {
+        const response = await fetch('/api/autobot/strategy', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(strategy),
+        });
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.error || "Failed to save strategy");
+        }
+        toast({
+          title: "Strategy Saved",
+          description: "Your Auto Bot strategy has been updated.",
+        });
+    } catch (error) {
+         toast({
+            variant: "destructive",
+            title: "Error Saving Strategy",
+            description: (error as Error).message,
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
   };
 
   const TooltipLabel = ({ htmlFor, label, tooltipText }: { htmlFor: string, label: string, tooltipText: string }) => (
@@ -101,18 +107,20 @@ export default function AutoBotStrategyForm({ config: initialConfig }: AutoBotSt
             </div>
             <div className="grid grid-cols-2 gap-4">
                 <div>
-                    <Label htmlFor="entryThresholdLower">Sell Signal &lt; <span className="font-bold text-red-400">{entryThresholdLower[0].toFixed(1)}</span></Label>
+                    <Label htmlFor="entryThresholdLower">Sell Signal &lt; <span className="font-bold text-red-400">{strategy.entryThresholdLower?.toFixed(1)}</span></Label>
                     <Slider
                         id="entryThresholdLower" min={-10} max={0} step={0.1}
-                        value={entryThresholdLower} onValueChange={setEntryThresholdLower}
+                        value={[strategy.entryThresholdLower ?? -7.0]} 
+                        onValueChange={(val) => setStrategy(s => ({...s, entryThresholdLower: val[0]}))}
                         className="[&>span>span]:bg-red-400"
                     />
                 </div>
                 <div>
-                    <Label htmlFor="entryThresholdUpper">Buy Signal &gt; <span className="font-bold text-green-400">{entryThresholdUpper[0].toFixed(1)}</span></Label>
+                    <Label htmlFor="entryThresholdUpper">Buy Signal &gt; <span className="font-bold text-green-400">{strategy.entryThresholdUpper?.toFixed(1)}</span></Label>
                     <Slider
                         id="entryThresholdUpper" min={0} max={10} step={0.1}
-                        value={entryThresholdUpper} onValueChange={setEntryThresholdUpper}
+                        value={[strategy.entryThresholdUpper ?? 7.0]} 
+                        onValueChange={(val) => setStrategy(s => ({...s, entryThresholdUpper: val[0]}))}
                         className="[&>span>span]:bg-green-400"
                     />
                 </div>
@@ -126,18 +134,20 @@ export default function AutoBotStrategyForm({ config: initialConfig }: AutoBotSt
             </div>
             <div className="grid grid-cols-2 gap-4">
                 <div>
-                    <Label htmlFor="exitThresholdLower">Exit Sell when &gt; <span className="font-bold text-red-400">{exitThresholdLower[0].toFixed(1)}</span></Label>
+                    <Label htmlFor="exitThresholdLower">Exit Sell when &gt; <span className="font-bold text-red-400">{strategy.exitThresholdLower?.toFixed(1)}</span></Label>
                     <Slider
                         id="exitThresholdLower" min={-10} max={0} step={0.1}
-                        value={exitThresholdLower} onValueChange={setExitThresholdLower}
+                        value={[strategy.exitThresholdLower ?? -6.0]} 
+                        onValueChange={(val) => setStrategy(s => ({...s, exitThresholdLower: val[0]}))}
                         className="[&>span>span]:bg-red-400/70"
                     />
                 </div>
                 <div>
-                    <Label htmlFor="exitThresholdUpper">Exit Buy when &lt; <span className="font-bold text-green-400">{exitThresholdUpper[0].toFixed(1)}</span></Label>
+                    <Label htmlFor="exitThresholdUpper">Exit Buy when &lt; <span className="font-bold text-green-400">{strategy.exitThresholdUpper?.toFixed(1)}</span></Label>
                     <Slider
                         id="exitThresholdUpper" min={0} max={10} step={0.1}
-                        value={exitThresholdUpper} onValueChange={setExitThresholdUpper}
+                        value={[strategy.exitThresholdUpper ?? 6.0]} 
+                        onValueChange={(val) => setStrategy(s => ({...s, exitThresholdUpper: val[0]}))}
                         className="[&>span>span]:bg-green-400/70"
                     />
                 </div>
@@ -153,7 +163,7 @@ export default function AutoBotStrategyForm({ config: initialConfig }: AutoBotSt
             <div className="grid grid-cols-2 gap-4">
                 <div>
                     <Label htmlFor="botType">Bot Type</Label>
-                    <Select value={config.botType} onValueChange={handleSelectChange('botType')}>
+                    <Select value={strategy.botType} onValueChange={handleSelectChange('botType')}>
                         <SelectTrigger id="botType"><SelectValue /></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="Dynamic DCA">Dynamic DCA</SelectItem>
@@ -163,27 +173,27 @@ export default function AutoBotStrategyForm({ config: initialConfig }: AutoBotSt
                 </div>
                  <div>
                     <Label htmlFor="lotSize">Initial Lot Size</Label>
-                    <Input id="lotSize" type="number" value={config.lotSize} onChange={handleInputChange} />
+                    <Input id="lotSize" type="number" value={strategy.lotSize} onChange={handleInputChange} />
                 </div>
                 <div>
                     <Label htmlFor="gridLevels">Grid Levels</Label>
-                    <Input id="gridLevels" type="number" value={config.gridLevels} onChange={handleInputChange} />
+                    <Input id="gridLevels" type="number" value={strategy.gridLevels} onChange={handleInputChange} />
                 </div>
                  <div>
                     <Label htmlFor="gridDistance">Grid Distance (pips)</Label>
-                    <Input id="gridDistance" type="number" value={config.gridDistance} onChange={handleInputChange} />
+                    <Input id="gridDistance" type="number" value={strategy.gridDistance} onChange={handleInputChange} />
                 </div>
                 <div>
                     <Label htmlFor="lotSizeMultiplier">Lot Size Multiplier</Label>
-                    <Input id="lotSizeMultiplier" type="number" value={config.lotSizeMultiplier} onChange={handleInputChange} />
+                    <Input id="lotSizeMultiplier" type="number" value={strategy.lotSizeMultiplier} onChange={handleInputChange} />
                 </div>
                  <div>
                     <Label htmlFor="maxPositions">Max Positions</Label>
-                    <Input id="maxPositions" type="number" value={config.maxPositions} onChange={handleInputChange} />
+                    <Input id="maxPositions" type="number" value={strategy.maxPositions} onChange={handleInputChange} />
                 </div>
                 <div>
                     <Label htmlFor="takeProfitType">Take Profit Type</Label>
-                    <Select value={config.takeProfitType} onValueChange={handleSelectChange('takeProfitType')}>
+                    <Select value={strategy.takeProfitType} onValueChange={handleSelectChange('takeProfitType')}>
                         <SelectTrigger id="takeProfitType"><SelectValue/></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="fixed">Fixed Amount ($)</SelectItem>
@@ -193,15 +203,15 @@ export default function AutoBotStrategyForm({ config: initialConfig }: AutoBotSt
                 </div>
                 <div>
                     <Label htmlFor="takeProfit">Take Profit Value</Label>
-                    <Input id="takeProfit" type="number" value={config.takeProfit} onChange={handleInputChange} />
+                    <Input id="takeProfit" type="number" value={strategy.takeProfit} onChange={handleInputChange} />
                 </div>
                 <div>
                     <Label htmlFor="stopLoss">Stop Loss ($)</Label>
-                    <Input id="stopLoss" type="number" value={config.stopLoss} onChange={handleInputChange} />
+                    <Input id="stopLoss" type="number" value={strategy.stopLoss} onChange={handleInputChange} />
                 </div>
                 <div>
                     <Label htmlFor="reentryDelay">Re-entry Delay (mins)</Label>
-                    <Input id="reentryDelay" type="number" value={config.reentryDelay} onChange={handleInputChange} />
+                    <Input id="reentryDelay" type="number" value={strategy.reentryDelay} onChange={handleInputChange} />
                 </div>
             </div>
             
@@ -213,10 +223,10 @@ export default function AutoBotStrategyForm({ config: initialConfig }: AutoBotSt
                         tooltipText="Automatically adjusts the stop loss as the trade moves in your favor." 
                     />
                     <div className="flex items-center gap-2">
-                        <Switch id="enableTrailingStop" checked={config.enableTrailingStop} onCheckedChange={handleSwitchChange('enableTrailingStop')} />
+                        <Switch id="enableTrailingStop" checked={strategy.enableTrailingStop} onCheckedChange={handleSwitchChange('enableTrailingStop')} />
                         <Input 
-                            id="trailingStopPips" type="number" value={config.trailingStopPips} 
-                            onChange={handleInputChange} disabled={!config.enableTrailingStop}
+                            id="trailingStopPips" type="number" value={strategy.trailingStopPips} 
+                            onChange={handleInputChange} disabled={!strategy.enableTrailingStop}
                             className="w-24" placeholder="pips"
                         />
                     </div>
@@ -227,7 +237,7 @@ export default function AutoBotStrategyForm({ config: initialConfig }: AutoBotSt
                         label="News Filter" 
                         tooltipText="Prevents opening new trades around high-impact news events." 
                     />
-                    <Switch id="newsFilter" checked={config.newsFilter} onCheckedChange={handleSwitchChange('newsFilter')} />
+                    <Switch id="newsFilter" checked={strategy.newsFilter} onCheckedChange={handleSwitchChange('newsFilter')} />
                 </div>
                  <div className="flex items-center justify-between">
                     <TooltipLabel 
@@ -235,11 +245,11 @@ export default function AutoBotStrategyForm({ config: initialConfig }: AutoBotSt
                         label="AI Optimization" 
                         tooltipText="Enables advanced AI features for enhanced decision-making." 
                     />
-                    <Switch id="aiOptimization" checked={config.aiOptimization} onCheckedChange={handleSwitchChange('aiOptimization')} />
+                    <Switch id="aiOptimization" checked={strategy.aiOptimization} onCheckedChange={handleSwitchChange('aiOptimization')} />
                 </div>
             </div>
         </div>
-         {config.aiOptimization && (
+         {strategy.aiOptimization && (
             <Alert>
                 <Lightbulb className="h-4 w-4" />
                 <AlertTitle>AI Optimization Enabled</AlertTitle>
@@ -251,7 +261,7 @@ export default function AutoBotStrategyForm({ config: initialConfig }: AutoBotSt
       </CardContent>
       <CardFooter>
         <Button className="w-full" disabled={isSubmitting} onClick={handleSubmit}>
-            <Save className="mr-2 h-4 w-4" />
+            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
             {isSubmitting ? 'Saving...' : 'Save Auto Bot Strategy'}
         </Button>
       </CardFooter>
