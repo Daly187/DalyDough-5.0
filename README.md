@@ -17,6 +17,7 @@ The application is built on a modern, robust, and scalable technology stack.
 - **Data Fetching:** Native `fetch` API, encapsulated within dedicated API service modules.
 - **AI Integration:** **Google Genkit**. The framework is configured in `src/ai/genkit.ts` for potential future AI features, though it is not currently used for core functionality.
 - **Technical Indicators:** **`technicalindicators` library**. Used for performing the mathematical calculations for indicators like EMA, RSI, ADX, etc.
+- **Automated Scanning**: **Google Cloud Scheduler** is used to trigger an API route (`/api/autobot/scan`) on a recurring schedule to perform automated market scanning and bot creation.
 
 ## 3. Architecture & Data Flow
 
@@ -26,7 +27,7 @@ The application's architecture is designed to be modular and scalable, with a cl
 
 - **Source:** All market data is sourced from the **Financial Modeling Prep (FMP) API**.
 - **API Module (`src/lib/api/fmp-api.ts`):** This is the single point of contact with the external FMP API.
-    - It contains a `fetchWithCache` function that provides simple in-memory caching to avoid redundant API calls.
+    - It contains a `fetchWithCache` function that provides simple in-memory caching to avoid redundant API calls. The cache TTL is set to 10 minutes.
     - It exports two specific functions:
         - `fetchQuote(symbol)`: Fetches the live spot price and daily change for a currency pair.
         - `fetchHistorical(symbol, limit)`: Fetches historical price data (Open, High, Low, Close) for a specified period.
@@ -60,72 +61,33 @@ This layer is responsible for taking the raw data from the API layer and transfo
     - `dashboard/page.tsx`: The main dashboard page.
     - `d-score-detailed/page.tsx`: A detailed table showing the weighted D-Score components for each pair.
     - `market-detailed/page.tsx`: A detailed table showing the raw technical indicator values for each pair.
-    - `bots/page.tsx`: Page for managing active and closed trading bots.
+    - `bots/page.tsx`: Page for managing active trading bots and pending orders.
+    - `closed-bots/page.tsx`: Page for reviewing historical closed bots.
     - `autobot/page.tsx`: The interface for configuring and launching new trading bots.
-    - `strength/page.tsx`: The Currency Strength Index page.
     - `... (other pages)`
+- `src/app/api/autobot/`: Contains API routes for the Auto Bot feature.
+    - `scan/route.ts`: The endpoint triggered by Cloud Scheduler to run the automated scanner.
+    - `strategy/route.ts`: Endpoint for saving and retrieving the user's Auto Bot strategy.
 - `src/app/page.tsx`: The public-facing landing page.
 - `src/components`: Contains all reusable React components.
-    - `ui/`: Core ShadCN UI components (Button, Card, Table, etc.).
-    - `dashboard/`: Components specific to the Dashboard page.
-    - `bots/`: Components for the Bots Management page.
-    - `autobot/`: Components for the Auto Bot Launcher page.
-    - `... (other feature-specific component folders)`
 - `src/lib`: Houses the core business logic, data definitions, and utilities.
-    - `api/fmp-api.ts`: Handles all communication with the external FMP API.
-    - `indicators/`: Contains individual files for each technical indicator calculation.
-    - `fmp.ts`: The central data processing and D-Score calculation logic.
-    - `data.ts`: Contains static data, like the list of currency pairs and mock data for development.
-    - `types.ts`: Defines all TypeScript types and interfaces used across the application (`DScore`, `Bot`, etc.).
-    - `utils.ts`: Utility functions, primarily `cn` for merging Tailwind CSS classes.
 - `src/hooks`: Custom React hooks, such as `use-toast` and `use-mobile`.
 - `public/`: Static assets.
-- `tailwind.config.ts`: Configuration file for Tailwind CSS, including custom fonts and colors.
+- `tailwind.config.ts`: Configuration file for Tailwind CSS.
 
 ## 5. Key Features & Components
 
-### 5.1. Core Layout (`src/app/(app)/layout.tsx`)
+### 5.1. Auto Bot Launcher & Scanner (`/autobot`)
 
-- A persistent sidebar for navigation and a header for displaying key account metrics.
-- The layout uses a `SidebarProvider` context to manage the sidebar's state (expanded/collapsed).
-- **Header:** Displays a real-time summary of P/L, Equity, and Margin Usage.
-- **Sidebar:** Contains navigation links to all major features, user profile information, and the app logo.
-
-### 5.2. Dashboard (`/dashboard`)
-
-- **System Status:** Shows the status of data sources (Live vs. Mock).
-- **Market Controls:** Allows the user to set a global D-Score threshold to filter the market overview, and includes emergency controls like "Pause All Bots".
-- **Market Overview Table:** The primary feature. It displays a real-time, sortable list of currency pairs, their live price, D-Score, and key indicator values.
-- **Manual Bot Launcher:** A condensed version of the bot configuration panel for quick launches.
-
-### 5.3. D-Score Detailed (`/d-score-detailed`)
-
-- Provides a transparent, in-depth view of how the final D-Score is constructed.
-- The table shows each component of the score (Trend Alignment, ADX Strength, etc.) and its weighted contribution for every currency pair.
-
-### 5.4. Market Detailed (`/market-detailed`)
-
-- Displays the raw, unweighted values calculated for each technical indicator (e.g., raw RSI value, MACD histogram, etc.). This is for advanced users who want to see the underlying data.
-
-### 5.5. Auto Bot Launcher (`/autobot`)
-
-- A dedicated page for configuring and launching new trading bots.
-- **Market Filter:** Allows users to find opportunities based on D-Score, quality, and trend.
-- **Bot Configuration:** An extensive form to set up every parameter of a new bot, including lot size, grid levels, take profit/stop loss, and advanced features like Trailing Stops and AI Optimization.
-
-### 5.6. Currency Strength Index (`/strength`)
-
-- Fetches data for major currency indices (DXY, EXY, etc.).
-- Displays a table showing the closing strength value for the last 10 days for each currency.
-- Includes a directional arrow to indicate the trend (up or down) from the previous day.
-
-### 5.7. Other Pages
-
-- **Bots Management:** View, manage, and monitor active and closed bots.
-- **Learning Center:** An accordion-style educational section explaining Forex concepts and the D-Score system.
-- **News:** An economic calendar to track market-moving events.
-- **Analytics:** Displays charts for the account's equity curve and global currency exposure.
-- **Accounts & Settings:** Interfaces for linking trading accounts and managing API keys.
+- A dedicated page for defining the global automated trading strategy.
+- Users configure entry/exit D-Score thresholds and a complete bot template (lot size, grid levels, etc.).
+- An API route at `/api/autobot/scan` contains the logic to:
+    1.  Fetch the saved strategy.
+    2.  Scan the market for all included pairs.
+    3.  Check for matching D-Scores against entry criteria.
+    4.  Verify no active auto-bot exists for the pair.
+    5.  Create a new bot in Firestore if all conditions are met.
+- This API route is designed to be called by an external scheduler like **Google Cloud Scheduler**.
 
 ## 6. Getting Started & Environment Setup
 
@@ -134,14 +96,35 @@ This layer is responsible for taking the raw data from the API layer and transfo
     npm install
     ```
 2.  **Environment Variables:**
-    - Create a `.env` file in the root of the project.
-    - To use your own private API key, add the following line to the `.env` file:
+    - Create a `.env` file in the root of the project for local development.
+    - To use your own private FMP API key, add the following line:
       ```
       FMP_API_KEY=your_financial_modeling_prep_api_key
       ```
-    - If this is not provided, the application will use a public, rate-limited fallback key.
+    - Add your Firebase project configuration variables to this file.
 3.  **Run the Development Server:**
     ```bash
     npm run dev
     ```
-4.  Open [http://localhost:9002](http://localhost:9002) in your browser to see the application.
+4.  Open [http://localhost:9002](http://localhost:9002) in your browser.
+
+## 7. Setting Up Automated Scanning (Cloud Scheduler)
+
+To make the Auto Bot feature fully automatic, you need to configure a cron job to call the scanner API route.
+
+1.  **Find your Deployed URL**: After deploying to Firebase Hosting, you will get a URL like `https://your-project-id.web.app`.
+
+2.  **Go to Cloud Scheduler**: Open the [Google Cloud Scheduler](https://console.cloud.google.com/cloudscheduler) page.
+
+3.  **Create a Job**:
+    *   **Name**: `dalydough-autobot-scanner`
+    *   **Frequency**: `*/10 * * * *` (for every 10 minutes)
+    *   **Timezone**: `UTC`
+
+4.  **Configure Execution**:
+    *   **Target type**: `HTTP`
+    *   **URL**: Enter your deployed URL from step 1, followed by the API path: `https://your-project-id.web.app/api/autobot/scan`
+    *   **HTTP method**: `POST`
+    *   **Headers**: Add a header with the name `x-internal-cron` and the value `true`. This is a security measure to verify the request is from the scheduler.
+
+5.  **Create** the job. It will now run automatically.
