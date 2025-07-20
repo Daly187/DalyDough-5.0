@@ -137,7 +137,7 @@ function calculateConfirmationScore(indicators: IndicatorValues, trendDirection:
     return trendDirection === 'up' ? score : -score;
 }
 
-async function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMPQuote | null): Promise<DScore> {
+async function calculateSmartDScore(indicators: IndicatorValues, currentPriceData: FMPQuote | null, fetchTimestamp: number): Promise<DScore> {
     const trendAnalysis = calculateTrendAlignment(indicators);
     const trendDirection = trendAnalysis.direction;
     const price = currentPriceData?.price ?? indicators.daily.price ?? 0;
@@ -163,7 +163,6 @@ async function calculateSmartDScore(indicators: IndicatorValues, currentPriceDat
 
     const change = currentPriceData?.change ?? 0;
     const changesPercentage = currentPriceData?.changesPercentage ?? 0;
-    const lastUpdated = currentPriceData?.timestamp ?? 0;
 
     return {
         id: indicators.pair,
@@ -175,7 +174,7 @@ async function calculateSmartDScore(indicators: IndicatorValues, currentPriceDat
         grade,
         signal: finalSignal,
         positions: 0,
-        lastUpdated,
+        lastUpdated: fetchTimestamp, // Use the consistent fetch timestamp
         trendAlignment: scores.trendAlignment,
         adxStrength: scores.adxStrength,
         macdMomentum: scores.macdMomentum,
@@ -197,10 +196,11 @@ async function calculateSmartDScore(indicators: IndicatorValues, currentPriceDat
 
 export async function getForexData(pair: string): Promise<DScore> {
     const baseSymbol = pair.replace('/', '');
+    const fetchTimestamp = Date.now(); // Generate a single timestamp for this entire fetch operation
 
     const defaultScore: DScore = {
         id: pair, pair: pair, price: 0, change: 0, changesPercentage: 0, dScore: 0, grade: 'C',
-        signal: 'Block', positions: 0, lastUpdated: 0, trendAlignment: 0, adxStrength: 0,
+        signal: 'Block', positions: 0, lastUpdated: fetchTimestamp, trendAlignment: 0, adxStrength: 0,
         macdMomentum: 0, atrVolatility: 0, confirmationIndicators: 0,
         rawIndicators: {}
     };
@@ -221,7 +221,6 @@ export async function getForexData(pair: string): Promise<DScore> {
                 price: quoteData?.price || 0,
                 change: quoteData?.change || 0,
                 changesPercentage: quoteData?.changesPercentage || 0,
-                lastUpdated: quoteData?.timestamp || 0,
             };
         }
 
@@ -230,7 +229,7 @@ export async function getForexData(pair: string): Promise<DScore> {
             pair
         };
 
-        const finalResult = await calculateSmartDScore(indicators, quoteData);
+        const finalResult = await calculateSmartDScore(indicators, quoteData, fetchTimestamp);
 
         return finalResult;
 

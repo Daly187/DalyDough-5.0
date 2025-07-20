@@ -16,7 +16,7 @@ import type { DScore } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Badge } from '../ui/badge';
-import { format } from 'date-fns';
+import { format as formatDate } from 'date-fns';
 
 interface MarketDetailTableProps {
   data: DScore[];
@@ -41,7 +41,7 @@ const formatPrice = (value: any, fixed: number = 2) => {
 const formatTimestamp = (timestamp?: any) => {
     if (typeof timestamp === 'number' && timestamp > 0) {
         try {
-            return format(new Date(timestamp * 1000), "yyyy-MM-dd HH:mm:ss");
+            return formatDate(new Date(timestamp), "yyyy-MM-dd HH:mm:ss");
         } catch (e) {
             return 'Invalid Date'
         }

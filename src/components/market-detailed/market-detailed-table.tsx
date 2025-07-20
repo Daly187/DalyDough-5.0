@@ -15,7 +15,7 @@ import { ArrowUpDown } from 'lucide-react';
 import type { DScore } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format as formatDate } from 'date-fns';
 
 interface MarketDetailedTableProps {
   data: DScore[];
@@ -41,7 +41,7 @@ const formatValue = (value: any, fixed: number = 2) => {
 
 const formatTimestamp = (timestamp?: any) => {
     if (typeof timestamp === 'number' && timestamp > 0) {
-        return format(new Date(timestamp * 1000), "yyyy-MM-dd HH:mm:ss");
+        return formatDate(new Date(timestamp), "yyyy-MM-dd HH:mm:ss");
     }
     return 'N/A';
 };
