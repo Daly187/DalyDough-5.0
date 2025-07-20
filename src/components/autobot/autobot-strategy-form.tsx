@@ -29,8 +29,10 @@ export default function AutoBotStrategyForm({ config: initialConfig }: AutoBotSt
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const { toast } = useToast();
   
-  const [entryThreshold, setEntryThreshold] = React.useState([7.0]);
-  const [exitThreshold, setExitThreshold] = React.useState([6.0]);
+  const [entryThresholdUpper, setEntryThresholdUpper] = React.useState([7.0]);
+  const [entryThresholdLower, setEntryThresholdLower] = React.useState([-7.0]);
+  const [exitThresholdUpper, setExitThresholdUpper] = React.useState([6.0]);
+  const [exitThresholdLower, setExitThresholdLower] = React.useState([-6.0]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -48,7 +50,13 @@ export default function AutoBotStrategyForm({ config: initialConfig }: AutoBotSt
   const handleSubmit = async () => {
     setIsSubmitting(true);
     // In a real app, this would save the config to a global state or database
-    console.log("Saving Auto Bot Strategy:", { ...config, entryThreshold: entryThreshold[0], exitThreshold: exitThreshold[0] });
+    console.log("Saving Auto Bot Strategy:", { 
+        ...config, 
+        entryThresholdUpper: entryThresholdUpper[0],
+        entryThresholdLower: entryThresholdLower[0],
+        exitThresholdUpper: exitThresholdUpper[0],
+        exitThresholdLower: exitThresholdLower[0]
+    });
     toast({
       title: "Strategy Saved",
       description: "Your Auto Bot strategy has been updated.",
@@ -89,33 +97,56 @@ export default function AutoBotStrategyForm({ config: initialConfig }: AutoBotSt
         <div className="space-y-4 p-4 border rounded-lg">
             <div className="flex items-center gap-2">
                 <SlidersHorizontal className="h-5 w-5" />
-                <h3 className="font-semibold">D-Score Rules</h3>
+                <h3 className="font-semibold">D-Score Entry Rules</h3>
             </div>
-             <div className="space-y-3">
-                <Label htmlFor="entryThreshold">
-                    Entry D-Score: <span className="font-bold text-primary">{`|${entryThreshold[0].toFixed(1)}|`}</span>
-                </Label>
-                <Slider
-                    id="entryThreshold"
-                    min={0} max={10} step={0.1}
-                    value={entryThreshold}
-                    onValueChange={setEntryThreshold}
-                    className="[&>span>span]:bg-green-400"
-                />
-            </div>
-            <div className="space-y-3">
-                <Label htmlFor="exitThreshold">
-                    Exit D-Score: <span className="font-bold text-primary">{`|${exitThreshold[0].toFixed(1)}|`}</span>
-                </Label>
-                <Slider
-                    id="exitThreshold"
-                    min={0} max={10} step={0.1}
-                    value={exitThreshold}
-                    onValueChange={setExitThreshold}
-                    className="[&>span>span]:bg-red-400"
-                />
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <Label htmlFor="entryThresholdLower">Sell Signal &lt; <span className="font-bold text-red-400">{entryThresholdLower[0].toFixed(1)}</span></Label>
+                    <Slider
+                        id="entryThresholdLower" min={-10} max={0} step={0.1}
+                        value={entryThresholdLower} onValueChange={setEntryThresholdLower}
+                        className="[&>span>span]:bg-red-400"
+                    />
+                </div>
+                <div>
+                    <Label htmlFor="entryThresholdUpper">Buy Signal &gt; <span className="font-bold text-green-400">{entryThresholdUpper[0].toFixed(1)}</span></Label>
+                    <Slider
+                        id="entryThresholdUpper" min={0} max={10} step={0.1}
+                        value={entryThresholdUpper} onValueChange={setEntryThresholdUpper}
+                        className="[&>span>span]:bg-green-400"
+                    />
+                </div>
             </div>
         </div>
+        
+        <div className="space-y-4 p-4 border rounded-lg">
+            <div className="flex items-center gap-2">
+                <SlidersHorizontal className="h-5 w-5 text-muted-foreground" />
+                <h3 className="font-semibold">D-Score Exit Rules</h3>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <Label htmlFor="exitThresholdLower">Exit Sell when &gt; <span className="font-bold text-red-400">{exitThresholdLower[0].toFixed(1)}</span></Label>
+                    <Slider
+                        id="exitThresholdLower" min={-10} max={0} step={0.1}
+                        value={exitThresholdLower} onValueChange={setExitThresholdLower}
+                        className="[&>span>span]:bg-red-400/70"
+                    />
+                </div>
+                <div>
+                    <Label htmlFor="exitThresholdUpper">Exit Buy when &lt; <span className="font-bold text-green-400">{exitThresholdUpper[0].toFixed(1)}</span></Label>
+                    <Slider
+                        id="exitThresholdUpper" min={0} max={10} step={0.1}
+                        value={exitThresholdUpper} onValueChange={setExitThresholdUpper}
+                        className="[&>span>span]:bg-green-400/70"
+                    />
+                </div>
+            </div>
+             <p className="text-[0.8rem] text-muted-foreground pt-2">
+                If an active bot's D-Score crosses these thresholds, it will be set to 'Close at Next TP' and will not re-enter.
+            </p>
+        </div>
+
 
         {/* Bot Configuration */}
         <div className="space-y-4">
