@@ -5,7 +5,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/lib/firebase/firestore';
 import { collection, doc, getDoc, getDocs, query, where, addDoc, serverTimestamp, runTransaction } from 'firebase/firestore';
 import { getForexData } from '@/lib/fmp';
-import type { AutoBotStrategy, Bot, PendingOrder } from '@/lib/types';
+import type { AutoBotStrategy, Bot, PendingOrder, UserSettings } from '@/lib/types';
 import { headers } from 'next/headers';
 
 async function getUserId() {
@@ -21,11 +21,19 @@ async function getUserId() {
   return userId;
 }
 
-async function getStrategy(userId: string): Promise<AutoBotStrategy | null> {
+async function getStrategyAndSettings(userId: string): Promise<{ strategy: AutoBotStrategy | null, settings: UserSettings | null }> {
     const strategyRef = doc(db, 'autobotStrategies', userId);
-    const strategySnap = await getDoc(strategyRef);
-    if (!strategySnap.exists()) return null;
-    return { id: strategySnap.id, ...strategySnap.data() } as AutoBotStrategy;
+    const settingsRef = doc(db, 'userSettings', userId);
+    
+    const [strategySnap, settingsSnap] = await Promise.all([
+      getDoc(strategyRef),
+      getDoc(settingsRef)
+    ]);
+
+    const strategy = strategySnap.exists() ? { id: strategySnap.id, ...strategySnap.data() } as AutoBotStrategy : null;
+    const settings = settingsSnap.exists() ? settingsSnap.data() as UserSettings : null;
+    
+    return { strategy, settings };
 }
 
 export async function POST(request: NextRequest) {
@@ -56,11 +64,17 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const strategy = await getStrategy(userId);
+    const { strategy, settings } = await getStrategyAndSettings(userId);
 
     if (!strategy) {
       return NextResponse.json({ success: false, error: `Auto Bot strategy not configured for user ${userId}.` }, { status: 404 });
     }
+    
+    if (!settings || !settings.symbolMappings) {
+      return NextResponse.json({ success: false, error: `User symbol settings not found for user ${userId}.` }, { status: 404 });
+    }
+
+    const symbolMap = new Map(settings.symbolMappings.map(m => [m.apiSymbol, m.brokerSymbol]));
 
     const activeBotsQuery = query(
         collection(db, "bots"), 
@@ -70,11 +84,11 @@ export async function POST(request: NextRequest) {
     const activeBotsSnap = await getDocs(activeBotsQuery);
     const activeBotPairs = new Set(activeBotsSnap.docs.map(doc => doc.data().pair));
 
-    const includedPairs = Object.entries(strategy.includedPairs)
+    const includedApiPairs = Object.entries(strategy.includedPairs)
         .filter(([, included]) => included)
         .map(([pair]) => pair);
 
-    const dScorePromises = includedPairs.map(pair => getForexData(pair));
+    const dScorePromises = includedApiPairs.map(pair => getForexData(pair));
     const dScores = await Promise.all(dScorePromises);
 
     let botsCreatedCount = 0;
@@ -82,24 +96,56 @@ export async function POST(request: NextRequest) {
     for (const dScore of dScores) {
       if (!dScore) continue;
 
+      const brokerSymbol = symbolMap.get(dScore.pair);
+      if (!brokerSymbol) {
+        console.warn(`No broker symbol found for API pair: ${dScore.pair}. Skipping.`);
+        continue;
+      }
+
       const isBuySignal = dScore.dScore >= strategy.entryThresholdUpper;
       const isSellSignal = dScore.dScore <= strategy.entryThresholdLower;
-      const alreadyHasActiveBot = activeBotPairs.has(dScore.pair);
+      const alreadyHasActiveBot = activeBotPairs.has(brokerSymbol);
 
       if ((isBuySignal || isSellSignal) && !alreadyHasActiveBot) {
-        // Align with EA capabilities by creating simple bots
-        const botStrategy = isBuySignal ? 'buy_and_hold' : 'sell_and_hold';
+        const direction = isBuySignal ? 'Buy' : 'Sell';
+        const pipSize = dScore.pair.includes('JPY') ? 0.01 : 0.0001;
+
+        const pendingOrders: PendingOrder[] = [];
+        let currentLotSize = Number(strategy.lotSize);
+        let cumulativeDistance = 0;
+
+        for (let i = 1; i <= strategy.gridLevels; i++) {
+            if (i > 1) {
+                currentLotSize *= Number(strategy.lotSizeMultiplier);
+            }
+            
+            const distanceMultiplier = i === 1 ? 1 : (strategy.gridDistanceMultiplier ?? 1.5) ** (i-1);
+            cumulativeDistance += Number(strategy.gridDistance) * distanceMultiplier;
+
+            const priceOffset = cumulativeDistance * pipSize;
+            const targetPrice = direction === 'Buy' 
+                ? dScore.price - priceOffset 
+                : dScore.price + priceOffset;
+
+            pendingOrders.push({
+                level: i,
+                targetPrice: parseFloat(targetPrice.toFixed(5)),
+                lotSize: parseFloat(currentLotSize.toFixed(2)),
+                status: 'PENDING'
+            });
+        }
         
         const newBotData: Omit<Bot, 'id'> = {
+            ...strategy,
             uid: userId, 
-            pair: dScore.pair,
+            pair: brokerSymbol, // Use the broker symbol here
             status: 'active',
             createdAt: serverTimestamp(),
             profit_loss: 0,
-            strategy: botStrategy, // Use the EA-compatible strategy name
+            strategy: strategy.botType || "Dynamic DCA",
             d_score_entry: dScore.dScore,
-            lotSize: Number(strategy.lotSize),
-            // Complex fields are omitted for now to match EA
+            direction: direction,
+            pendingOrders: pendingOrders,
         };
 
         await addDoc(collection(db, "bots"), newBotData);
