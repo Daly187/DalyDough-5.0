@@ -1,5 +1,4 @@
 
-
 export type PendingOrderStatus = 'PENDING' | 'BLOCKED_NEWS' | 'SLEEPING' | 'PRICE_RETRACE' | 'D_SCORE_LOW';
 
 export type PendingOrder = {
@@ -59,6 +58,7 @@ export type Bot = {
   aiOptimization?: boolean;
   gridLevels?: number;
   gridDistance?: number;
+  gridDistanceMultiplier?: number;
   lotSizeMultiplier?: number;
   takeProfitType?: 'fixed' | 'average';
   closeOnRetrace?: boolean;
@@ -144,12 +144,12 @@ export type AutoBotStrategy = {
   aiOptimization: boolean;
   gridLevels: number;
   gridDistance: number;
+  gridDistanceMultiplier: number;
   lotSizeMultiplier: number;
   takeProfitType: 'fixed' | 'average';
   closeOnRetrace: boolean;
   retracePercentage: number;
 }
-
 
 export type AIReentry = {
   level: number;

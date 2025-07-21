@@ -58,6 +58,7 @@ export async function GET() {
         aiOptimization: true,
         gridLevels: 5,
         gridDistance: 20,
+        gridDistanceMultiplier: 1.5,
         lotSizeMultiplier: 1.5,
         takeProfitType: 'fixed',
         closeOnRetrace: false,

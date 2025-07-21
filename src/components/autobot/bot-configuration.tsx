@@ -40,6 +40,7 @@ const defaultConfig = {
     aiOptimization: true,
     gridLevels: 5,
     gridDistance: 20,
+    gridDistanceMultiplier: 1.5,
     lotSizeMultiplier: 1.5,
     takeProfitType: 'fixed' as 'fixed' | 'average',
     closeOnRetrace: false,
@@ -134,14 +135,17 @@ export default function BotConfiguration({ allPairs, activeBots, isLoading }: Bo
         // Calculate pending orders
         const pendingOrders: PendingOrder[] = [];
         let currentLotSize = Number(config.lotSize);
+        let currentGridDistance = Number(config.gridDistance);
+        let cumulativeDistance = 0;
 
         for (let i = 1; i <= config.gridLevels; i++) {
-             // Increment lot size for levels > 1
             if (i > 1) {
                 currentLotSize *= Number(config.lotSizeMultiplier);
+                currentGridDistance *= Number(config.gridDistanceMultiplier);
             }
             
-            const priceOffset = Number(config.gridDistance) * pipSize * i;
+            cumulativeDistance += currentGridDistance;
+            const priceOffset = cumulativeDistance * pipSize;
             const targetPrice = direction === 'Buy' 
                 ? dScoreData.price - priceOffset 
                 : dScoreData.price + priceOffset;
@@ -259,6 +263,10 @@ export default function BotConfiguration({ allPairs, activeBots, isLoading }: Bo
                     <Input id="lotSizeMultiplier" type="number" value={config.lotSizeMultiplier} onChange={handleInputChange} />
                 </div>
                  <div>
+                    <Label htmlFor="gridDistanceMultiplier">Grid Distance Multiplier</Label>
+                    <Input id="gridDistanceMultiplier" type="number" value={config.gridDistanceMultiplier} onChange={handleInputChange} />
+                </div>
+                 <div>
                     <Label htmlFor="maxPositions">Max Positions</Label>
                     <Input id="maxPositions" type="number" value={config.maxPositions} onChange={handleInputChange} />
                 </div>
@@ -374,15 +382,10 @@ export default function BotConfiguration({ allPairs, activeBots, isLoading }: Bo
          {config.aiOptimization && (
             <Alert>
                 <Lightbulb className="h-4 w-4" />
-                <AlertTitle>AI Optimization Features:</AlertTitle>
+                <AlertTitle>How AI Optimization Works</AlertTitle>
                 <AlertDescription>
-                    <ul className="list-disc pl-5 text-xs text-muted-foreground">
-                        <li>Dynamic R/S level detection for optimal re-entry timing</li>
-                        <li>Real-time sentiment analysis integration</li>
-                        <li>Adaptive lot sizing based on market volatility</li>
-                        <li>Smart exit timing using momentum indicators</li>
-                        <li>News impact assessment for position sizing</li>
-                    </ul>
+                    <p className="font-semibold text-foreground">Optimal R/S Re-entry:</p>
+                    <p className="text-xs text-muted-foreground">Instead of fixed pip distances, the AI identifies the nearest significant support (for buys) or resistance (for sells) levels based on recent price action (swing highs/lows). Grid orders are then placed at these dynamically calculated levels, resulting in more natural and effective entry points.</p>
                 </AlertDescription>
             </Alert>
         )}

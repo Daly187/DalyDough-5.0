@@ -78,7 +78,7 @@ const learningContent = [
         content: [
             {
                 subTitle: "Dynamic DCA (Dollar-Cost Averaging)",
-                text: "This is a sophisticated grid strategy. If the initial trade moves into a loss, the bot automatically opens new trades at predetermined intervals (Grid Distance) to get a better average entry price. The 'Dynamic' aspect means it can use AI to adjust re-entry timing based on market conditions like volatility or D-Score changes. It's ideal for ranging or slowly trending markets."
+                text: "This is a sophisticated grid strategy. If the initial trade moves into a loss, the bot automatically opens new trades at predetermined intervals (Grid Distance) to get a better average entry price. It uses a Lot Size Multiplier to increase position size on subsequent entries and a Grid Distance Multiplier to widen the space between entries as the grid deepens. The 'Dynamic' aspect means it can use AI to adjust re-entry timing based on market conditions like volatility or D-Score changes. It's ideal for ranging or slowly trending markets."
             },
             {
                 subTitle: "Trend Rider",

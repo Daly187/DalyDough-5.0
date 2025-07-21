@@ -92,11 +92,17 @@ export async function POST(request: NextRequest) {
         
         const pendingOrders: PendingOrder[] = [];
         let currentLotSize = Number(strategy.lotSize);
+        let currentGridDistance = Number(strategy.gridDistance);
+        let cumulativeDistance = 0;
+
         for (let i = 1; i <= strategy.gridLevels; i++) {
              if (i > 1) {
                 currentLotSize *= Number(strategy.lotSizeMultiplier);
+                currentGridDistance *= Number(strategy.gridDistanceMultiplier);
             }
-            const priceOffset = Number(strategy.gridDistance) * pipSize * i;
+            
+            cumulativeDistance += currentGridDistance;
+            const priceOffset = cumulativeDistance * pipSize;
             const targetPrice = direction === 'Buy' 
                 ? dScore.price - priceOffset 
                 : dScore.price + priceOffset;

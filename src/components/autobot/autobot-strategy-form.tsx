@@ -188,6 +188,10 @@ export default function AutoBotStrategyForm({ initialStrategy }: AutoBotStrategy
                     <Input id="lotSizeMultiplier" type="number" value={strategy.lotSizeMultiplier} onChange={handleInputChange} />
                 </div>
                  <div>
+                    <Label htmlFor="gridDistanceMultiplier">Grid Distance Multiplier</Label>
+                    <Input id="gridDistanceMultiplier" type="number" value={strategy.gridDistanceMultiplier} onChange={handleInputChange} />
+                </div>
+                <div>
                     <Label htmlFor="maxPositions">Max Positions</Label>
                     <Input id="maxPositions" type="number" value={strategy.maxPositions} onChange={handleInputChange} />
                 </div>
