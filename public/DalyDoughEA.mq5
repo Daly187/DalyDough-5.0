@@ -5,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2025, DalyDough Ltd"
 #property link      "https://dalydough.com"
-#property version   "1.11" // Version incremented
+#property version   "1.10"
 
 #include <Trade\Trade.mqh>
 
@@ -158,9 +158,7 @@ void UpdateAccountStatus()
     double balance = AccountInfoDouble(ACCOUNT_BALANCE);
     double equity = AccountInfoDouble(ACCOUNT_EQUITY);
     double marginLevel = AccountInfoDouble(ACCOUNT_MARGIN_LEVEL);
-    
-    // **FIX**: Use TIME_RFC3339 for a JSON-safe ISO 8601 timestamp string
-    string timestamp = TimeToString(TimeCurrent(), TIME_RFC3339);
+    string lastUpdateTime = TimeToString(TimeCurrent(), TIME_RFC3339);
 
     string jsonData = StringFormat(
         "{\"fields\": {"
@@ -170,7 +168,7 @@ void UpdateAccountStatus()
         "\"status\": {\"stringValue\": \"Connected\"},"
         "\"lastUpdate\": {\"stringValue\": \"%s\"}"
         "}}",
-        balance, equity, marginLevel, timestamp
+        balance, equity, marginLevel, lastUpdateTime
     );
     
     string url = baseURL + accountDocumentPath + "?updateMask.fieldPaths=balance&updateMask.fieldPaths=equity&updateMask.fieldPaths=marginLevel&updateMask.fieldPaths=status&updateMask.fieldPaths=lastUpdate";
@@ -190,7 +188,7 @@ void SyncBrokerSymbols()
     string symbolMappingsJson = "\"symbolMappings\": {\"arrayValue\": {\"values\": [";
     
     int totalSymbols = SymbolsTotal(true);
-    for(int i = 0; i < totalSymbols && syncedCount < 20; i++)
+    for(int i = 0; i < totalSymbols; i++) // Removed the i < 20 limit
     {
         string symbol = SymbolName(i, true);
         if(!SymbolInfoInteger(symbol, SYMBOL_SELECT)) continue;
@@ -210,7 +208,7 @@ void SyncBrokerSymbols()
         );
         
         syncedCount++;
-        Sleep(50);
+        Sleep(50); // Small delay to avoid overwhelming the API
     }
     
     symbolMappingsJson += "]}}";
@@ -282,8 +280,7 @@ void ProcessBotCommands()
     int res = WebRequest("POST", queryUrl, "Content-Type: application/json", 5000, postData, result, resultHeaders);
 
     if (res != 200) {
-        // This can be noisy, so only print if something changed or on first run
-        // Print("Failed to query for bots. HTTP Code: ", res);
+        Print("Failed to query for bots. HTTP Code: ", res);
         return;
     }
 
@@ -293,7 +290,8 @@ void ProcessBotCommands()
     // Simple bot processing - this would need more complex JSON parsing for multiple bots
     if(StringFind(response, "\"documents\"") != -1)
     {
-        // Extract basic bot information using simple string search
+        // This is a placeholder. In a real scenario, you'd loop through each document in the response.
+        // For now, we'll just process the first one found for demonstration.
         string botPair = ExtractStringValue(response, "pair");
         double lotSize = ExtractDoubleValue(response, "lotSize");
         string strategy = ExtractStringValue(response, "strategy");
@@ -312,22 +310,11 @@ void ProcessBotCommands()
 //+------------------------------------------------------------------+
 void ExecuteBotStrategy(string pair, double lotSize, string strategy)
 {
-    // Simple example strategy implementation
-    if(strategy == "buy_and_hold")
-    {
-        // Check if we already have a position for this pair
-        if(!PositionSelect(pair))
-        {
-            // No position exists, place a buy order
-            double ask = SymbolInfoDouble(pair, SYMBOL_ASK);
-            if(ask > 0)
-            {
-                trade.Buy(lotSize, pair, ask, 0, 0, "DalyDough Bot");
-                Print("Executed BUY order for ", pair, " at ", ask);
-            }
-        }
-    }
-    // Add more strategies as needed
+    // This is a placeholder for your actual trading logic.
+    // It should check the bot's direction, manage pending orders, check for close signals, etc.
+    
+    // Example:
+    // if(strategy == "Dynamic DCA") { ... }
 }
 
 //+------------------------------------------------------------------+
@@ -356,7 +343,8 @@ bool SendFirebaseRequest(string method, string url, string jsonData)
     {
         string response = CharArrayToString(result);
         Print("Firebase request failed. Method: ", method, " HTTP Code: ", res);
-        Print("Response: ", StringSubstr(response, 0, 300)); // Limit response length
+        Print("URL: ", url);
+        Print("Response: ", StringSubstr(response, 0, 400)); // Limit response length
         return false;
     }
 }
