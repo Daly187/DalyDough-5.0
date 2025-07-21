@@ -5,14 +5,14 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2025, DalyDough Ltd"
 #property link      "https://dalydough.com"
-#property version   "1.21"
+#property version   "1.22"
 
 #include <Trade\Trade.mqh>
 
 //--- Input parameters
 input string EA_Key = "";  // PASTE YOUR KEY HERE - Get this from the DalyDough Accounts page
-input string Firebase_Project_ID = "dalydough";  // Your correct Firebase Project ID
-input string Firebase_API_Key = "AIzaSyAsDdz19ANsbI4ndBt6MOVBYRefBjjPb-I";  // Your real Firebase API Key
+input string Firebase_Project_ID = "studio-7990806245";
+input string Firebase_API_Key = "AIzaSyC29eL1_e0SSBqj4a08x6yA5uNHXlke1eU";
 input int Update_Frequency_Seconds = 60;        // How often to sync with server (seconds)
 
 //--- Global variables
@@ -176,7 +176,7 @@ void UpdateAccountStatus()
     string balanceStr = DoubleToString(balance, 2);
     string equityStr = DoubleToString(equity, 2);
     string marginStr = DoubleToString(marginLevel, 2);
-    string timeStr = TimeToString(TimeCurrent(), TIME_DATE|TIME_SECONDS);
+    string timeStr = TimeToString(TimeCurrent(), TIME_RFC3339); // Use ISO 8601 format
     
     // Clean all strings
     StringReplace(balanceStr, " ", "");
@@ -318,7 +318,7 @@ void SyncBrokerSymbols()
     string symbolMappingsJson = "\"symbolMappings\":{\"arrayValue\":{\"values\":[";
     
     int totalSymbols = SymbolsTotal(true);
-    for(int i = 0; i < totalSymbols && syncedCount < 50; i++) // Limit to 50 to avoid timeout
+    for(int i = 0; i < totalSymbols; i++) // *** FIX: REMOVED THE SYMBOL LIMIT ***
     {
         string symbol = SymbolName(i, true);
         if(!SymbolInfoInteger(symbol, SYMBOL_SELECT)) continue;
@@ -339,7 +339,7 @@ void SyncBrokerSymbols()
         symbolMappingsJson += "}}}";
         
         syncedCount++;
-        Sleep(50);
+        Sleep(5); // Small sleep to avoid overwhelming the API
     }
     
     symbolMappingsJson += "]}}";
