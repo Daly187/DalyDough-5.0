@@ -34,21 +34,25 @@ export type Bot = {
   id: string;
   uid: string; // User ID of the bot's owner
   pair: string;
-  strategy: string;
+  strategy: string; // Now 'buy_and_hold', 'sell_and_hold', or 'Dynamic DCA' etc.
   status: 'active' | 'paused' | 'error' | 'close_at_tp' | 'closed' | 'close_now';
-  direction?: 'Buy' | 'Sell';
   profit_loss: number;
   createdAt?: { seconds: number; nanoseconds: number; }; // Firestore Timestamp
   d_score_entry: number;
   d_score_exit?: number;
-  d_score_exit_status?: 'Armed' | 'Close at TP';
-  // Include all configuration options that can be set
-  botType?: string;
+  // This is now implicitly handled by strategy for simple bots
+  // but kept for more complex strategies in the future.
+  direction?: 'Buy' | 'Sell'; 
+  
+  // All configuration options that can be set
   lotSize?: number;
-  maxPositions?: number;
-  reentryDelay?: number;
   stopLoss?: number;
   takeProfit?: number;
+
+  // Fields for more complex strategies
+  botType?: string;
+  maxPositions?: number;
+  reentryDelay?: number;
   enableDSizeExit?: boolean;
   dSizeExitThreshold?: number;
   enableTrailingStop?: boolean;

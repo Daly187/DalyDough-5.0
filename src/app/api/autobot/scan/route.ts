@@ -5,7 +5,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/lib/firebase/firestore';
 import { collection, doc, getDoc, getDocs, query, where, addDoc, serverTimestamp, runTransaction } from 'firebase/firestore';
 import { getForexData } from '@/lib/fmp';
-import type { AutoBotStrategy, Bot, PendingOrder, TradeAccount } from '@/lib/types';
+import type { AutoBotStrategy, Bot, PendingOrder } from '@/lib/types';
 import { headers } from 'next/headers';
 
 async function getUserId() {
@@ -87,45 +87,19 @@ export async function POST(request: NextRequest) {
       const alreadyHasActiveBot = activeBotPairs.has(dScore.pair);
 
       if ((isBuySignal || isSellSignal) && !alreadyHasActiveBot) {
-        const direction = isBuySignal ? 'Buy' : 'Sell';
-        const pipSize = dScore.pair.includes('JPY') ? 0.01 : 0.0001;
-        
-        const pendingOrders: PendingOrder[] = [];
-        let currentLotSize = Number(strategy.lotSize);
-        let currentGridDistance = Number(strategy.gridDistance);
-        let cumulativeDistance = 0;
-
-        for (let i = 1; i <= strategy.gridLevels; i++) {
-             if (i > 1) {
-                currentLotSize *= Number(strategy.lotSizeMultiplier);
-                currentGridDistance *= Number(strategy.gridDistanceMultiplier);
-            }
-            
-            cumulativeDistance += currentGridDistance;
-            const priceOffset = cumulativeDistance * pipSize;
-            const targetPrice = direction === 'Buy' 
-                ? dScore.price - priceOffset 
-                : dScore.price + priceOffset;
-
-            pendingOrders.push({
-                level: i,
-                targetPrice: parseFloat(targetPrice.toFixed(5)),
-                lotSize: parseFloat(currentLotSize.toFixed(2)),
-                status: 'PENDING'
-            });
-        }
+        // Align with EA capabilities by creating simple bots
+        const botStrategy = isBuySignal ? 'buy_and_hold' : 'sell_and_hold';
         
         const newBotData: Omit<Bot, 'id'> = {
-            ...strategy,
             uid: userId, 
             pair: dScore.pair,
             status: 'active',
             createdAt: serverTimestamp(),
             profit_loss: 0,
-            strategy: strategy.botType || "DCA Grid",
+            strategy: botStrategy, // Use the EA-compatible strategy name
             d_score_entry: dScore.dScore,
-            direction: direction,
-            pendingOrders: pendingOrders,
+            lotSize: Number(strategy.lotSize),
+            // Complex fields are omitted for now to match EA
         };
 
         await addDoc(collection(db, "bots"), newBotData);
