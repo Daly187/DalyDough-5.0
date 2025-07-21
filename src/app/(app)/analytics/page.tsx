@@ -10,7 +10,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase/auth';
 import { db } from '@/lib/firebase/firestore';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import type { TradeAccount, Bot } from '@/lib/types';
+import type { Bot, ExposureData } from '@/lib/types';
 
 
 export default function AnalyticsPage() {
@@ -18,32 +18,33 @@ export default function AnalyticsPage() {
     const [isLoading, setIsLoading] = React.useState(true);
     const [riskMetrics, setRiskMetrics] = React.useState<any[]>([]);
     const [equityData, setEquityData] = React.useState<any[]>([]);
-    const [exposureData, setExposureData] = React.useState<any[]>([]);
+    const [exposureData, setExposureData] = React.useState<ExposureData[]>([]);
 
     React.useEffect(() => {
         if (user) {
             setIsLoading(true);
             const fetchData = async () => {
-                // Fetch closed bots to analyze performance
-                const botsQuery = query(collection(db, "bots"), where("uid", "==", user.uid), where("status", "==", "closed"));
-                const botsSnapshot = await getDocs(botsQuery);
-                const closedBots: Bot[] = botsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Bot));
+                const botsCollection = collection(db, "bots");
+                const q = query(botsCollection, where("uid", "==", user.uid));
+                const botsSnapshot = await getDocs(q);
+                
+                const allBots: Bot[] = botsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Bot));
+                const closedBots = allBots.filter(b => b.status === "closed");
+                const activeBots = allBots.filter(b => b.status === "active");
 
                 // --- Calculate Risk Metrics ---
                 const totalTrades = closedBots.length;
                 const winningTrades = closedBots.filter(b => b.profit_loss > 0).length;
                 const winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
-                // Note: Real drawdown, R:R, and exposure require more complex data/calculations
                 
                 setRiskMetrics([
                     { label: 'Win/Loss Ratio', value: `${winRate.toFixed(1)}%`, description: 'Based on closed bots' },
                     { label: 'Total Closed Trades', value: totalTrades, description: 'Total automated trades completed' },
-                    { label: 'Avg. R:R', value: '1:1.8', description: 'Mock: Average risk to reward ratio' },
+                    { label: 'Active Bots', value: activeBots.length, description: 'Currently running automated trades' },
                     { label: 'Max Drawdown', value: '9.2%', description: 'Mock: Peak-to-trough decline' },
                 ]);
 
                 // --- Generate Equity Curve Data ---
-                // This is a simplified mock-up. Real equity curve would need historical account snapshots.
                 let cumulativeEquity = 50000; // Starting with a base
                 const generatedEquityData = closedBots
                     .sort((a,b) => (a.createdAt?.seconds ?? 0) - (b.createdAt?.seconds ?? 0))
@@ -56,12 +57,32 @@ export default function AnalyticsPage() {
                     });
                 setEquityData(generatedEquityData.length > 0 ? generatedEquityData : [{date: new Date().toISOString(), equity: cumulativeEquity}]);
                 
-                // Mock exposure data for now
-                setExposureData([
-                    { currency: 'EUR', exposure: 12500.50, type: 'long' },
-                    { currency: 'USD', exposure: -8500.00, type: 'short' },
-                    { currency: 'GBP', exposure: 7800.75, type: 'long' },
-                ]);
+                // --- Calculate Global Exposure ---
+                const exposureMap: { [currency: string]: { long: number, short: number } } = {};
+                
+                activeBots.forEach(bot => {
+                    const [base, quote] = bot.pair.split('/');
+                    const lotValue = (bot.lotSize ?? 0.01) * 100000; // Simplified exposure calculation
+
+                    if (bot.direction === 'Buy') {
+                        exposureMap[base] = { long: (exposureMap[base]?.long || 0) + lotValue, short: exposureMap[base]?.short || 0 };
+                        exposureMap[quote] = { long: exposureMap[quote]?.long || 0, short: (exposureMap[quote]?.short || 0) - lotValue };
+                    } else if (bot.direction === 'Sell') {
+                        exposureMap[base] = { long: exposureMap[base]?.long || 0, short: (exposureMap[base]?.short || 0) - lotValue };
+                        exposureMap[quote] = { long: (exposureMap[quote]?.long || 0) + lotValue, short: exposureMap[quote]?.short || 0 };
+                    }
+                });
+                
+                const generatedExposureData: ExposureData[] = Object.entries(exposureMap).map(([currency, values]) => {
+                    const netExposure = values.long + values.short;
+                    return {
+                        currency,
+                        exposure: netExposure,
+                        type: netExposure > 0 ? 'long' : 'short'
+                    }
+                });
+                
+                setExposureData(generatedExposureData);
 
                 setIsLoading(false);
             };

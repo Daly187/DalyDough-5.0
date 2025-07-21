@@ -82,7 +82,7 @@ export type EquityData = {
 
 export type RiskMetric = {
   label: string;
-  value: string;
+  value: string | number;
   description: string;
 };
 
