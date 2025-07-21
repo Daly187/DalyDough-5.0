@@ -92,6 +92,14 @@ export type ApiKey = {
   key: string;
 };
 
+export type UserSettings = {
+    symbolMappings: {
+        brokerSymbol: string;
+        apiSymbol: string;
+        description?: string;
+    }[];
+}
+
 export type TradeAccount = {
   id: string; // Firestore document ID
   uid: string; // User ID

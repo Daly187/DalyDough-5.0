@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RefreshProvider } from '@/context/refresh-context';
+import { DataProvider } from '@/context/data-context';
 
 export default function AppLayout({
   children,
@@ -121,10 +122,12 @@ export default function AppLayout({
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <RefreshProvider>
-          <Header />
-          {children}
-        </RefreshProvider>
+        <DataProvider>
+          <RefreshProvider>
+            <Header />
+            {children}
+          </RefreshProvider>
+        </DataProvider>
       </SidebarInset>
     </SidebarProvider>
   );

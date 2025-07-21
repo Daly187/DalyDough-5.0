@@ -14,10 +14,11 @@ import { z } from 'zod';
 import { db } from '@/lib/firebase/firestore';
 import { auth } from '@/lib/firebase/auth';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useData } from '@/context/data-context';
 
 const symbolMappingSchema = z.object({
   mappings: z.array(z.object({
@@ -32,7 +33,7 @@ type SymbolMappingFormData = z.infer<typeof symbolMappingSchema>;
 function SymbolMappingForm() {
   const [user] = useAuthState(auth);
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = React.useState(true);
+  const { userSettings, isLoading } = useData();
   const [isSaving, setIsSaving] = React.useState(false);
 
   const { control, handleSubmit, reset } = useForm<SymbolMappingFormData>({
@@ -46,31 +47,10 @@ function SymbolMappingForm() {
   });
 
   React.useEffect(() => {
-    if (user) {
-      setIsLoading(true);
-      const docRef = doc(db, 'userSettings', user.uid);
-      
-      const unsubscribe = onSnapshot(docRef, (docSnap) => {
-        if (docSnap.exists() && docSnap.data().symbolMappings && docSnap.data().symbolMappings.length > 0) {
-          reset({ mappings: docSnap.data().symbolMappings });
-        } else {
-            // Set default values if no settings are found
-            reset({ mappings: [
-                { brokerSymbol: 'EURUSD', apiSymbol: 'EUR/USD', description: 'Euro vs US Dollar' },
-                { brokerSymbol: 'USDJPY', apiSymbol: 'USD/JPY', description: 'US Dollar vs Japanese Yen' },
-                { brokerSymbol: 'GBPUSD', apiSymbol: 'GBP/USD', description: 'Great Britain Pound vs US Dollar' },
-            ] });
-        }
-        setIsLoading(false);
-      }, (error) => {
-        console.error("Error fetching symbol mappings: ", error);
-        toast({ variant: 'destructive', title: 'Error', description: "Could not load symbol mappings." });
-        setIsLoading(false);
-      });
-
-      return () => unsubscribe(); // Cleanup listener on unmount
+    if (userSettings) {
+        reset({ mappings: userSettings.symbolMappings });
     }
-  }, [user, reset, toast]);
+  }, [userSettings, reset]);
 
   const onSubmit = async (data: SymbolMappingFormData) => {
     if (!user) {

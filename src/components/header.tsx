@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from 'react';
-import { useRefresh } from '@/context/refresh-context';
+import { useData } from '@/context/data-context';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Button } from './ui/button';
 import { Bell, Bot, Settings, PowerOff } from 'lucide-react';
@@ -38,21 +38,15 @@ const formatCurrency = (value: number | undefined) => {
 
 
 export default function Header() {
-  const { refreshKey } = useRefresh();
-  const [lastUpdated, setLastUpdated] = React.useState(new Date());
+  const { lastUpdated, activeBots, isLoading } = useData();
   const [user] = useAuthState(auth);
   const [primaryAccount, setPrimaryAccount] = React.useState<TradeAccount | null>(null);
-  const [bots, setBots] = React.useState<BotType[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const [isAccountLoading, setIsAccountLoading] = React.useState(true);
 
   React.useEffect(() => {
-    setLastUpdated(new Date());
-  }, [refreshKey]);
-  
-  React.useEffect(() => {
     if (user) {
-        setIsLoading(true);
-        // Listener for trade accounts
+        setIsAccountLoading(true);
+        // This listener is specific to the header for account details, separate from the main data context.
         const accountsQuery = query(collection(db, "tradeAccounts"), where("uid", "==", user.uid));
         const unsubscribeAccounts = onSnapshot(accountsQuery, (snapshot) => {
             const userAccounts: TradeAccount[] = [];
@@ -61,37 +55,24 @@ export default function Header() {
             });
             const primary = userAccounts.find(acc => acc.isPrimary) || userAccounts[0] || null;
             setPrimaryAccount(primary);
-            setIsLoading(false);
+            setIsAccountLoading(false);
         });
-
-        // Listener for bots to calculate P/L
-        const botsQuery = query(collection(db, "bots"), where("uid", "==", user.uid), where("status", "==", "active"));
-        const unsubscribeBots = onSnapshot(botsQuery, (snapshot) => {
-            const activeBots: BotType[] = [];
-            snapshot.forEach((doc) => {
-                activeBots.push({ id: doc.id, ...doc.data() } as BotType);
-            });
-            setBots(activeBots);
-        });
-
-        return () => {
-            unsubscribeAccounts();
-            unsubscribeBots();
-        };
+        
+        return () => unsubscribeAccounts();
     } else {
-        setIsLoading(false);
+        setIsAccountLoading(false);
         setPrimaryAccount(null);
-        setBots([]);
     }
   }, [user]);
 
-  const totalPL = bots.reduce((sum, bot) => sum + bot.profit_loss, 0);
+  const totalPL = activeBots.reduce((sum, bot) => sum + bot.profit_loss, 0);
+  const pageIsLoading = isLoading || isAccountLoading;
 
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
       <SidebarTrigger className="flex md:hidden" />
       <div className="flex w-full items-center justify-between">
-        {isLoading ? (
+        {pageIsLoading ? (
             <div className="flex gap-6 text-sm items-center">
                 <Skeleton className="h-5 w-48" />
                 <Skeleton className="h-5 w-32" />

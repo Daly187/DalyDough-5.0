@@ -41,7 +41,8 @@ export default function AccountsPage() {
   }, [user]);
 
   const handleAccountAdded = (newAccount: TradeAccount) => {
-    setAccounts(prev => [...prev, newAccount]);
+    // The onSnapshot listener will handle adding the account to the state
+    // This function can be used for optimistic updates if needed in the future
   };
 
   return (

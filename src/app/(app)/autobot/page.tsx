@@ -3,75 +3,22 @@
 
 import * as React from 'react';
 import MarketOpportunities from '@/components/autobot/market-opportunities';
-import { botConfigurationData } from '@/lib/data';
-import { getForexData } from '@/lib/fmp';
-import type { DScore, AutoBotStrategy } from '@/lib/types';
 import { Scan, PlayCircle, Loader2 } from 'lucide-react';
 import AutoBotStrategyForm from '@/components/autobot/autobot-strategy-form';
 import { useToast } from '@/hooks/use-toast';
-import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from '@/lib/firebase/auth';
-import { db } from '@/lib/firebase/firestore';
-import { doc, getDoc } from 'firebase/firestore';
+import { useData } from '@/context/data-context';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function AutoBotPage() {
-  const [dScoreData, setDScoreData] = React.useState<DScore[]>([]);
-  const [strategy, setStrategy] = React.useState<AutoBotStrategy | null>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const { dScoreData, strategy, isLoading: isDataLoading } = useData();
   const [isScanning, setIsScanning] = React.useState(false);
   const { toast } = useToast();
-  const [user] = useAuthState(auth);
+  
+  const [localStrategy, setLocalStrategy] = React.useState(strategy);
 
   React.useEffect(() => {
-    const fetchData = async () => {
-      if (!user) return;
-
-      setIsLoading(true);
-
-      // Fetch user's symbol mappings
-      const settingsRef = doc(db, 'userSettings', user.uid);
-      const settingsSnap = await getDoc(settingsRef);
-      let pairs: string[] = [];
-      if (settingsSnap.exists() && settingsSnap.data().symbolMappings) {
-        pairs = settingsSnap.data().symbolMappings.map((m: { apiSymbol: string }) => m.apiSymbol);
-      } else {
-        pairs = ['EUR/USD', 'USD/JPY', 'GBP/USD']; // Fallback
-      }
-
-      let dScores: DScore[] = [];
-      if (pairs.length > 0) {
-        dScores = await Promise.all(
-          pairs.map(p => getForexData(p) as unknown as Promise<DScore>)
-        );
-      }
-      
-      const strategyPromise = fetch('/api/autobot/strategy').then(res => res.json());
-
-      const [strategyRes] = await Promise.all([strategyPromise]);
-      
-      setDScoreData(dScores.filter(Boolean));
-      if (strategyRes.success && strategyRes.data) {
-        // Ensure includedPairs is populated for all available pairs
-        const currentIncluded = strategyRes.data.includedPairs || {};
-        const newIncludedPairs = Object.fromEntries(pairs.map(p => [p, currentIncluded[p] ?? true]));
-        setStrategy({ ...strategyRes.data, includedPairs: newIncludedPairs });
-      } else {
-        // If no strategy is found, use the default config
-        setStrategy({ 
-          id: 'default', 
-          ...botConfigurationData, 
-          includedPairs: Object.fromEntries(pairs.map(p => [p, true])),
-          entryThresholdLower: -7,
-          entryThresholdUpper: 7,
-          exitThresholdLower: -6,
-          exitThresholdUpper: 6
-        });
-      }
-
-      setIsLoading(false);
-    };
-    fetchData();
-  }, [user]);
+    setLocalStrategy(strategy);
+  }, [strategy]);
 
   const handleScanNow = async () => {
     setIsScanning(true);
@@ -109,7 +56,7 @@ export default function AutoBotPage() {
         </div>
         <button
           onClick={handleScanNow}
-          disabled={isScanning || isLoading}
+          disabled={isScanning || isDataLoading}
           className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
         >
           {isScanning ? (
@@ -122,18 +69,18 @@ export default function AutoBotPage() {
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         <div className="lg:col-span-1 flex flex-col gap-8">
-            {isLoading || !strategy ? (
-                 <div className="lg:col-span-1 flex flex-col gap-8">Loading strategy...</div>
+            {isDataLoading || !localStrategy ? (
+                 <Skeleton className="h-[800px] w-full" />
             ) : (
-                <AutoBotStrategyForm initialStrategy={strategy} />
+                <AutoBotStrategyForm initialStrategy={localStrategy} />
             )}
         </div>
         <div className="lg:col-span-2 flex flex-col gap-8">
             <MarketOpportunities 
                 opportunities={dScoreData} 
-                includedPairs={strategy?.includedPairs ?? {}}
+                includedPairs={localStrategy?.includedPairs ?? {}}
                 onInclusionChange={(pair, included) => {
-                    setStrategy(prev => prev ? ({ ...prev, includedPairs: { ...prev.includedPairs, [pair]: included } }) : null);
+                    setLocalStrategy(prev => prev ? ({ ...prev, includedPairs: { ...prev.includedPairs, [pair]: included } }) : null);
                 }}
             />
         </div>
