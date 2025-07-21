@@ -8,7 +8,6 @@ import { auth } from '@/lib/firebase/auth';
 import { db } from '@/lib/firebase/firestore';
 import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { getForexData } from '@/lib/fmp';
-import { botConfigurationData } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 
 interface DataContextType {
@@ -24,6 +23,29 @@ interface DataContextType {
 }
 
 const DataContext = React.createContext<DataContextType | undefined>(undefined);
+
+const defaultStrategyData = {
+    botType: 'Dynamic DCA',
+    lotSize: 0.01,
+    maxPositions: 5,
+    reentryDelay: 15,
+    stopLoss: 500,
+    takeProfit: 100,
+    enableDSizeExit: true,
+    dSizeExitThreshold: 6.0,
+    enableTrailingStop: false,
+    trailingStopPips: 20,
+    newsFilter: true,
+    weekendTrading: false,
+    aiOptimization: true,
+    gridLevels: 5,
+    gridDistance: 20,
+    lotSizeMultiplier: 1.5,
+    takeProfitType: 'fixed' as 'fixed' | 'average',
+    closeOnRetrace: false,
+    retracePercentage: 50,
+};
+
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
@@ -103,7 +125,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         } else {
              setStrategy({ 
                 id: user.uid, 
-                ...botConfigurationData, 
+                ...defaultStrategyData, 
                 includedPairs: {},
                 entryThresholdLower: -7,
                 entryThresholdUpper: 7,

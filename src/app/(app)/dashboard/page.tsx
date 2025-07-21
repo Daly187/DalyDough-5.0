@@ -3,7 +3,6 @@
 
 import * as React from 'react';
 import MarketOverviewTable from '@/components/dashboard/market-overview-table';
-import { botConfigurationData, aiReentriesData } from '@/lib/data';
 import ActiveBotsTable from '@/components/bots/active-bots-table';
 import BotConfiguration from '@/components/autobot/bot-configuration';
 import { Rocket } from 'lucide-react';
@@ -82,8 +81,8 @@ export default function DashboardPage() {
                     <p className="text-muted-foreground">Configure and launch a new bot manually.</p>
                 </div>
             </div>
-            <BotConfiguration config={botConfigurationData} allPairs={filteredDScoreData} activeBots={activeBots} isLoading={isLoading} />
-            <AiOptimizedReentries reentries={aiReentriesData} />
+            <BotConfiguration allPairs={filteredDScoreData} activeBots={activeBots} isLoading={isLoading} />
+            <AiOptimizedReentries />
         </div>
       </div>
     </main>

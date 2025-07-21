@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Settings, Lightbulb, HelpCircle, Rocket } from "lucide-react";
-import type { BotConfigurationData, DScore, Bot, PendingOrder } from "@/lib/types";
+import type { DScore, Bot, PendingOrder } from "@/lib/types";
 import { cn } from '@/lib/utils';
 import {
   Tooltip,
@@ -24,16 +24,37 @@ import { db } from '@/lib/firebase/firestore';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { getForexData } from '@/lib/fmp';
 
+const defaultConfig = {
+    botType: 'Dynamic DCA',
+    lotSize: 0.01,
+    maxPositions: 5,
+    reentryDelay: 15,
+    stopLoss: 500,
+    takeProfit: 100,
+    enableDSizeExit: true,
+    dSizeExitThreshold: 6.0,
+    enableTrailingStop: false,
+    trailingStopPips: 20,
+    newsFilter: true,
+    weekendTrading: false,
+    aiOptimization: true,
+    gridLevels: 5,
+    gridDistance: 20,
+    lotSizeMultiplier: 1.5,
+    takeProfitType: 'fixed' as 'fixed' | 'average',
+    closeOnRetrace: false,
+    retracePercentage: 50,
+};
+
 
 interface BotConfigurationProps {
-  config: BotConfigurationData;
   allPairs: DScore[];
   activeBots: Bot[];
   isLoading: boolean;
 }
 
-export default function BotConfiguration({ config: initialConfig, allPairs, activeBots, isLoading }: BotConfigurationProps) {
-  const [config, setConfig] = React.useState(initialConfig);
+export default function BotConfiguration({ allPairs, activeBots, isLoading }: BotConfigurationProps) {
+  const [config, setConfig] = React.useState(defaultConfig);
   const [selectedPair, setSelectedPair] = React.useState<string>("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const { toast } = useToast();
@@ -43,7 +64,7 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
     setConfig((prev) => ({ ...prev, [id]: value }));
   };
 
-  const handleSelectChange = (id: keyof BotConfigurationData) => (value: string) => {
+  const handleSelectChange = (id: keyof typeof defaultConfig) => (value: string) => {
     setConfig((prev) => ({ ...prev, [id]: value }));
   };
   
@@ -51,7 +72,7 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
     setSelectedPair(value);
   };
 
-  const handleSwitchChange = (id: keyof BotConfigurationData) => (checked: boolean) => {
+  const handleSwitchChange = (id: keyof typeof defaultConfig) => (checked: boolean) => {
     setConfig((prev) => ({ ...prev, [id]: checked }));
   };
 

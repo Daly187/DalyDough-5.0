@@ -1,13 +1,17 @@
+
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Lightbulb } from "lucide-react";
-import type { AIReentry } from "@/lib/types";
 
-interface AiOptimizedReentriesProps {
-    reentries: AIReentry[];
-}
+const reentriesData = [
+  { level: 2, priceOffset: "-18 pips", lotSize: 0.02, condition: "RSI < 40" },
+  { level: 3, priceOffset: "-35 pips", lotSize: 0.04, condition: "Vol > Avg" },
+  { level: 4, priceOffset: "-50 pips", lotSize: 0.08, condition: "On Sup" },
+  { level: 5, priceOffset: "-75 pips", lotSize: 0.16, condition: "Extreme" },
+];
 
-export default function AiOptimizedReentries({ reentries }: AiOptimizedReentriesProps) {
+
+export default function AiOptimizedReentries() {
     return (
         <Card>
             <CardHeader>
@@ -27,7 +31,7 @@ export default function AiOptimizedReentries({ reentries }: AiOptimizedReentries
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {reentries.map((reentry) => (
+                        {reentriesData.map((reentry) => (
                             <TableRow key={reentry.level}>
                                 <TableCell>{reentry.level}</TableCell>
                                 <TableCell>{reentry.priceOffset}</TableCell>

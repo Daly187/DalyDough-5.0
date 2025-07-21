@@ -5,10 +5,20 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase/firestore';
 import { collection, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import type { AutoBotStrategy } from '@/lib/types';
-import { botConfigurationData, pairs } from '@/lib/data';
 import { headers } from 'next/headers';
 
 const strategyCollection = collection(db, 'autobotStrategies');
+
+// This list should ideally be managed in a shared config, but for now,
+// it ensures the default strategy includes all available symbols.
+const ALL_SYMBOLS = [
+    'EUR/USD', 'USD/JPY', 'GBP/USD', 'USD/CHF', 'AUD/USD', 'USD/CAD', 'NZD/USD',
+    'EUR/GBP', 'EUR/AUD', 'EUR/JPY', 'EUR/CHF', 'GBP/JPY', 'GBP/CHF', 'GBPAUD',
+    'AUD/JPY', 'NZD/JPY', 'CAD/JPY', 'CHF/JPY', 'AUD/CAD', 'AUD/NZD', 'EUR/CAD',
+    'EUR/NZD', 'GBP/CAD', 'GBP/NZD', 'XAU/USD', 'XAG/USD', 'WTI/USD', 'USD/NOK',
+    'USD/SEK', 'USD/ZAR', 'USD/TRY', 'USD/MXN', 'USD/SGD', 'USD/HKD', 'EUR/NOK',
+    'EUR/SEK', 'BTC/USD', 'ETH/USD'
+];
 
 async function getUserId() {
   const headersList = headers();
@@ -28,22 +38,32 @@ export async function GET() {
     if (docSnap.exists()) {
       return NextResponse.json({ success: true, data: { id: docSnap.id, ...docSnap.data() } });
     } else {
-      const settingsRef = doc(db, 'userSettings', userId);
-      const settingsSnap = await getDoc(settingsRef);
-      let userPairs: string[] = [];
-      if (settingsSnap.exists() && settingsSnap.data().symbolMappings) {
-        userPairs = settingsSnap.data().symbolMappings.map((m: { apiSymbol: string }) => m.apiSymbol);
-      } else {
-        userPairs = ['EUR/USD', 'USD/JPY', 'GBP/USD']; // Fallback
-      }
-      
+      // Create a default strategy if one doesn't exist for the user
       const defaultStrategy: Omit<AutoBotStrategy, 'id'> = {
-        ...botConfigurationData,
         entryThresholdUpper: 7.0,
         entryThresholdLower: -7.0,
         exitThresholdUpper: 6.0,
         exitThresholdLower: -6.0,
-        includedPairs: Object.fromEntries(userPairs.map(p => [p, true])),
+        includedPairs: Object.fromEntries(ALL_SYMBOLS.map(p => [p, true])),
+        botType: 'Dynamic DCA',
+        lotSize: 0.01,
+        maxPositions: 5,
+        reentryDelay: 15,
+        stopLoss: 500,
+        takeProfit: 100,
+        enableDSizeExit: true,
+        dSizeExitThreshold: 6.0,
+        enableTrailingStop: false,
+        trailingStopPips: 20,
+        newsFilter: true,
+        weekendTrading: false,
+        aiOptimization: true,
+        gridLevels: 5,
+        gridDistance: 20,
+        lotSizeMultiplier: 1.5,
+        takeProfitType: 'fixed',
+        closeOnRetrace: false,
+        retracePercentage: 50,
       };
       await setDoc(docRef, defaultStrategy);
       return NextResponse.json({ success: true, data: { id: userId, ...defaultStrategy } });
