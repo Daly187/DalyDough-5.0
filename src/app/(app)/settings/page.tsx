@@ -17,6 +17,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const symbolMappingSchema = z.object({
   mappings: z.array(z.object({
@@ -92,47 +93,49 @@ function SymbolMappingForm() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2"><UserCog /> Symbol Mapping</CardTitle>
         <CardDescription>
-          Map your broker's specific symbols (e.g., EURUSD.pro) to the standard API format (e.g., EUR/USD). This ensures the app fetches the correct data for your account. This list can be automatically populated by the EA.
+          Map your broker's specific symbols (e.g., EURUSD.pro) to the standard API format (e.g., EUR/USD). This ensures the app fetches the correct data for your account. This list is automatically populated by the EA.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          <div className="space-y-4">
-            {fields.map((field, index) => (
-              <div key={field.id} className="flex items-end gap-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-grow">
-                  <div>
-                    <Label htmlFor={`mappings.${index}.brokerSymbol`}>Broker Symbol</Label>
-                    <Controller
-                      name={`mappings.${index}.brokerSymbol`}
-                      control={control}
-                      render={({ field }) => <Input {...field} placeholder="e.g., EURUSD.pro" />}
-                    />
+          <ScrollArea className="h-[60vh] pr-4">
+            <div className="space-y-4">
+              {fields.map((field, index) => (
+                <div key={field.id} className="flex items-end gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-grow">
+                    <div>
+                      <Label htmlFor={`mappings.${index}.brokerSymbol`}>Broker Symbol</Label>
+                      <Controller
+                        name={`mappings.${index}.brokerSymbol`}
+                        control={control}
+                        render={({ field }) => <Input {...field} placeholder="e.g., EURUSD.pro" />}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor={`mappings.${index}.apiSymbol`}>API Symbol</Label>
+                      <Controller
+                        name={`mappings.${index}.apiSymbol`}
+                        control={control}
+                        render={({ field }) => <Input {...field} placeholder="e.g., EUR/USD" />}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor={`mappings.${index}.description`}>Description</Label>
+                      <Controller
+                        name={`mappings.${index}.description`}
+                        control={control}
+                        render={({ field }) => <Input {...field} placeholder="Symbol description" />}
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor={`mappings.${index}.apiSymbol`}>API Symbol</Label>
-                    <Controller
-                      name={`mappings.${index}.apiSymbol`}
-                      control={control}
-                      render={({ field }) => <Input {...field} placeholder="e.g., EUR/USD" />}
-                    />
-                  </div>
-                   <div>
-                    <Label htmlFor={`mappings.${index}.description`}>Description</Label>
-                    <Controller
-                      name={`mappings.${index}.description`}
-                      control={control}
-                      render={({ field }) => <Input {...field} placeholder="Symbol description" />}
-                    />
-                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => remove(index)} className="self-end text-destructive">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => remove(index)} className="self-end text-destructive">
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-          </div>
-          <div className="flex justify-between items-center">
+              ))}
+            </div>
+          </ScrollArea>
+          <div className="flex justify-between items-center pt-4 border-t">
             <Button type="button" variant="outline" onClick={() => append({ brokerSymbol: '', apiSymbol: '', description: '' })}>
               <PlusCircle className="mr-2 h-4 w-4" />
               Add Symbol Manually
