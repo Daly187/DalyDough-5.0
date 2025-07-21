@@ -1,5 +1,5 @@
 //+------------------------------------------------------------------+
-//|                                                DalyDoughEA.mq5   |
+//|                                         WorkingDalyDoughEA.mq5  |
 //|                                  Copyright 2025, DalyDough Ltd   |
 //|                                             https://dalydough.com |
 //+------------------------------------------------------------------+
@@ -11,8 +11,8 @@
 
 //--- Input parameters
 input string EA_Key = "";  // PASTE YOUR KEY HERE - Get this from the DalyDough Accounts page
-input string Firebase_Project_ID = "studio-7990806245";  // Your Firebase Project ID
-input string Firebase_API_Key = "AIzaSyDFf3g984whrO93847gfeirfefg_ADDiw";  // Your Firebase API Key
+input string Firebase_Project_ID = "dalydough";  // Your correct Firebase Project ID
+input string Firebase_API_Key = "AIzaSyAsDdz19ANsbI4ndBt6MOVBYRefBjjPb-I";  // Your real Firebase API Key
 input int Update_Frequency_Seconds = 60;        // How often to sync with server (seconds)
 
 //--- Global variables
@@ -176,7 +176,7 @@ void UpdateAccountStatus()
     string balanceStr = DoubleToString(balance, 2);
     string equityStr = DoubleToString(equity, 2);
     string marginStr = DoubleToString(marginLevel, 2);
-    string timeStr = TimeToString(TimeCurrent(), TIME_RFC3339);
+    string timeStr = TimeToString(TimeCurrent(), TIME_DATE|TIME_SECONDS);
     
     // Clean all strings
     StringReplace(balanceStr, " ", "");
@@ -285,8 +285,8 @@ double ExtractDoubleValue(string json, string fieldName)
 {
     string searchFor = "\"" + fieldName + "\":{\"doubleValue\":";
     int pos = StringFind(json, searchFor);
-     if(pos == -1) 
-     {
+    if(pos == -1) 
+    {
         searchFor = "\"" + fieldName + "\":{\"integerValue\":\"";
         pos = StringFind(json, searchFor);
         if(pos == -1) return 0.0;
@@ -295,7 +295,7 @@ double ExtractDoubleValue(string json, string fieldName)
         if(endPos == -1) return 0.0;
         string valueStr = StringSubstr(json, pos, endPos - pos);
         return (double)StringToInteger(valueStr);
-     }
+    }
     
     pos += StringLen(searchFor);
     int endPos = StringFind(json, "}", pos);
@@ -318,7 +318,7 @@ void SyncBrokerSymbols()
     string symbolMappingsJson = "\"symbolMappings\":{\"arrayValue\":{\"values\":[";
     
     int totalSymbols = SymbolsTotal(true);
-    for(int i = 0; i < totalSymbols; i++) // Removed the limit of 20
+    for(int i = 0; i < totalSymbols && syncedCount < 50; i++) // Limit to 50 to avoid timeout
     {
         string symbol = SymbolName(i, true);
         if(!SymbolInfoInteger(symbol, SYMBOL_SELECT)) continue;
@@ -339,15 +339,12 @@ void SyncBrokerSymbols()
         symbolMappingsJson += "}}}";
         
         syncedCount++;
-        Sleep(50); // Small delay to avoid overwhelming the API
+        Sleep(50);
     }
     
     symbolMappingsJson += "]}}";
     
-    string finalUpdate = "{\"fields\":{" + symbolMappingsg to your linked trading account.
-
-Here are the required changes.
-Json + "}}";
+    string finalUpdate = "{\"fields\":{" + symbolMappingsJson + "}}";
     string documentPath = "userSettings/" + userID;
     string url = baseURL + documentPath + "?updateMask.fieldPaths=symbolMappings&key=" + Firebase_API_Key;
     
@@ -398,15 +395,49 @@ void ProcessBotCommands()
     queryJson += "{\"fieldFilter\":{\"field\":{\"fieldPath\":\"status\"},\"op\":\"EQUAL\",\"value\":{\"stringValue\":\"active\"}}}";
     queryJson += "]}}}}";
     
-    if(SendFirebaseRequest("POST", queryUrl + "?key=" + Firebase_API_Key, queryJson))
+    char data[];
+    char result[];
+    string resultHeaders;
+    
+    // Convert to char array
+    StringToCharArray(queryJson, data, 0, WHOLE_ARRAY, CP_UTF8);
+    ArrayResize(data, ArraySize(data) - 1);
+    
+    int res = WebRequest("POST", queryUrl + "?key=" + Firebase_API_Key, "Content-Type: application/json", 10000, data, result, resultHeaders);
+    
+    if(res == 200)
     {
-        Print("✓ Bot query sent successfully");
-        // Note: In a real implementation, you would parse the response and process each bot
-        // For now, this demonstrates the query structure
+        string response = CharArrayToString(result);
+        Print("✓ Bot query successful, processing bots...");
+        
+        // Simple bot processing - look for bot documents in response
+        if(StringFind(response, "\"documents\"") != -1)
+        {
+            // Extract basic bot information using simple string search
+            string botPair = ExtractStringValue(response, "pair");
+            double lotSize = ExtractDoubleValue(response, "lotSize");
+            string strategy = ExtractStringValue(response, "strategy");
+            
+            if(StringLen(botPair) > 0 && lotSize > 0)
+            {
+                Print("Found active bot for pair: ", botPair, " with lot size: ", lotSize);
+                ExecuteBotStrategy(botPair, lotSize, strategy);
+            }
+            else
+            {
+                Print("No active bots found or bot data incomplete");
+            }
+        }
+        else
+        {
+            Print("No bot documents found in response");
+        }
     }
     else
     {
-        Print("✗ Bot query failed");
+        Print("✗ Bot query failed - HTTP Code: ", res);
+        string response = CharArrayToString(result);
+        Print("Error response: ", StringSubstr(response, 0, 200));
     }
 }
 
@@ -468,5 +499,3 @@ void ExecuteBotStrategy(string pair, double lotSize, string strategy)
     }
     // Add more strategies as needed
 }
-
-    

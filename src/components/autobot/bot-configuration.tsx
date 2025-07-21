@@ -216,6 +216,8 @@ export default function BotConfiguration({ config: initialConfig, allPairs, acti
                             <SelectItem value="Dynamic DCA">Dynamic DCA</SelectItem>
                             <SelectItem value="Trend Rider">Trend Rider</SelectItem>
                             <SelectItem value="Mean Reversion">Mean Reversion</SelectItem>
+                            <SelectItem value="buy_and_hold">Buy and Hold</SelectItem>
+                            <SelectItem value="sell_and_hold">Sell and Hold</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
