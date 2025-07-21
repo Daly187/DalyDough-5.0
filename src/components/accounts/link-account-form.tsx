@@ -15,7 +15,7 @@ import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { db } from "@/lib/firebase/firestore";
 import { auth } from "@/lib/firebase/auth";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, setDoc, doc } from "firebase/firestore";
 import { useAuthState } from "react-firebase-hooks/auth";
 import type { TradeAccount } from "@/lib/types";
 import { Separator } from "../ui/separator";
@@ -24,7 +24,7 @@ const accountSchema = z.object({
   nickname: z.string().min(1, "Nickname is required"),
   platform: z.enum(["mt4", "mt5"], { required_error: "Platform is required" }),
   accountId: z.string().min(1, "Account ID is required"),
-  password: z.string().min(1, "Password is required"),
+  password: z.string().min(1, "Password is required"), // Note: Storing passwords is not recommended in a real app. This is for simulation.
   server: z.string().min(1, "Server is required"),
 });
 
@@ -45,9 +45,9 @@ export default function LinkAccountForm({ onAccountAdded }: LinkAccountFormProps
     });
 
     const generateApiKey = () => {
-        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        let result = '';
-        for (let i = 0; i < 32; i++) {
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let result = 'EA_';
+        for (let i = 0; i < 16; i++) {
             result += characters.charAt(Math.floor(Math.random() * characters.length));
         }
         setApiKey(result);
@@ -68,27 +68,26 @@ export default function LinkAccountForm({ onAccountAdded }: LinkAccountFormProps
             const newAccountData = {
                 uid: user.uid,
                 ...data,
-                eaKey: apiKey, // Save the generated key
+                eaKey: apiKey, // The key is now the document ID
                 balance: 0,
                 equity: 0,
                 status: 'Connecting', // Initial status
-                isPrimary: false, // New accounts are not primary by default
+                isPrimary: false, 
                 copySettings: { enabled: false, weight: 1.0 },
                 createdAt: serverTimestamp(),
             };
-            const docRef = await addDoc(collection(db, "tradeAccounts"), newAccountData);
             
-            toast({ title: "Account Linking...", description: "Connecting to your trading account." });
+            // Use the API key as the document ID for easy lookup from the EA
+            const docRef = doc(db, "tradeAccounts", apiKey);
+            await setDoc(docRef, newAccountData);
+            
+            toast({ title: "Account Linking...", description: "Waiting for EA connection." });
+            
+            onAccountAdded({ id: apiKey, ...newAccountData } as unknown as TradeAccount);
             
             // Re-generate a new key for the next form entry and reset fields
             generateApiKey(); 
             reset();
-
-            // Simulate connection process
-            setTimeout(() => {
-                 toast({ title: "Account Linked!", description: `Account ${data.nickname} has been successfully linked.` });
-                 onAccountAdded({ id: docRef.id, ...newAccountData } as unknown as TradeAccount);
-            }, 2000);
 
         } catch (error) {
             toast({ variant: "destructive", title: "Linking Failed", description: (error as Error).message });
@@ -174,24 +173,22 @@ export default function LinkAccountForm({ onAccountAdded }: LinkAccountFormProps
                             <ol className="list-decimal list-inside space-y-1">
                                 <li>Download the EA file for your platform below.</li>
                                 <li>In MetaTrader, go to `File {' > '} Open Data Folder`.</li>
-                                <li>Place the `.ex4` or `.ex5` file in the `MQL4/Experts` or `MQL5/Experts` folder.</li>
+                                <li>Place the `.ex5` file in the `MQL5/Experts` folder.</li>
                                 <li>Refresh your Expert Advisors list in the Navigator panel.</li>
                                 <li>Drag the EA onto a chart and enter the unique key above when prompted.</li>
                             </ol>
                         </div>
                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <Link href="/dalydough-ea.ex4" download className="w-full">
+                            <Link href="/DalyDoughEA.mq5" download className="w-full">
                                 <Button variant="secondary" className="w-full" type="button">
                                     <Download className="h-4 w-4 mr-2" />
-                                    Download for MT4
+                                    Download for MT5 (.mq5 source)
                                 </Button>
                             </Link>
-                            <Link href="/dalydough-ea.ex5" download className="w-full">
-                                <Button variant="secondary" className="w-full" type="button">
-                                    <Download className="h-4 w-4 mr-2" />
-                                    Download for MT5
-                                </Button>
-                            </Link>
+                             <Button variant="secondary" className="w-full" type="button" disabled>
+                                <Download className="h-4 w-4 mr-2" />
+                                MT4 Version (Coming Soon)
+                            </Button>
                         </div>
                     </div>
                 </CardContent>
