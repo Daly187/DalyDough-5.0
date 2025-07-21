@@ -3,7 +3,6 @@
 
 import * as React from 'react';
 import MarketOverviewTable from '@/components/dashboard/market-overview-table';
-import SystemStatus from '@/components/dashboard/system-status';
 import { botConfigurationData, aiReentriesData } from '@/lib/data';
 import ActiveBotsTable from '@/components/bots/active-bots-table';
 import BotConfiguration from '@/components/autobot/bot-configuration';
@@ -148,8 +147,6 @@ export default function DashboardPage() {
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
-      <SystemStatus />
-      
       {isLoading ? (
         <Skeleton className="h-[158px] w-full rounded-lg" />
       ) : (
