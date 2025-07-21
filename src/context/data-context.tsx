@@ -34,6 +34,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [allBots, setAllBots] = React.useState<Bot[]>([]);
   const [strategy, setStrategy] = React.useState<AutoBotStrategy | null>(null);
   const [userSettings, setUserSettings] = React.useState<UserSettings | null>(null);
+  const [isSettingsLoaded, setIsSettingsLoaded] = React.useState(false);
   const [refreshKey, setRefreshKey] = React.useState(0);
   const [lastUpdated, setLastUpdated] = React.useState(new Date());
 
@@ -47,6 +48,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setAllBots([]);
       setStrategy(null);
       setUserSettings(null);
+      setIsSettingsLoaded(false);
       return;
     }
 
@@ -58,6 +60,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       if (docSnap.exists()) {
         setUserSettings(docSnap.data() as UserSettings);
       } else {
+         // If no settings exist, create a default structure but don't assume it's "loaded" for D-Score fetching yet
+         // The main fetch logic will handle this case.
          setUserSettings({
             symbolMappings: [
                 { brokerSymbol: 'EURUSD', apiSymbol: 'EUR/USD', description: 'Euro vs US Dollar' },
@@ -66,9 +70,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             ]
         });
       }
+      setIsSettingsLoaded(true); // Mark settings as loaded/checked
     }, (error) => {
       console.error("Error fetching user settings:", error);
       toast({ variant: 'destructive', title: 'Error', description: 'Could not load user settings.' });
+      setIsSettingsLoaded(true); // Still mark as loaded to prevent infinite loading state
     });
 
     // 2. Setup listener for Bots
@@ -121,8 +127,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
 
   React.useEffect(() => {
-    // 4. Fetch D-Score data whenever user settings (and thus symbols) change, or on manual refresh
+    // 4. Fetch D-Score data ONLY when settings are confirmed loaded.
     const fetchDScoreData = async () => {
+      // **THE FIX**: Do not proceed if settings haven't been loaded from Firestore yet.
+      if (!isSettingsLoaded) {
+        return;
+      }
+      
       if (!userSettings || !userSettings.symbolMappings || userSettings.symbolMappings.length === 0) {
         setDScoreData([]);
         setLastUpdated(new Date());
@@ -147,7 +158,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     };
 
     fetchDScoreData();
-  }, [userSettings, refreshKey, toast]);
+  }, [userSettings, isSettingsLoaded, refreshKey, toast]);
 
 
   const activeBots = React.useMemo(() => allBots.filter(b => b.status !== 'closed'), [allBots]);
