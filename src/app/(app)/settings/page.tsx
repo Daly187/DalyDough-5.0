@@ -14,7 +14,7 @@ import { z } from 'zod';
 import { db } from '@/lib/firebase/firestore';
 import { auth } from '@/lib/firebase/auth';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -22,6 +22,7 @@ const symbolMappingSchema = z.object({
   mappings: z.array(z.object({
     brokerSymbol: z.string().min(1, 'Broker symbol is required.'),
     apiSymbol: z.string().min(1, 'API symbol is required.'),
+    description: z.string().optional(),
   })),
 });
 
@@ -54,9 +55,9 @@ function SymbolMappingForm() {
         } else {
             // Set default values if no settings are found
             reset({ mappings: [
-                { brokerSymbol: 'EURUSD', apiSymbol: 'EUR/USD' },
-                { brokerSymbol: 'USDJPY', apiSymbol: 'USD/JPY' },
-                { brokerSymbol: 'GBPUSD', apiSymbol: 'GBP/USD' },
+                { brokerSymbol: 'EURUSD', apiSymbol: 'EUR/USD', description: 'Euro vs US Dollar' },
+                { brokerSymbol: 'USDJPY', apiSymbol: 'USD/JPY', description: 'US Dollar vs Japanese Yen' },
+                { brokerSymbol: 'GBPUSD', apiSymbol: 'GBP/USD', description: 'Great Britain Pound vs US Dollar' },
             ] });
         }
         setIsLoading(false);
@@ -91,15 +92,15 @@ function SymbolMappingForm() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2"><UserCog /> Symbol Mapping</CardTitle>
         <CardDescription>
-          Map your broker's specific symbols (e.g., EURUSD.pro) to the standard API format (e.g., EUR/USD). This ensures the app fetches the correct data for your account.
+          Map your broker's specific symbols (e.g., EURUSD.pro) to the standard API format (e.g., EUR/USD). This ensures the app fetches the correct data for your account. This list can be automatically populated by the EA.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="space-y-4">
             {fields.map((field, index) => (
-              <div key={field.id} className="flex items-center gap-4">
-                <div className="grid grid-cols-2 gap-4 flex-grow">
+              <div key={field.id} className="flex items-end gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-grow">
                   <div>
                     <Label htmlFor={`mappings.${index}.brokerSymbol`}>Broker Symbol</Label>
                     <Controller
@@ -116,6 +117,14 @@ function SymbolMappingForm() {
                       render={({ field }) => <Input {...field} placeholder="e.g., EUR/USD" />}
                     />
                   </div>
+                   <div>
+                    <Label htmlFor={`mappings.${index}.description`}>Description</Label>
+                    <Controller
+                      name={`mappings.${index}.description`}
+                      control={control}
+                      render={({ field }) => <Input {...field} placeholder="Symbol description" />}
+                    />
+                  </div>
                 </div>
                 <Button variant="ghost" size="icon" onClick={() => remove(index)} className="self-end text-destructive">
                   <Trash2 className="h-4 w-4" />
@@ -124,9 +133,9 @@ function SymbolMappingForm() {
             ))}
           </div>
           <div className="flex justify-between items-center">
-            <Button type="button" variant="outline" onClick={() => append({ brokerSymbol: '', apiSymbol: '' })}>
+            <Button type="button" variant="outline" onClick={() => append({ brokerSymbol: '', apiSymbol: '', description: '' })}>
               <PlusCircle className="mr-2 h-4 w-4" />
-              Add Symbol
+              Add Symbol Manually
             </Button>
             <Button type="submit" disabled={isSaving}>
               {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
