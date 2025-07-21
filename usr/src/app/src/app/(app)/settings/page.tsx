@@ -7,16 +7,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Trash2, PlusCircle, Save, Loader2, KeyRound, Server, UserCog } from 'lucide-react';
+import { Trash2, PlusCircle, Save, Loader2, KeyRound, Server, UserCog, Info } from 'lucide-react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { db } from '@/lib/firebase/firestore';
-import { auth } from '@/lib/firebase/auth';
-import { useAuthState } from 'react-firebase-hooks/auth';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
-import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useData } from '@/context/data-context';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const symbolMappingSchema = z.object({
   mappings: z.array(z.object({
@@ -29,59 +27,24 @@ const symbolMappingSchema = z.object({
 type SymbolMappingFormData = z.infer<typeof symbolMappingSchema>;
 
 function SymbolMappingForm() {
-  const [user] = useAuthState(auth);
-  const { toast } = useToast();
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [isSaving, setIsSaving] = React.useState(false);
+  const { userSettings, isLoading } = useData();
 
-  const { control, handleSubmit, reset } = useForm<SymbolMappingFormData>({
+  const { control, reset } = useForm<SymbolMappingFormData>({
     resolver: zodResolver(symbolMappingSchema),
     defaultValues: { mappings: [] },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields } = useFieldArray({
     control,
     name: 'mappings',
   });
 
   React.useEffect(() => {
-    if (user) {
-      const fetchMappings = async () => {
-        setIsLoading(true);
-        const docRef = doc(db, 'userSettings', user.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists() && docSnap.data().symbolMappings) {
-          reset({ mappings: docSnap.data().symbolMappings });
-        } else {
-            // Set default values if no settings are found
-            reset({ mappings: [
-                { brokerSymbol: 'EURUSD', apiSymbol: 'EUR/USD', description: 'Euro vs US Dollar' },
-                { brokerSymbol: 'USDJPY', apiSymbol: 'USD/JPY', description: 'US Dollar vs Japanese Yen' },
-                { brokerSymbol: 'GBPUSD', apiSymbol: 'GBP/USD', description: 'Great Britain Pound vs US Dollar' },
-            ] });
-        }
-        setIsLoading(false);
-      };
-      fetchMappings();
+    if (userSettings) {
+        reset({ mappings: userSettings.symbolMappings });
     }
-  }, [user, reset]);
+  }, [userSettings, reset]);
 
-  const onSubmit = async (data: SymbolMappingFormData) => {
-    if (!user) {
-      toast({ variant: 'destructive', title: 'Not authenticated' });
-      return;
-    }
-    setIsSaving(true);
-    try {
-      const docRef = doc(db, 'userSettings', user.uid);
-      await setDoc(docRef, { symbolMappings: data.mappings }, { merge: true });
-      toast({ title: 'Success', description: 'Symbol mappings have been saved.' });
-    } catch (error) {
-      toast({ variant: 'destructive', title: 'Error', description: (error as Error).message });
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   if (isLoading) {
     return <Skeleton className="h-96 w-full" />;
@@ -92,53 +55,62 @@ function SymbolMappingForm() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2"><UserCog /> Symbol Mapping</CardTitle>
         <CardDescription>
-          Map your broker's specific symbols (e.g., EURUSD.pro) to the standard API format (e.g., EUR/USD). This ensures the app fetches the correct data for your account. This list can be automatically populated by the EA.
+          Map your broker's specific symbols (e.g., EURUSD.pro) to the standard API format (e.g., EUR/USD). This list is currently managed by the system.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          <div className="space-y-4">
-            {fields.map((field, index) => (
-              <div key={field.id} className="flex items-end gap-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-grow">
-                  <div>
-                    <Label htmlFor={`mappings.${index}.brokerSymbol`}>Broker Symbol</Label>
-                    <Controller
-                      name={`mappings.${index}.brokerSymbol`}
-                      control={control}
-                      render={({ field }) => <Input {...field} placeholder="e.g., EURUSD.pro" />}
-                    />
+         <Alert className="mb-6">
+            <Info className="h-4 w-4" />
+            <AlertTitle>System Managed Symbols</AlertTitle>
+            <AlertDescription>
+                The symbol list is currently hardcoded within the application to ensure stability. Automatic syncing from your EA will be re-enabled in a future update.
+            </AlertDescription>
+        </Alert>
+        <form className="space-y-6">
+          <ScrollArea className="h-[60vh] pr-4">
+            <div className="space-y-4">
+              {fields.map((field, index) => (
+                <div key={field.id} className="flex items-end gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-grow">
+                    <div>
+                      <Label htmlFor={`mappings.${index}.brokerSymbol`}>Broker Symbol</Label>
+                      <Controller
+                        name={`mappings.${index}.brokerSymbol`}
+                        control={control}
+                        render={({ field }) => <Input {...field} placeholder="e.g., EURUSD.pro" readOnly disabled />}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor={`mappings.${index}.apiSymbol`}>API Symbol</Label>
+                      <Controller
+                        name={`mappings.${index}.apiSymbol`}
+                        control={control}
+                        render={({ field }) => <Input {...field} placeholder="e.g., EUR/USD" readOnly disabled />}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor={`mappings.${index}.description`}>Description</Label>
+                      <Controller
+                        name={`mappings.${index}.description`}
+                        control={control}
+                        render={({ field }) => <Input {...field} placeholder="Symbol description" readOnly disabled />}
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor={`mappings.${index}.apiSymbol`}>API Symbol</Label>
-                    <Controller
-                      name={`mappings.${index}.apiSymbol`}
-                      control={control}
-                      render={({ field }) => <Input {...field} placeholder="e.g., EUR/USD" />}
-                    />
-                  </div>
-                   <div>
-                    <Label htmlFor={`mappings.${index}.description`}>Description</Label>
-                    <Controller
-                      name={`mappings.${index}.description`}
-                      control={control}
-                      render={({ field }) => <Input {...field} placeholder="Symbol description" />}
-                    />
-                  </div>
+                  <Button variant="ghost" size="icon" disabled className="self-end text-destructive">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => remove(index)} className="self-end text-destructive">
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-          </div>
-          <div className="flex justify-between items-center">
-            <Button type="button" variant="outline" onClick={() => append({ brokerSymbol: '', apiSymbol: '', description: '' })}>
+              ))}
+            </div>
+          </ScrollArea>
+          <div className="flex justify-between items-center pt-4 border-t">
+            <Button type="button" variant="outline" disabled>
               <PlusCircle className="mr-2 h-4 w-4" />
               Add Symbol Manually
             </Button>
-            <Button type="submit" disabled={isSaving}>
-              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+            <Button type="submit" disabled>
+              <Save className="mr-2 h-4 w-4" />
               Save Mappings
             </Button>
           </div>
