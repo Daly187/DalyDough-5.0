@@ -1,4 +1,3 @@
-
 //+------------------------------------------------------------------+
 //|                                                DalyDoughEA.mq5   |
 //|                                  Copyright 2025, DalyDough Ltd   |
@@ -6,7 +5,7 @@
 //+------------------------------------------------------------------+
 #property copyright "Copyright 2025, DalyDough Ltd"
 #property link      "https://dalydough.com"
-#property version   "1.10"
+#property version   "1.11" // Version incremented
 
 #include <Trade\Trade.mqh>
 
@@ -160,6 +159,9 @@ void UpdateAccountStatus()
     double equity = AccountInfoDouble(ACCOUNT_EQUITY);
     double marginLevel = AccountInfoDouble(ACCOUNT_MARGIN_LEVEL);
     
+    // **FIX**: Use TIME_RFC3339 for a JSON-safe ISO 8601 timestamp string
+    string timestamp = TimeToString(TimeCurrent(), TIME_RFC3339);
+
     string jsonData = StringFormat(
         "{\"fields\": {"
         "\"balance\": {\"doubleValue\": %.2f},"
@@ -168,7 +170,7 @@ void UpdateAccountStatus()
         "\"status\": {\"stringValue\": \"Connected\"},"
         "\"lastUpdate\": {\"stringValue\": \"%s\"}"
         "}}",
-        balance, equity, marginLevel, TimeToString(TimeCurrent(), TIME_DATE|TIME_SECONDS)
+        balance, equity, marginLevel, timestamp
     );
     
     string url = baseURL + accountDocumentPath + "?updateMask.fieldPaths=balance&updateMask.fieldPaths=equity&updateMask.fieldPaths=marginLevel&updateMask.fieldPaths=status&updateMask.fieldPaths=lastUpdate";
@@ -280,12 +282,13 @@ void ProcessBotCommands()
     int res = WebRequest("POST", queryUrl, "Content-Type: application/json", 5000, postData, result, resultHeaders);
 
     if (res != 200) {
-        Print("Failed to query for bots. HTTP Code: ", res);
+        // This can be noisy, so only print if something changed or on first run
+        // Print("Failed to query for bots. HTTP Code: ", res);
         return;
     }
 
     string response = CharArrayToString(result);
-    Print("Successfully queried for bots. Response length: ", StringLen(response));
+    // Print("Successfully queried for bots. Response length: ", StringLen(response));
     
     // Simple bot processing - this would need more complex JSON parsing for multiple bots
     if(StringFind(response, "\"documents\"") != -1)
@@ -297,7 +300,7 @@ void ProcessBotCommands()
         
         if(StringLen(botPair) > 0 && lotSize > 0)
         {
-            Print("Processing bot for pair: ", botPair, " with lot size: ", lotSize);
+            // Print("Processing bot for pair: ", botPair, " with lot size: ", lotSize);
             // Add your trading logic here
             ExecuteBotStrategy(botPair, lotSize, strategy);
         }
@@ -353,7 +356,7 @@ bool SendFirebaseRequest(string method, string url, string jsonData)
     {
         string response = CharArrayToString(result);
         Print("Firebase request failed. Method: ", method, " HTTP Code: ", res);
-        Print("Response: ", StringSubstr(response, 0, 200)); // Limit response length
+        Print("Response: ", StringSubstr(response, 0, 300)); // Limit response length
         return false;
     }
 }
