@@ -168,7 +168,7 @@ export default function SettingsPage() {
                     <CardHeader>
                         <CardTitle>Security</CardTitle>
                         <CardDescription>Manage your account security settings.</CardDescription>
-                    </Header>
+                    </CardHeader>
                     <CardContent>
                         {/* Security Management UI will go here */}
                     </CardContent>
