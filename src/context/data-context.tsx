@@ -6,23 +6,41 @@ import type { DScore, Bot, AutoBotStrategy, UserSettings } from '@/lib/types';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase/auth';
 import { db } from '@/lib/firebase/firestore';
-import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
+import { collection, doc, onSnapshot, query, where, setDoc } from 'firebase/firestore';
 import { getForexData } from '@/lib/fmp';
 import { useToast } from '@/hooks/use-toast';
 
-interface DataContextType {
-  isLoading: boolean;
-  dScoreData: DScore[];
-  allBots: Bot[];
-  activeBots: Bot[];
-  closedBots: Bot[];
-  strategy: AutoBotStrategy | null;
-  userSettings: UserSettings | null;
-  triggerRefresh: () => void;
-  lastUpdated: Date;
-}
-
-const DataContext = React.createContext<DataContextType | undefined>(undefined);
+const defaultSymbolMappings = [
+    { brokerSymbol: 'AUDCAD', apiSymbol: 'AUD/CAD', description: 'Australian Dollar vs Canadian Dollar' },
+    { brokerSymbol: 'AUDCHF', apiSymbol: 'AUD/CHF', description: 'Australian Dollar vs Swiss Franc' },
+    { brokerSymbol: 'AUDJPY', apiSymbol: 'AUD/JPY', description: 'Australian Dollar vs Japanese Yen' },
+    { brokerSymbol: 'AUDNZD', apiSymbol: 'AUD/NZD', description: 'Australian Dollar vs New Zealand Dollar' },
+    { brokerSymbol: 'AUDUSD', apiSymbol: 'AUD/USD', description: 'Australian Dollar vs US Dollar' },
+    { brokerSymbol: 'CADJPY', apiSymbol: 'CAD/JPY', description: 'Canadian Dollar vs Japanese Yen' },
+    { brokerSymbol: 'CHFJPY', apiSymbol: 'CHF/JPY', description: 'Swiss Franc vs Japanese Yen' },
+    { brokerSymbol: 'EURCAD', apiSymbol: 'EUR/CAD', description: 'Euro vs Canadian Dollar' },
+    { brokerSymbol: 'EURCHF', apiSymbol: 'EUR/CHF', description: 'Euro vs Swiss Franc' },
+    { brokerSymbol: 'EURGBP', apiSymbol: 'EUR/GBP', description: 'Euro vs Great Britain Pound' },
+    { brokerSymbol: 'EURJPY', apiSymbol: 'EUR/JPY', description: 'Euro vs Japanese Yen' },
+    { brokerSymbol: 'EURNZD', apiSymbol: 'EUR/NZD', description: 'Euro vs New Zealand Dollar' },
+    { brokerSymbol: 'EURTRY', apiSymbol: 'EUR/TRY', description: 'Euro vs Turkish Lira' },
+    { brokerSymbol: 'EURUSD', apiSymbol: 'EUR/USD', description: 'Euro vs US Dollar' },
+    { brokerSymbol: 'GBPAUD', apiSymbol: 'GBP/AUD', description: 'Great Britain Pound vs Australian Dollar' },
+    { brokerSymbol: 'GBPCAD', apiSymbol: 'GBP/CAD', description: 'Great Britain Pound vs Canadian Dollar' },
+    { brokerSymbol: 'GBPCHF', apiSymbol: 'GBP/CHF', description: 'Great Britain Pound vs Swiss Franc' },
+    { brokerSymbol: 'GBPJPY', apiSymbol: 'GBP/JPY', description: 'Great Britain Pound vs Japanese Yen' },
+    { brokerSymbol: 'GBPUSD', apiSymbol: 'GBP/USD', description: 'Great Britain Pound vs US Dollar' },
+    { brokerSymbol: 'NZDCAD', apiSymbol: 'NZD/CAD', description: 'New Zealand Dollar vs Canadian Dollar' },
+    { brokerSymbol: 'NZDCHF', apiSymbol: 'NZD/CHF', description: 'New Zealand Dollar vs Swiss Franc' },
+    { brokerSymbol: 'NZDJPY', apiSymbol: 'NZD/JPY', description: 'New Zealand Dollar vs Japanese Yen' },
+    { brokerSymbol: 'NZDUSD', apiSymbol: 'NZD/USD', description: 'New Zealand Dollar vs US Dollar' },
+    { brokerSymbol: 'USDCAD', apiSymbol: 'USD/CAD', description: 'US Dollar vs Canadian Dollar' },
+    { brokerSymbol: 'USDCHF', apiSymbol: 'USD/CHF', description: 'US Dollar vs Swiss Franc' },
+    { brokerSymbol: 'USDJPY', apiSymbol: 'USD/JPY', description: 'US Dollar vs Japanese Yen' },
+    { brokerSymbol: 'USDTRY', apiSymbol: 'USD/TRY', description: 'US Dollar vs Turkish Lira' },
+    { brokerSymbol: 'USDZAR', apiSymbol: 'USD/ZAR', description: 'US Dollar vs South African Rand' },
+    { brokerSymbol: 'XAUUSD', apiSymbol: 'XAU/USD', description: 'Gold vs US Dollar' },
+];
 
 const defaultStrategyData = {
     botType: 'Dynamic DCA',
@@ -46,6 +64,19 @@ const defaultStrategyData = {
     retracePercentage: 50,
 };
 
+interface DataContextType {
+  isLoading: boolean;
+  dScoreData: DScore[];
+  allBots: Bot[];
+  activeBots: Bot[];
+  closedBots: Bot[];
+  strategy: AutoBotStrategy | null;
+  userSettings: UserSettings | null;
+  triggerRefresh: () => void;
+  lastUpdated: Date;
+}
+
+const DataContext = React.createContext<DataContextType | undefined>(undefined);
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
@@ -74,29 +105,21 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    setIsLoading(true);
-
     // 1. Setup listener for User Settings (contains symbol mappings)
     const settingsRef = doc(db, 'userSettings', user.uid);
     const unsubscribeSettings = onSnapshot(settingsRef, (docSnap) => {
       if (docSnap.exists()) {
         setUserSettings(docSnap.data() as UserSettings);
       } else {
-         // If no settings exist, create a default structure but don't assume it's "loaded" for D-Score fetching yet
-         // The main fetch logic will handle this case.
-         setUserSettings({
-            symbolMappings: [
-                { brokerSymbol: 'EURUSD', apiSymbol: 'EUR/USD', description: 'Euro vs US Dollar' },
-                { brokerSymbol: 'USDJPY', apiSymbol: 'USD/JPY', description: 'US Dollar vs Japanese Yen' },
-                { brokerSymbol: 'GBPUSD', apiSymbol: 'GBP/USD', description: 'Great Britain Pound vs US Dollar' },
-            ]
-        });
+         const defaultSettings = { symbolMappings: defaultSymbolMappings };
+         setDoc(settingsRef, defaultSettings); // Create default settings for new user
+         setUserSettings(defaultSettings);
       }
-      setIsSettingsLoaded(true); // Mark settings as loaded/checked
+      setIsSettingsLoaded(true);
     }, (error) => {
       console.error("Error fetching user settings:", error);
       toast({ variant: 'destructive', title: 'Error', description: 'Could not load user settings.' });
-      setIsSettingsLoaded(true); // Still mark as loaded to prevent infinite loading state
+      setIsSettingsLoaded(true);
     });
 
     // 2. Setup listener for Bots
@@ -151,7 +174,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     // 4. Fetch D-Score data ONLY when settings are confirmed loaded.
     const fetchDScoreData = async () => {
-      // **THE FIX**: Do not proceed if settings haven't been loaded from Firestore yet.
       if (!isSettingsLoaded) {
         return;
       }

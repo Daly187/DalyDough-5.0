@@ -3,22 +3,20 @@
 
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase/firestore';
-import { collection, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, setDoc } from 'firebase/firestore';
 import type { AutoBotStrategy } from '@/lib/types';
 import { headers } from 'next/headers';
 
 const strategyCollection = collection(db, 'autobotStrategies');
 
-// This list should ideally be managed in a shared config, but for now,
-// it ensures the default strategy includes all available symbols.
-const ALL_SYMBOLS = [
-    'EUR/USD', 'USD/JPY', 'GBP/USD', 'USD/CHF', 'AUD/USD', 'USD/CAD', 'NZD/USD',
-    'EUR/GBP', 'EUR/AUD', 'EUR/JPY', 'EUR/CHF', 'GBP/JPY', 'GBP/CHF', 'GBPAUD',
-    'AUD/JPY', 'NZD/JPY', 'CAD/JPY', 'CHF/JPY', 'AUD/CAD', 'AUD/NZD', 'EUR/CAD',
-    'EUR/NZD', 'GBP/CAD', 'GBP/NZD', 'XAU/USD', 'XAG/USD', 'WTI/USD', 'USD/NOK',
-    'USD/SEK', 'USD/ZAR', 'USD/TRY', 'USD/MXN', 'USD/SGD', 'USD/HKD', 'EUR/NOK',
-    'EUR/SEK', 'BTC/USD', 'ETH/USD'
+// Default symbol list for new strategies.
+const DEFAULT_SYMBOLS = [
+    'AUD/CAD', 'AUD/CHF', 'AUD/JPY', 'AUD/NZD', 'AUD/USD', 'CAD/JPY', 'CHF/JPY',
+    'EUR/CAD', 'EUR/CHF', 'EUR/GBP', 'EUR/JPY', 'EURNZD', 'EUR/TRY', 'EUR/USD',
+    'GBP/AUD', 'GBP/CAD', 'GBP/CHF', 'GBP/JPY', 'GBP/USD', 'NZD/CAD', 'NZD/CHF',
+    'NZD/JPY', 'NZD/USD', 'USD/CAD', 'USD/CHF', 'USD/JPY', 'USD/TRY', 'USD/ZAR', 'XAU/USD'
 ];
+
 
 async function getUserId() {
   const headersList = headers();
@@ -44,7 +42,7 @@ export async function GET() {
         entryThresholdLower: -7.0,
         exitThresholdUpper: 6.0,
         exitThresholdLower: -6.0,
-        includedPairs: Object.fromEntries(ALL_SYMBOLS.map(p => [p, true])),
+        includedPairs: Object.fromEntries(DEFAULT_SYMBOLS.map(p => [p, true])),
         botType: 'Dynamic DCA',
         lotSize: 0.01,
         maxPositions: 5,

@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Trash2, PlusCircle, Save, Loader2, KeyRound, Server, UserCog } from 'lucide-react';
+import { Trash2, PlusCircle, Save, Loader2, UserCog } from 'lucide-react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -70,7 +70,7 @@ function SymbolMappingForm() {
   };
 
   if (isLoading) {
-    return <Skeleton className="h-96 w-full" />;
+    return <Skeleton className="h-[75vh] w-full" />;
   }
 
   return (
@@ -168,7 +168,7 @@ export default function SettingsPage() {
                     <CardHeader>
                         <CardTitle>Security</CardTitle>
                         <CardDescription>Manage your account security settings.</CardDescription>
-                    </CardHeader>
+                    </Header>
                     <CardContent>
                         {/* Security Management UI will go here */}
                     </CardContent>
