@@ -14,7 +14,7 @@ import { z } from 'zod';
 import { db } from '@/lib/firebase/firestore';
 import { auth } from '@/lib/firebase/auth';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -47,11 +47,11 @@ function SymbolMappingForm() {
 
   React.useEffect(() => {
     if (user) {
-      const fetchMappings = async () => {
-        setIsLoading(true);
-        const docRef = doc(db, 'userSettings', user.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists() && docSnap.data().symbolMappings) {
+      setIsLoading(true);
+      const docRef = doc(db, 'userSettings', user.uid);
+      
+      const unsubscribe = onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists() && docSnap.data().symbolMappings && docSnap.data().symbolMappings.length > 0) {
           reset({ mappings: docSnap.data().symbolMappings });
         } else {
             // Set default values if no settings are found
@@ -62,10 +62,15 @@ function SymbolMappingForm() {
             ] });
         }
         setIsLoading(false);
-      };
-      fetchMappings();
+      }, (error) => {
+        console.error("Error fetching symbol mappings: ", error);
+        toast({ variant: 'destructive', title: 'Error', description: "Could not load symbol mappings." });
+        setIsLoading(false);
+      });
+
+      return () => unsubscribe(); // Cleanup listener on unmount
     }
-  }, [user, reset]);
+  }, [user, reset, toast]);
 
   const onSubmit = async (data: SymbolMappingFormData) => {
     if (!user) {
@@ -93,7 +98,7 @@ function SymbolMappingForm() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2"><UserCog /> Symbol Mapping</CardTitle>
         <CardDescription>
-          Map your broker's specific symbols (e.g., EURUSD.pro) to the standard API format (e.g., EUR/USD). This ensures the app fetches the correct data for your account. This list is automatically populated by the EA.
+          Map your broker's specific symbols (e.g., EURUSD.pro) to the standard API format (e.g., EUR/USD). This list is automatically populated by the EA.
         </CardDescription>
       </CardHeader>
       <CardContent>
