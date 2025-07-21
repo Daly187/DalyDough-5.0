@@ -56,10 +56,11 @@ const learningContent = [
                 subTitle: "How is the D-Score Calculated?",
                 text: "The score is a weighted sum of several factors. The most important factors are:",
                 list: [
-                    "Trend Alignment (Weight: 3.0): Are the short-term, medium-term, and long-term trends all pointing in the same direction? This is the most heavily weighted component.",
-                    "Trend Strength (ADX, Weight: 1.5): How strong is the prevailing trend? A strong, clear trend gets a higher score.",
-                    "Momentum (RSI & MACD, Weight: 2.0): Is there strong momentum behind the current price movement?",
-                    "Volatility & Other Factors (ATR, BB, etc., Weights: 0.5-1.0): Other indicators provide additional confirmation and context, refining the final score."
+                    "Trend Alignment (Weight: 4.0): Are the short-term, medium-term, and long-term trends all pointing in the same direction? This is the most heavily weighted component.",
+                    "Trend Strength (ADX, Weight: 2.5): How strong is the prevailing trend? A strong, clear trend gets a higher score.",
+                    "Momentum (MACD, Weight: 1.0): Is there strong momentum behind the current price movement?",
+                    "Volatility (ATR, Weight: 1.5): Assesses market volatility. The system prefers healthy, trending volatility over extreme or stagnant conditions.",
+                    "Confirmation Indicators (Stochastic, SAR, CCI, Weight: 1.0): Other indicators provide additional confirmation and context, refining the final score."
                 ]
             },
              {
@@ -73,7 +74,28 @@ const learningContent = [
         ]
     },
     {
-        title: "Chapter 4: Using the Auto Bot Launcher",
+        title: "Chapter 4: Understanding Bot Types",
+        content: [
+            {
+                subTitle: "Dynamic DCA (Dollar-Cost Averaging)",
+                text: "This is a sophisticated grid strategy. If the initial trade moves into a loss, the bot automatically opens new trades at predetermined intervals (Grid Distance) to get a better average entry price. The 'Dynamic' aspect means it can use AI to adjust re-entry timing based on market conditions like volatility or D-Score changes. It's ideal for ranging or slowly trending markets."
+            },
+            {
+                subTitle: "Trend Rider",
+                text: "A classic trend-following strategy. This bot aims to enter a trade when the D-Score indicates a strong trend is underway and ride that trend for a significant profit. Unlike DCA, it typically does not open multiple positions against the trend; it's designed to capture a single, powerful market move."
+            },
+            {
+                subTitle: "Mean Reversion",
+                text: "This strategy operates on the belief that prices tend to return to their historical average. The bot looks for assets that are heavily 'overbought' (price is unusually high) or 'oversold' (price is unusually low) and places a trade in the opposite direction, betting on a correction."
+            },
+            {
+                subTitle: "Buy and Hold / Sell and Hold",
+                text: "These are the most basic strategies. The bot will execute a single buy or sell order and hold it until it's manually closed or hits a pre-defined Stop Loss or Take Profit. It does not use any grid or re-entry logic. This is useful for simple, one-off trades based on a strong D-Score signal."
+            }
+        ]
+    },
+    {
+        title: "Chapter 5: Using the Auto Bot Launcher",
         content: [
             {
                 subTitle: "Finding Opportunities",
@@ -93,7 +115,7 @@ const learningContent = [
         ]
     },
     {
-        title: "Chapter 5: Managing Active & Closed Bots",
+        title: "Chapter 6: Managing Active & Closed Bots",
         content: [
             {
                 subTitle: "Monitoring Active Bots",
