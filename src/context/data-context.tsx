@@ -108,18 +108,19 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     // 1. Setup listener for User Settings (contains symbol mappings)
     const settingsRef = doc(db, 'userSettings', user.uid);
     const unsubscribeSettings = onSnapshot(settingsRef, (docSnap) => {
-      if (docSnap.exists()) {
+      if (docSnap.exists() && docSnap.data().symbolMappings?.length > 0) {
         setUserSettings(docSnap.data() as UserSettings);
       } else {
          const defaultSettings = { symbolMappings: defaultSymbolMappings };
-         setDoc(settingsRef, defaultSettings); // Create default settings for new user
+         setDoc(settingsRef, defaultSettings, { merge: true }); // Create default settings for new user
          setUserSettings(defaultSettings);
       }
       setIsSettingsLoaded(true);
     }, (error) => {
       console.error("Error fetching user settings:", error);
       toast({ variant: 'destructive', title: 'Error', description: 'Could not load user settings.' });
-      setIsSettingsLoaded(true);
+      setIsSettingsLoaded(true); // Still allow app to proceed with defaults
+       setUserSettings({ symbolMappings: defaultSymbolMappings });
     });
 
     // 2. Setup listener for Bots
@@ -185,7 +186,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       
-      setIsLoading(true);
+      // Don't set loading to true for background refreshes
+      // setIsLoading(true); 
+      
       const pairs = userSettings.symbolMappings.map(m => m.apiSymbol);
       try {
         const data = await Promise.all(
@@ -200,8 +203,16 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false);
       }
     };
-
+    
+    // Initial fetch
     fetchDScoreData();
+
+    // Set up interval for subsequent fetches
+    const intervalId = setInterval(fetchDScoreData, 10 * 60 * 1000); // 10 minutes
+
+    // Cleanup function to clear the interval when the component unmounts or dependencies change
+    return () => clearInterval(intervalId);
+    
   }, [userSettings, isSettingsLoaded, refreshKey, toast]);
 
 
