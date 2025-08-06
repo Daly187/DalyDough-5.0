@@ -128,21 +128,16 @@ export default function BotConfiguration({ allPairs, activeBots, isLoading }: Bo
 
         const direction = dScoreData.dScore > 0 ? 'Buy' : 'Sell';
         const pipSize = selectedApiPair.includes('JPY') ? 0.01 : 0.0001;
-
-        // The first trade is active, not pending. Subsequent trades are pending.
+        
         const pendingOrders: PendingOrder[] = [];
         let currentLotSize = Number(config.lotSize);
         let cumulativeDistance = 0;
 
-        // Loop starts from grid level 2 for PENDING orders
         for (let i = 2; i <= Number(config.gridLevels); i++) {
             currentLotSize *= Number(config.lotSizeMultiplier);
             
-            // Adjust distance logic to start from the first pending order
-            const distanceMultiplier = (config.gridDistanceMultiplier ?? 1.5) ** (i - 1);
-            cumulativeDistance = i === 2 
-                ? Number(config.gridDistance) 
-                : cumulativeDistance + (Number(config.gridDistance) * distanceMultiplier);
+            const distanceMultiplier = (config.gridDistanceMultiplier ?? 1.5) ** (i - 2);
+            cumulativeDistance += Number(config.gridDistance) * distanceMultiplier;
 
             const priceOffset = cumulativeDistance * pipSize;
             

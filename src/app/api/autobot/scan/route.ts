@@ -114,14 +114,11 @@ export async function POST(request: NextRequest) {
         let currentLotSize = Number(strategy.lotSize);
         let cumulativeDistance = 0;
 
-        // Loop starts from grid level 2 for PENDING orders
         for (let i = 2; i <= strategy.gridLevels; i++) {
             currentLotSize *= Number(strategy.lotSizeMultiplier);
             
-            const distanceMultiplier = (strategy.gridDistanceMultiplier ?? 1.5) ** (i - 1);
-            cumulativeDistance = i === 2 
-                ? Number(strategy.gridDistance) 
-                : cumulativeDistance + (Number(strategy.gridDistance) * distanceMultiplier);
+            const distanceMultiplier = (strategy.gridDistanceMultiplier ?? 1.5) ** (i - 2);
+            cumulativeDistance += Number(strategy.gridDistance) * distanceMultiplier;
 
             const priceOffset = cumulativeDistance * pipSize;
             const targetPrice = direction === 'Buy' 
