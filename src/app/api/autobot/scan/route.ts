@@ -1,9 +1,8 @@
-
 'use server';
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/lib/firebase/firestore';
-import { collection, doc, getDoc, getDocs, query, where, addDoc, serverTimestamp, runTransaction } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, where, addDoc, serverTimestamp, runTransaction, updateDoc, deleteDoc } from 'firebase/firestore';
 import { getForexData } from '@/lib/fmp';
 import type { AutoBotStrategy, Bot, PendingOrder, UserSettings } from '@/lib/types';
 import { headers } from 'next/headers';
@@ -34,6 +33,74 @@ async function getStrategyAndSettings(userId: string): Promise<{ strategy: AutoB
     const settings = settingsSnap.exists() ? settingsSnap.data() as UserSettings : null;
     
     return { strategy, settings };
+}
+
+// Helper function to close a bot and update all pending orders
+async function closeBot(botId: string): Promise<void> {
+  try {
+    const botRef = doc(db, 'bots', botId);
+    const botDoc = await getDoc(botRef);
+    
+    if (!botDoc.exists()) {
+      throw new Error('Bot not found');
+    }
+    
+    const botData = botDoc.data() as Bot;
+    
+    // Update all pending orders to closed status
+    const updatedPendingOrders = botData.pendingOrders?.map(order => ({
+      ...order,
+      status: 'closed' as const
+    })) || [];
+    
+    // Update the bot with closed status and closed pending orders
+    await updateDoc(botRef, {
+      status: 'closed',
+      pendingOrders: updatedPendingOrders
+    });
+    
+    console.log(`Bot ${botId} closed successfully with all pending orders updated.`);
+    
+  } catch (error) {
+    console.error(`Error closing bot ${botId}:`, error);
+    throw error;
+  }
+}
+
+// Helper function to delete a bot completely
+async function deleteBot(botId: string): Promise<void> {
+  try {
+    const botRef = doc(db, 'bots', botId);
+    const botDoc = await getDoc(botRef);
+    
+    if (!botDoc.exists()) {
+      throw new Error('Bot not found');
+    }
+    
+    const botData = botDoc.data() as Bot;
+    
+    // If bot is still active, close it first (update pending orders)
+    if (botData.status === 'active') {
+      const updatedPendingOrders = botData.pendingOrders?.map(order => ({
+        ...order,
+        status: 'closed' as const
+      })) || [];
+      
+      await updateDoc(botRef, {
+        status: 'closed',
+        pendingOrders: updatedPendingOrders
+      });
+    }
+    
+    // Now delete the bot document
+    await deleteDoc(botRef);
+    
+    console.log(`Bot ${botId} deleted successfully.`);
+    
+  } catch (error) {
+    console.error(`Error deleting bot ${botId}:`, error);
+    throw error;
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -111,6 +178,16 @@ export async function POST(request: NextRequest) {
         const pipSize = dScore.pair.includes('JPY') ? 0.01 : 0.0001;
 
         const pendingOrders: PendingOrder[] = [];
+        
+        // Add the initial entry order (Level 1) with "active" status
+        pendingOrders.push({
+            level: 1,
+            targetPrice: parseFloat(dScore.price.toFixed(5)), // Current market price
+            lotSize: parseFloat(Number(strategy.lotSize).toFixed(2)), // Initial lot size
+            status: 'active' // This should execute immediately
+        });
+
+        // Add the DCA levels (starting from Level 2) with "PENDING" status
         let currentLotSize = Number(strategy.lotSize);
         let cumulativeDistance = 0;
 
@@ -129,9 +206,11 @@ export async function POST(request: NextRequest) {
                 level: i,
                 targetPrice: parseFloat(targetPrice.toFixed(5)),
                 lotSize: parseFloat(currentLotSize.toFixed(2)),
-                status: 'PENDING'
+                status: 'PENDING' // These wait for price to reach target levels
             });
         }
+        
+        console.log(`Creating auto bot for ${brokerSymbol} with pending orders:`, pendingOrders);
         
         const newBotData: Omit<Bot, 'id'> = {
             ...strategy,
@@ -151,10 +230,90 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ success: true, message: `Scan complete for user ${userId}. ${botsCreatedCount} new bot(s) created.` });
+    return NextResponse.json({ 
+      success: true, 
+      message: `Scan complete for user ${userId}. ${botsCreatedCount} new bot(s) created with initial entries.` 
+    });
 
   } catch (error) {
     console.error("Error during Auto Bot scan:", error);
+    return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
+  }
+}
+
+// Handle DELETE requests to close a specific bot
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const botId = searchParams.get('id');
+    const action = searchParams.get('action'); // 'close' or 'delete'
+    
+    if (!botId) {
+      return NextResponse.json({ success: false, error: 'Bot ID is required' }, { status: 400 });
+    }
+    
+    if (action === 'delete') {
+      await deleteBot(botId);
+      return NextResponse.json({ 
+        success: true, 
+        message: `Bot ${botId} deleted successfully.` 
+      });
+    } else {
+      // Default to close
+      await closeBot(botId);
+      return NextResponse.json({ 
+        success: true, 
+        message: `Bot ${botId} closed successfully.` 
+      });
+    }
+    
+  } catch (error) {
+    console.error("Error handling bot deletion/closure:", error);
+    return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
+  }
+}
+
+// Handle PUT requests to update bot status
+export async function PUT(request: NextRequest) {
+  try {
+    const { botId, status, pendingOrders } = await request.json();
+    
+    if (!botId) {
+      return NextResponse.json({ success: false, error: 'Bot ID is required' }, { status: 400 });
+    }
+    
+    const botRef = doc(db, 'bots', botId);
+    const updateData: any = {};
+    
+    if (status) {
+      updateData.status = status;
+      
+      // If closing the bot, also close all pending orders
+      if (status === 'closed') {
+        const botDoc = await getDoc(botRef);
+        if (botDoc.exists()) {
+          const botData = botDoc.data() as Bot;
+          updateData.pendingOrders = botData.pendingOrders?.map(order => ({
+            ...order,
+            status: 'closed' as const
+          })) || [];
+        }
+      }
+    }
+    
+    if (pendingOrders) {
+      updateData.pendingOrders = pendingOrders;
+    }
+    
+    await updateDoc(botRef, updateData);
+    
+    return NextResponse.json({ 
+      success: true, 
+      message: `Bot ${botId} updated successfully.` 
+    });
+    
+  } catch (error) {
+    console.error("Error updating bot:", error);
     return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
   }
 }

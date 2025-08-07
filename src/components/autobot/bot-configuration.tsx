@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from 'react';
@@ -12,7 +11,7 @@ import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { getAuth } from 'firebase/auth';
 import { db } from '@/lib/firebase/firestore';
-import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { getForexData } from '@/lib/fmp';
 import { useData } from '@/context/data-context';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
@@ -87,6 +86,85 @@ export default function BotConfiguration({ allPairs, activeBots, isLoading }: Bo
     return counts;
   }, [activeBots]);
 
+  // Function to close a bot and update all pending orders
+  const closeBot = async (botId: string) => {
+    try {
+      const botRef = doc(db, 'bots', botId);
+      const botDoc = await getDoc(botRef);
+      
+      if (!botDoc.exists()) {
+        throw new Error('Bot not found');
+      }
+      
+      const botData = botDoc.data() as Bot;
+      
+      // Update all pending orders to closed status
+      const updatedPendingOrders = botData.pendingOrders?.map(order => ({
+        ...order,
+        status: 'closed' as const
+      })) || [];
+      
+      // Update the bot with closed status and closed pending orders
+      await updateDoc(botRef, {
+        status: 'closed',
+        pendingOrders: updatedPendingOrders
+      });
+      
+      toast({
+        title: "Bot Closed Successfully",
+        description: `Bot for ${botData.pair} has been closed along with all pending orders.`,
+      });
+      
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error Closing Bot",
+        description: (error as Error).message,
+      });
+    }
+  };
+
+  // Function to delete a bot completely
+  const deleteBot = async (botId: string) => {
+    try {
+      const botRef = doc(db, 'bots', botId);
+      const botDoc = await getDoc(botRef);
+      
+      if (!botDoc.exists()) {
+        throw new Error('Bot not found');
+      }
+      
+      const botData = botDoc.data() as Bot;
+      
+      // If bot is still active, close it first (update pending orders)
+      if (botData.status === 'active') {
+        const updatedPendingOrders = botData.pendingOrders?.map(order => ({
+          ...order,
+          status: 'closed' as const
+        })) || [];
+        
+        await updateDoc(botRef, {
+          status: 'closed',
+          pendingOrders: updatedPendingOrders
+        });
+      }
+      
+      // Now delete the bot document
+      await deleteDoc(botRef);
+      
+      toast({
+        title: "Bot Deleted Successfully",
+        description: `Bot for ${botData.pair} has been permanently deleted.`,
+      });
+      
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error Deleting Bot",
+        description: (error as Error).message,
+      });
+    }
+  };
 
   React.useEffect(() => {
     if (allPairs.length > 0 && !allPairs.find(p => p.pair === selectedApiPair)) {
@@ -130,6 +208,16 @@ export default function BotConfiguration({ allPairs, activeBots, isLoading }: Bo
         const pipSize = selectedApiPair.includes('JPY') ? 0.01 : 0.0001;
         
         const pendingOrders: PendingOrder[] = [];
+        
+        // Add the initial entry order (Level 1) with "active" status
+        pendingOrders.push({
+            level: 1,
+            targetPrice: parseFloat(dScoreData.price.toFixed(5)), // Current market price
+            lotSize: parseFloat(Number(config.lotSize).toFixed(2)), // Initial lot size
+            status: 'active' // This should execute immediately
+        });
+
+        // Add the DCA levels (starting from Level 2) with "PENDING" status
         let currentLotSize = Number(config.lotSize);
         let cumulativeDistance = 0;
 
@@ -149,9 +237,11 @@ export default function BotConfiguration({ allPairs, activeBots, isLoading }: Bo
                 level: i,
                 targetPrice: parseFloat(targetPrice.toFixed(5)),
                 lotSize: parseFloat(currentLotSize.toFixed(2)),
-                status: 'PENDING'
+                status: 'PENDING' // These wait for price to reach target levels
             });
         }
+        
+        console.log('Creating bot with pending orders:', pendingOrders);
         
         const newBotData: Omit<Bot, 'id'> = {
             ...config,
@@ -170,7 +260,7 @@ export default function BotConfiguration({ allPairs, activeBots, isLoading }: Bo
 
         toast({
             title: "Bot Launched Successfully!",
-            description: `A ${config.botType} bot for ${brokerSymbol} has been created.`,
+            description: `A ${config.botType} bot for ${brokerSymbol} has been created with initial entry at market price.`,
         });
     } catch (e) {
         toast({ variant: "destructive", title: "Failed to Launch Bot", description: (e as Error).message });
